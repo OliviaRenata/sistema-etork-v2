@@ -1,5 +1,5 @@
 // src/pages/admin/OrderDetail.tsx
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase, callFunction, storage } from '../../lib/supabase';
 import type { Order, OrderStatusHistory, OrderFile, OrderStatus } from '../../types';
@@ -9,11 +9,11 @@ import { ArrowRightIcon, DocumentIcon } from '../../components/ui/Icons';
 import { formatCurrency, formatDate } from '../../lib/utils';
 
 const STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-  solicitado:  ['em_producao', 'cancelado'],
+  solicitado:   ['em_producao', 'cancelado'],
   em_producao: ['enviado', 'cancelado'],
-  enviado:     ['concluido'],
-  concluido:   [],
-  cancelado:   [],
+  enviado:      ['concluido'],
+  concluido:    [],
+  cancelado:    [],
 };
 
 export default function AdminOrderDetail() {
@@ -110,7 +110,7 @@ export default function AdminOrderDetail() {
                 </tr>
               </thead>
               <tbody>
-                {(order.order_items || []).map((oi: unknown) => {
+                {(order.order_items || []).map((oi: any) => {
                   const item = oi as { id: string; item: { sku: string; name: string; category: string }; quantity: number; unit_price: number; subtotal: number };
                   return (
                     <tr key={item.id} style={{ borderBottom: '1px solid #161616' }}>
@@ -146,8 +146,6 @@ export default function AdminOrderDetail() {
                   <div>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#ccc', fontWeight: 500 }}>
                       <DocumentIcon width={14} height={14} /> {file.file_name}
-                     color: '#ccc', fontWeight: 500 }}>
-                      <DocumentIcon width={14} height={14} /> {file.file_name}
                     </div>
                     <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>
                       {file.file_size ? `${(file.file_size / 1024).toFixed(1)} KB · ` : ''}{formatDate(file.created_at)}
@@ -182,7 +180,7 @@ export default function AdminOrderDetail() {
                   </div>
                   {h.notes && <div style={{ fontSize: 11, color: '#666', marginTop: 2 }}>{h.notes}</div>}
                   <div style={{ fontSize: 10, color: '#444', marginTop: 2 }}>
-                    {(h.profile as unknown as { full_name: string })?.full_name || '—'} · {formatDate(h.created_at)}
+                    {(h.profile as any)?.full_name || '—'} · {formatDate(h.created_at)}
                   </div>
                 </div>
               </div>
