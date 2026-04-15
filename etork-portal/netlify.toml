@@ -1,7 +1,7 @@
 [build]
   base = "etork-portal"
-  command = "npm install && npm run build"
-  publish = "etork-portal/dist"
+  command = "npm install && npx vite build"
+  publish = "dist"
 
 [build.environment]
   NODE_VERSION = "20"
