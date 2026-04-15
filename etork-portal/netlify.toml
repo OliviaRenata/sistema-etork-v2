@@ -1,0 +1,12 @@
+[build]
+  base = "etork-portal"
+  command = "npm install && npm run build"
+  publish = "etork-portal/dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
