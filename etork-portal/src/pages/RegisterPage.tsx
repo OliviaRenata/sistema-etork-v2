@@ -228,11 +228,11 @@ export default function RegisterPage() {
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(230,184,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(230,184,0,0.04) 1px, transparent 1px)', backgroundSize: '48px 48px' }} />
         <div style={{ position: 'absolute', top: '38%', left: '50%', transform: 'translate(-50%, -50%)', width: 480, height: 480, borderRadius: '50%', background: 'radial-gradient(circle, rgba(230,184,0,0.06) 0%, transparent 68%)', pointerEvents: 'none' }} />
         <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 420, padding: 24, textAlign: 'center' }}>
-          <img 
-            src={logoImg} 
-            alt="Etork Brasil" 
-            style={{ width: 180, maxWidth: '100%', marginBottom: 24, filter: 'brightness(0) invert(1)' }} 
-          />
+<img 
+  src={logoImg} 
+  alt="Etork Brasil" 
+  style={{ width: 180, maxWidth: '100%', marginBottom: 24, filter: 'invert(1)' }} 
+/>
           <div style={{ color: '#fff', fontSize: 22, fontWeight: 700, marginBottom: 12 }}>Bem-vindo ao portal Etork</div>
           <p style={{ color: '#999', fontSize: 14, lineHeight: 1.7, margin: 0 }}>Cadastre sua conta e acesse o painel de franqueados para acompanhar pedidos, finanças e novidades da rede.</p>
         </div>
