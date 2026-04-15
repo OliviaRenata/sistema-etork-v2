@@ -4,20 +4,26 @@ import { supabase } from '../lib/supabase';
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
   async function handleRegister(e: React.FormEvent) {
-    // ESSAS DUAS LINHAS S�O AS MAIS IMPORTANTES DO PROJETO AGORA
+    // ESSAS DUAS LINHAS SÃO AS MAIS IMPORTANTES DO PROJETO AGORA
     e.preventDefault();
     e.stopPropagation();
     
+    if (password !== confirmPassword) {
+      setMessage({ type: 'error', text: 'As senhas não coincidem.' });
+      return;
+    }
+
     setMessage({ type: '', text: '' });
     setLoading(true);
 
     try {
-      // O signUp precisa da chave que come�a com "ey" no Netlify
+      // O signUp precisa da chave que começa com "ey" no Netlify
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -71,13 +77,42 @@ export default function RegisterPage() {
                 style={{ width: '100%', padding: '12px', background: '#0d0d0d', color: '#fff', border: '1px solid #2a2a2a', borderRadius: 8, fontSize: 14, outline: 'none' }}
               />
             </div>
-            <div style={{ marginBottom: 24, position: 'relative' }}>
+            <div style={{ marginBottom: 16, position: 'relative' }}>
               <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#888', marginBottom: 6 }}>SENHA</label>
               <input 
                 type={showPassword ? 'text' : 'password'} 
                 placeholder="••••••••" 
                 value={password} 
                 onChange={e => setPassword(e.target.value)} 
+                required 
+                style={{ width: '100%', padding: '12px', background: '#0d0d0d', color: '#fff', border: '1px solid #2a2a2a', borderRadius: 8, fontSize: 14, outline: 'none', paddingRight: 40 }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{ position: 'absolute', right: 10, top: 30, background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                {showPassword ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M2 2L22 22" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
+                  </svg>
+                )}
+              </button>
+            </div>
+            <div style={{ marginBottom: 24, position: 'relative' }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#888', marginBottom: 6 }}>CONFIRMAR SENHA</label>
+              <input 
+                type={showPassword ? 'text' : 'password'} 
+                placeholder="••••••••" 
+                value={confirmPassword} 
+                onChange={e => setConfirmPassword(e.target.value)} 
                 required 
                 style={{ width: '100%', padding: '12px', background: '#0d0d0d', color: '#fff', border: '1px solid #2a2a2a', borderRadius: 8, fontSize: 14, outline: 'none', paddingRight: 40 }}
               />
