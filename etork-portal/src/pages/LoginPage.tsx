@@ -1,28 +1,7 @@
 // src/pages/LoginPage.tsx
 //
 // ════════════════════════════════════════════════════════════
-// COMO USAR SUA LOGO SEM DEFORMAR:
-//
-// 1. Copie o arquivo  logoetork.png  para a pasta:
-//       src/assets/logoetork.png
-//
-// 2. Descomente a linha de import abaixo:
-//       import logoImg from '../assets/logoetork.png';
-//
-// 3. No JSX, substitua o bloco <LogoFallback /> por:
-//       <img
-//         src={logoImg}
-//         alt="Etork Brasil"
-//         style={{
-//           height: 60,          // ← defina apenas a altura
-//           width: 'auto',       // ← a largura se ajusta sozinha
-//           objectFit: 'contain',
-//           display: 'block',
-//         }}
-//       />
-//
-// ⚠️  NUNCA defina width E height ao mesmo tempo sem objectFit,
-//     pois isso estica/comprime a imagem.
+// LAYOUT CORRIGIDO: LOGO RESPONSIVA OCUPANDO TODA PARTE BRANCA
 // ════════════════════════════════════════════════════════════
 
 import logoImg from '../assets/logoetork.png';
@@ -69,26 +48,49 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', fontFamily: '"Inter", "Helvetica Neue", sans-serif' }}>
+    <div style={{ 
+      minHeight: '100vh', 
+      display: 'flex', 
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      fontFamily: '"Inter", "Helvetica Neue", sans-serif' 
+    }}>
 
-      {/* ─── ESQUERDA: formulário ───────────────────────────────── */}
+      {/* ─── ESQUERDA: formulário (460px fixo) ───────────────────────────────── */}
       <div style={{
-        width: 460, minHeight: '100vh', flexShrink: 0,
+        width: 460, 
+        minHeight: '100vh', 
+        flexShrink: 0,
         background: '#0a0a0a',
-        display: 'flex', flexDirection: 'column', justifyContent: 'center',
-        padding: '48px 44px', position: 'relative',
+        display: 'flex', 
+        flexDirection: 'column', 
+        justifyContent: 'center',
+        padding: '48px 44px', 
+        position: 'relative',
       }}>
         {/* Borda direita dourada */}
         <div style={{
-          position: 'absolute', right: 0, top: '10%', bottom: '10%', width: 1,
+          position: 'absolute', 
+          right: 0, 
+          top: '10%', 
+          bottom: '10%', 
+          width: 1,
           background: 'linear-gradient(to bottom, transparent, rgba(230,184,0,0.4) 40%, rgba(230,184,0,0.4) 60%, transparent)',
+          zIndex: 2,
         }} />
 
+        {/* Logo pequena no topo do formulário */}
         <div style={{ marginBottom: 44, textAlign: 'center' }}>
           <img
             src={logoImg}
             alt="Etork Brasil"
-            style={{ height: 72, width: 'auto', objectFit: 'contain', display: 'block', margin: '0 auto' }}
+            style={{ 
+              height: 60, 
+              width: 'auto', 
+              objectFit: 'contain', 
+              display: 'block', 
+              margin: '0 auto' 
+            }}
           />
         </div>
 
@@ -103,8 +105,11 @@ export default function LoginPage() {
           <div style={{ marginBottom: 14 }}>
             <label style={labelStyle}>E-MAIL</label>
             <input
-              type="email" value={email} onChange={e => setEmail(e.target.value)}
-              required placeholder="seu@email.com"
+              type="email" 
+              value={email} 
+              onChange={e => setEmail(e.target.value)}
+              required 
+              placeholder="seu@email.com"
               style={inputStyle}
               onFocus={e => e.target.style.borderColor = '#e6b800'}
               onBlur={e => e.target.style.borderColor = '#1e1e1e'}
@@ -116,14 +121,30 @@ export default function LoginPage() {
             <div style={{ position: 'relative' }}>
               <input
                 type={showPassword ? 'text' : 'password'}
-                value={password} onChange={e => setPassword(e.target.value)}
-                required placeholder="••••••••"
+                value={password} 
+                onChange={e => setPassword(e.target.value)}
+                required 
+                placeholder="••••••••"
                 style={{ ...inputStyle, paddingRight: 42 }}
                 onFocus={e => e.target.style.borderColor = '#e6b800'}
                 onBlur={e => e.target.style.borderColor = '#1e1e1e'}
               />
-              <button type="button" onClick={() => setShowPassword(s => !s)}
-                style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: 14, padding: 0, lineHeight: 1 }}>
+              <button 
+                type="button" 
+                onClick={() => setShowPassword(s => !s)}
+                style={{ 
+                  position: 'absolute', 
+                  right: 12, 
+                  top: '50%', 
+                  transform: 'translateY(-50%)', 
+                  background: 'none', 
+                  border: 'none', 
+                  color: '#555', 
+                  cursor: 'pointer', 
+                  fontSize: 14, 
+                  padding: 0, 
+                  lineHeight: 1 
+                }}>
                 {showPassword
                   ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
                   : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -141,11 +162,17 @@ export default function LoginPage() {
 
           {message.text && (
             <div style={{
-              padding: '10px 14px', marginBottom: 14, borderRadius: 8, fontSize: 12, lineHeight: 1.5,
+              padding: '10px 14px', 
+              marginBottom: 14, 
+              borderRadius: 8, 
+              fontSize: 12, 
+              lineHeight: 1.5,
               background: message.type === 'error' ? '#130808' : '#081308',
               border: `1px solid ${message.type === 'error' ? '#3a1010' : '#103a10'}`,
               color: message.type === 'error' ? '#f87171' : '#4ade80',
-              display: 'flex', alignItems: 'center', gap: 8,
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 8,
             }}>
               {message.type === 'error' ? (
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -163,14 +190,22 @@ export default function LoginPage() {
 
           <button type="submit" disabled={loading}
             style={{
-              width: '100%', padding: '14px',
+              width: '100%', 
+              padding: '14px',
               background: loading ? '#1a1600' : '#e6b800',
-              color: '#000', border: 'none', borderRadius: 8,
-              fontSize: 13, fontWeight: 800, letterSpacing: 1.5,
+              color: '#000', 
+              border: 'none', 
+              borderRadius: 8,
+              fontSize: 13, 
+              fontWeight: 800, 
+              letterSpacing: 1.5,
               cursor: loading ? 'not-allowed' : 'pointer',
               transition: 'background 0.15s, box-shadow 0.15s',
               boxShadow: loading ? 'none' : '0 4px 24px rgba(230,184,0,0.18)',
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              gap: 8,
             }}
             onMouseEnter={e => { if (!loading) { (e.currentTarget).style.background = '#ffd000'; } }}
             onMouseLeave={e => { if (!loading) { (e.currentTarget).style.background = '#e6b800'; } }}
@@ -202,204 +237,137 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* ─── DIREITA: branding visual ──────────────────────────────── */}
-      {/* CORRIGIDO: fundo 100% preto, logo inteira e centralizado */}
+      {/* ─── DIREITA: área BRANCA com logo RESPONSIVA ocupando TODO espaço ──── */}
       <div style={{
-        flex: '0 0 420px', 
-        maxWidth: 420, 
-        background: '#000',  // ← fundo completamente preto
-        position: 'relative', 
+        flex: 1,              // ← ocupa todo espaço restante (responsivo!)
+        background: '#ffffff', // ← FUNDO BRANCO como na imagem
+        position: 'relative',
         overflow: 'hidden',
-        display: 'flex', 
+        display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center', 
+        alignItems: 'center',
         justifyContent: 'center',
-        minHeight: '100vh',   // ← garante altura total
+        minHeight: '100vh',
+        padding: '40px',
       }}>
 
-        {/* Faixa vermelha no topo */}
+        {/* Sutil textura de fundo */}
         <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0, height: 3,
-          background: 'linear-gradient(90deg, transparent 0%, #cc2200 30%, #e6b800 60%, transparent 100%)',
-        }} />
-
-        {/* Grade de fundo */}
-        <div style={{
-          position: 'absolute', inset: 0,
-          backgroundImage: [
-            'linear-gradient(rgba(230,184,0,0.03) 1px, transparent 1px)',
-            'linear-gradient(90deg, rgba(230,184,0,0.03) 1px, transparent 1px)',
-          ].join(', '),
-          backgroundSize: '48px 48px',
-        }} />
-
-        {/* Glow dourado */}
-        <div style={{
-          position: 'absolute', top: '38%', left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 480, height: 480, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(230,184,0,0.05) 0%, transparent 68%)',
+          position: 'absolute',
+          inset: 0,
+          opacity: 0.03,
+          backgroundImage: `radial-gradient(circle at 25% 40%, #000 1.5px, transparent 1.5px)`,
+          backgroundSize: '32px 32px',
           pointerEvents: 'none',
         }} />
 
-        {/* Glow vermelho menor */}
-        <div style={{
-          position: 'absolute', bottom: '20%', right: '20%',
-          width: 200, height: 200, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(204,34,0,0.04) 0%, transparent 70%)',
-          pointerEvents: 'none',
-        }} />
+        {/* CONTEÚDO CENTRALIZADO - LOGO GRANDE ocupando espaço */}
+        <div style={{ 
+          textAlign: 'center', 
+          maxWidth: '90%',
+          width: '100%',
+        }}>
+          
+          {/* LOGO RESPONSIVA - ocupa toda largura disponível */}
+          <img
+            src={logoImg}
+            alt="Etork Brasil"
+            style={{ 
+              width: '100%',        // ← ocupa 100% da largura do container
+              maxWidth: 500,        // ← limite máximo para não ficar gigante
+              height: 'auto',       // ← altura automática mantém proporção
+              objectFit: 'contain',
+              display: 'block',
+              margin: '0 auto 32px auto',
+            }}
+          />
 
-        {/* Xadrez decorativo canto superior direito */}
-        <div style={{
-          position: 'absolute', top: 24, right: 24,
-          width: 48, height: 48, opacity: 0.1,
-          backgroundImage: 'repeating-conic-gradient(#e6b800 0% 25%, transparent 0% 50%)',
-          backgroundSize: '12px 12px',
-          borderRadius: 4,
-        }} />
-
-        {/* Xadrez decorativo canto inferior esquerdo */}
-        <div style={{
-          position: 'absolute', bottom: 90, left: 32,
-          width: 64, height: 64, opacity: 0.06,
-          backgroundImage: 'repeating-conic-gradient(#cc2200 0% 25%, transparent 0% 50%)',
-          backgroundSize: '16px 16px',
-          borderRadius: 4,
-        }} />
-
-        {/* Conteúdo central */}
-        <div style={{ position: 'relative', textAlign: 'center', padding: '0 56px', maxWidth: 560 }}>
-
-          {/* Badge pulsante */}
+          {/* Badge/tagline */}
           <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            background: '#0d0d0d', border: '1px solid #2a2200',
-            borderRadius: 30, padding: '7px 18px', marginBottom: 36,
-            fontSize: 10, color: '#e6b800', letterSpacing: 2, fontWeight: 700,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            background: '#f5f5f5',
+            border: '1px solid #e0e0e0',
+            borderRadius: 30,
+            padding: '8px 24px',
+            marginBottom: 32,
           }}>
             <span style={{
-              width: 7, height: 7, borderRadius: '50%', background: '#e6b800',
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              background: '#e6b800',
               display: 'inline-block',
-              boxShadow: '0 0 6px #e6b800',
-              animation: 'etorkPulse 2s ease-in-out infinite',
             }} />
-            PORTAL DE FRANQUEADOS
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#333', letterSpacing: 2 }}>
+              REMAP · CHIP · PERFORMANCE
+            </span>
           </div>
-
-          {/* LOGO CORRIGIDA: inteira, sem cortes, altura ajustada */}
-          <div style={{ marginBottom: 8 }}>
-            <img
-              src={logoImg}
-              alt="Etork Brasil"
-              style={{ 
-                maxWidth: '100%',      // ← não ultrapassa o container
-                height: 'auto',        // ← altura automática mantém proporção
-                width: 'auto',         // ← largura automática
-                maxHeight: 180,        // ← limite de altura (opcional, evita excesso)
-                objectFit: 'contain', 
-                display: 'block', 
-                margin: '0 auto' 
-              }}
-            />
-          </div>
-
-          {/* Linha vermelha */}
-          <div style={{ width: 50, height: 3, background: '#cc2200', margin: '28px auto', borderRadius: 2 }} />
 
           {/* Descrição */}
-          <p style={{ color: '#3a3a3a', fontSize: 14, lineHeight: 1.9, margin: '0 auto 40px' }}>
+          <p style={{ 
+            color: '#666', 
+            fontSize: 15, 
+            lineHeight: 1.8, 
+            maxWidth: 400, 
+            margin: '0 auto',
+          }}>
             Plataforma de gestão de pedidos,<br />
             arquivos de remap e financeiro<br />
             para franqueados da rede Etork.
           </p>
+        </div>
 
-          {/* Pilares */}
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-            {[
-              {
-                icon: (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M3 3h18v6H3z" />
-                    <path d="M3 9l9 6 9-6" />
-                    <path d="M12 15v6" />
-                  </svg>
-                ),
-                label: 'REMAP',
-              },
-              {
-                icon: (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                  </svg>
-                ),
-                label: 'CHIP',
-              },
-              {
-                icon: (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M3 3h14l4 4v14H3z" />
-                    <path d="M7 7h10v4H7z" />
-                  </svg>
-                ),
-                label: 'PERFORMANCE',
-              },
-            ].map(({ icon, label }) => (
-              <div key={label} style={{
-                padding: '9px 20px',
-                background: '#0a0a0a', border: '1px solid #1a1a1a',
-                borderRadius: 24, fontSize: 10, fontWeight: 700,
-                color: '#555', letterSpacing: 1.5,
-                display: 'flex', alignItems: 'center', gap: 6,
-              }}>
-                <span style={{ display: 'inline-flex', width: 16, height: 16, alignItems: 'center', justifyContent: 'center' }}>{icon}</span>
-                {label}
-              </div>
-            ))}
+        {/* Rodapé com stats na parte inferior */}
+        <div style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          borderTop: '1px solid #eee',
+          display: 'flex',
+          justifyContent: 'center',
+          gap: 48,
+          padding: '20px 32px',
+          background: '#fff',
+        }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#e6b800' }}>2017</div>
+            <div style={{ fontSize: 10, color: '#999', letterSpacing: 1 }}>FUNDAÇÃO</div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#e6b800' }}>MS</div>
+            <div style={{ fontSize: 10, color: '#999', letterSpacing: 1 }}>CAMPO GRANDE</div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#e6b800' }}>100%</div>
+            <div style={{ fontSize: 10, color: '#999', letterSpacing: 1 }}>PRÓPRIO</div>
           </div>
         </div>
-
-        {/* Barra inferior com stats */}
-        <div style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0,
-          borderTop: '1px solid #111',
-          display: 'grid', gridTemplateColumns: '1fr 1fr 1fr',
-        }}>
-          {[
-            { num: '2017', txt: 'Fundação' },
-            { num: 'MS', txt: 'Campo Grande' },
-            { num: '100%', txt: 'Próprio' },
-          ].map((s, i) => (
-            <div key={i} style={{
-              padding: '18px 12px', textAlign: 'center',
-              borderRight: i < 2 ? '1px solid #111' : 'none',
-            }}>
-              <div style={{ fontSize: 18, fontWeight: 800, color: '#e6b800', letterSpacing: -0.5 }}>{s.num}</div>
-              <div style={{ fontSize: 9, color: '#333', marginTop: 3, letterSpacing: 1.5 }}>{s.txt.toUpperCase()}</div>
-            </div>
-          ))}
-        </div>
-
-        <style>{`
-          @keyframes etorkPulse {
-            0%, 100% { opacity: 1; box-shadow: 0 0 6px #e6b800; }
-            50% { opacity: 0.4; box-shadow: 0 0 2px #e6b800; }
-          }
-        `}</style>
       </div>
     </div>
   );
 }
 
 const labelStyle: React.CSSProperties = {
-  display: 'block', fontSize: 10, fontWeight: 700,
-  color: '#444', letterSpacing: 1.5, marginBottom: 7,
+  display: 'block', 
+  fontSize: 10, 
+  fontWeight: 700,
+  color: '#444', 
+  letterSpacing: 1.5, 
+  marginBottom: 7,
 };
 
 const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '12px 14px',
-  background: '#0d0d0d', border: '1px solid #1e1e1e',
-  borderRadius: 8, color: '#fff', fontSize: 13,
-  outline: 'none', boxSizing: 'border-box',
+  width: '100%', 
+  padding: '12px 14px',
+  background: '#0d0d0d', 
+  border: '1px solid #1e1e1e',
+  borderRadius: 8, 
+  color: '#fff', 
+  fontSize: 13,
+  outline: 'none', 
+  boxSizing: 'border-box',
   transition: 'border-color 0.15s',
 };
