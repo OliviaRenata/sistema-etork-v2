@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
@@ -55,7 +56,7 @@ export default function RegisterPage() {
 
         {/* Card */}
         <div style={{ background: '#111', border: '1px solid #222', borderRadius: 16, padding: 32 }}>
-          <h1 style={{ color: '#fff', fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Solicitar Acesso</h1>
+          <h1 style={{ color: '#fff', fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Cadastrar</h1>
           <p style={{ color: '#555', fontSize: 13, marginBottom: 28 }}>Crie sua conta de franqueado</p>
 
           <form onSubmit={handleRegister}>
@@ -70,16 +71,23 @@ export default function RegisterPage() {
                 style={{ width: '100%', padding: '12px', background: '#0d0d0d', color: '#fff', border: '1px solid #2a2a2a', borderRadius: 8, fontSize: 14, outline: 'none' }}
               />
             </div>
-            <div style={{ marginBottom: 24 }}>
+            <div style={{ marginBottom: 24, position: 'relative' }}>
               <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#888', marginBottom: 6 }}>SENHA</label>
               <input 
-                type="password" 
+                type={showPassword ? 'text' : 'password'} 
                 placeholder="••••••••" 
                 value={password} 
                 onChange={e => setPassword(e.target.value)} 
                 required 
-                style={{ width: '100%', padding: '12px', background: '#0d0d0d', color: '#fff', border: '1px solid #2a2a2a', borderRadius: 8, fontSize: 14, outline: 'none' }}
+                style={{ width: '100%', padding: '12px', background: '#0d0d0d', color: '#fff', border: '1px solid #2a2a2a', borderRadius: 8, fontSize: 14, outline: 'none', paddingRight: 40 }}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{ position: 'absolute', right: 10, top: 30, background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: 16 }}
+              >
+                {showPassword ? '🙈' : '👁️'}
+              </button>
             </div>
             {message.text && (
               <div style={{

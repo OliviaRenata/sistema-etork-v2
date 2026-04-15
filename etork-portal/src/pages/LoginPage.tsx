@@ -6,6 +6,7 @@ export default function LoginPage() {
   const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
@@ -72,13 +73,20 @@ export default function LoginPage() {
               />
             </div>
 
-            <div style={{ marginBottom: 8 }}>
+            <div style={{ marginBottom: 8, position: 'relative' }}>
               <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#888', marginBottom: 6 }}>SENHA</label>
               <input
-                type="password" value={password} onChange={e => setPassword(e.target.value)} required
+                type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required
                 placeholder="••••••••"
-                style={{ width: '100%', padding: '12px', background: '#0d0d0d', border: '1px solid #2a2a2a', borderRadius: 8, color: '#fff', fontSize: 14, outline: 'none' }}
+                style={{ width: '100%', padding: '12px', background: '#0d0d0d', border: '1px solid #2a2a2a', borderRadius: 8, color: '#fff', fontSize: 14, outline: 'none', paddingRight: 40 }}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{ position: 'absolute', right: 10, top: 30, background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: 16 }}
+              >
+                {showPassword ? '🙈' : '👁️'}
+              </button>
             </div>
 
             {/* Link Esqueci Senha */}
