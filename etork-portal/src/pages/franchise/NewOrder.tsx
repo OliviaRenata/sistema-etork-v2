@@ -147,7 +147,7 @@ export default function FranchiseNewOrder() {
               <input
                 value={vehiclePlate}
                 onChange={e => setVehiclePlate(e.target.value.toUpperCase())}
-                placeholder="ABC-1234 ou ABC1D23"
+                placeholder="ex: ABC1D23"
                 maxLength={8}
                 style={{
                   flex: 1, padding: '10px 12px', borderRadius: 8, fontSize: 13, outline: 'none',

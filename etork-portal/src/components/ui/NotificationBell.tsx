@@ -50,7 +50,10 @@ export default function NotificationBell() {
         onClick={() => setOpen(!open)}
         style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, position: 'relative' }}
       >
-        <span style={{ fontSize: 18, color: open ? '#e6b800' : '#888' }}>🔔</span>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={open ? '#e6b800' : '#888'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </svg>
         {unread > 0 && (
           <span style={{
             position: 'absolute', top: 0, right: 0,

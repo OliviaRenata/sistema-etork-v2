@@ -162,9 +162,9 @@ export default function AppLayout() {
             display: 'inline-block', marginTop: 6,
             fontSize: 10, fontWeight: 700, letterSpacing: 1,
             color: isAdmin ? colors.accent : '#4ade80',
-            background: isAdmin ? '#1a1500' : '#0a1a0a',
+            background: isAdmin ? '#1a1500' : (isDark ? '#0a1a0a' : '#ffffff'),
             padding: '2px 8px', borderRadius: 4,
-            border: `1px solid ${isAdmin ? '#3a3000' : '#1a3a1a'}`,
+            border: `1px solid ${isAdmin ? '#3a3000' : (isDark ? '#1a3a1a' : '#dddddd')}`,
           }}>
             {isAdmin ? 'ADMIN' : 'FRANQUEADO'}
           </div>
