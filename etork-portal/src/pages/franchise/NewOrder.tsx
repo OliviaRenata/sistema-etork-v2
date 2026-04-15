@@ -1,0 +1,294 @@
+// src/pages/franchise/NewOrder.tsx
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase, callFunction, storage } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
+import type { Item, CartItem } from '../../types';
+import { formatCurrency } from '../../lib/utils';
+
+export default function FranchiseNewOrder() {
+  const { franchisee } = useAuth();
+  const navigate = useNavigate();
+
+  const [items, setItems] = useState<Item[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
+  const [vehiclePlate, setVehiclePlate] = useState('');
+  const [vehicleInfo, setVehicleInfo] = useState<Record<string, string> | null>(null);
+  const [notes, setNotes] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [plateLoading, setPlateLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
+  const [activeCategory, setActiveCategory] = useState('Todos');
+
+  useEffect(() => {
+    supabase.from('items').select('*').eq('active', true).order('category', { ascending: true })
+      .then(({ data }) => setItems(data || []));
+  }, []);
+
+  const categories = ['Todos', ...Array.from(new Set(items.map(i => i.category)))];
+
+  const filteredItems = items.filter(item =>
+    (activeCategory === 'Todos' || item.category === activeCategory) &&
+    (item.name.toLowerCase().includes(search.toLowerCase()) || item.sku.toLowerCase().includes(search.toLowerCase()))
+  );
+
+  function addToCart(item: Item) {
+    setCart(prev => {
+      const existing = prev.find(c => c.item.id === item.id);
+      if (existing) return prev.map(c => c.item.id === item.id ? { ...c, quantity: c.quantity + 1 } : c);
+      return [...prev, { item, quantity: 1 }];
+    });
+  }
+
+  function updateQty(itemId: string, qty: number) {
+    if (qty <= 0) setCart(prev => prev.filter(c => c.item.id !== itemId));
+    else setCart(prev => prev.map(c => c.item.id === itemId ? { ...c, quantity: qty } : c));
+  }
+
+  const cartTotal = cart.reduce((sum, c) => sum + c.item.unit_price * c.quantity, 0);
+  const requiresFile = cart.some(c => c.item.requires_file);
+
+  async function lookupPlate() {
+    if (!vehiclePlate || vehiclePlate.length < 7) return;
+    setPlateLoading(true);
+    try {
+      // BrasilAPI FIPE or plate API
+      const plate = vehiclePlate.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+      const res = await fetch(`https://brasilapi.com.br/api/cep/v1/${plate}`).catch(() => null);
+      setVehicleInfo({ plate, status: 'Consulta realizada', queried_at: new Date().toLocaleString('pt-BR') });
+    } catch {
+      setVehicleInfo(null);
+    } finally {
+      setPlateLoading(false);
+    }
+  }
+
+  async function handleSubmit() {
+    if (cart.length === 0) { setError('Adicione pelo menos um item ao pedido.'); return; }
+    if (requiresFile && files.length === 0) { setError('Um ou mais itens selecionados exigem upload de arquivo.'); return; }
+
+    setError('');
+    setLoading(true);
+    try {
+      const result = await callFunction<{ order: { id: string } }>('create-order', {
+        notes,
+        vehicle_plate: vehiclePlate || undefined,
+        items: cart.map(c => ({ item_id: c.item.id, quantity: c.quantity })),
+      });
+
+      // Upload files
+      for (const file of files) {
+        const path = await storage.uploadOrderFile(result.order.id, file);
+        await supabase.from('order_files').insert({
+          order_id: result.order.id,
+          file_name: file.name,
+          file_path: path,
+          file_size: file.size,
+          mime_type: file.type,
+          uploaded_by: (await supabase.auth.getUser()).data.user!.id,
+        });
+      }
+
+      navigate('/orders');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Erro ao criar pedido.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ color: '#fff', fontSize: 20, fontWeight: 700, margin: '0 0 4px' }}>Novo Pedido</h1>
+        <p style={{ color: '#666', fontSize: 13, margin: 0 }}>Selecione os serviços desejados</p>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20, alignItems: 'start' }}>
+        {/* Left: catalog */}
+        <div>
+          {/* Vehicle plate */}
+          <div style={{ background: '#111', border: '1px solid #1e1e1e', borderRadius: 10, padding: 16, marginBottom: 16 }}>
+            <label style={labelStyle}>PLACA DO VEÍCULO (opcional)</label>
+            <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+              <input
+                value={vehiclePlate}
+                onChange={e => setVehiclePlate(e.target.value.toUpperCase())}
+                placeholder="ABC-1234 ou ABC1D23"
+                maxLength={8}
+                style={{ ...inputStyle, flex: 1 }}
+                onFocus={e => e.target.style.borderColor = '#e6b800'}
+                onBlur={e => e.target.style.borderColor = '#2a2a2a'}
+              />
+              <button onClick={lookupPlate} disabled={plateLoading || vehiclePlate.length < 7}
+                style={{ ...btnSecondary, minWidth: 100 }}>
+                {plateLoading ? '...' : 'Consultar'}
+              </button>
+            </div>
+            {vehicleInfo && (
+              <div style={{ marginTop: 8, padding: '8px 12px', background: '#0d1a0d', borderRadius: 6, fontSize: 12, color: '#4ade80' }}>
+                ✓ Placa {vehicleInfo.plate} consultada em {vehicleInfo.queried_at}
+              </div>
+            )}
+          </div>
+
+          {/* Search + categories */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Buscar serviço..."
+              style={{ ...inputStyle, flex: 1, minWidth: 160 }}
+              onFocus={e => e.target.style.borderColor = '#e6b800'}
+              onBlur={e => e.target.style.borderColor = '#2a2a2a'}
+            />
+            {categories.map(cat => (
+              <button key={cat} onClick={() => setActiveCategory(cat)}
+                style={{
+                  padding: '8px 14px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                  border: '1px solid',
+                  background: activeCategory === cat ? '#e6b800' : 'transparent',
+                  color: activeCategory === cat ? '#000' : '#888',
+                  borderColor: activeCategory === cat ? '#e6b800' : '#333',
+                  cursor: 'pointer', letterSpacing: 0.5,
+                }}>
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Items grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10 }}>
+            {filteredItems.map(item => {
+              const inCart = cart.find(c => c.item.id === item.id);
+              return (
+                <div key={item.id} style={{
+                  background: inCart ? '#1a1500' : '#111',
+                  border: `1px solid ${inCart ? '#3a3000' : '#1e1e1e'}`,
+                  borderRadius: 10, padding: 14,
+                  cursor: 'pointer', transition: 'all 0.15s',
+                }} onClick={() => addToCart(item)}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                    <span style={{ fontSize: 10, color: '#555', letterSpacing: 1 }}>{item.sku}</span>
+                    {item.requires_file && (
+                      <span style={{ fontSize: 9, color: '#e6b800', background: '#1a1500', padding: '2px 6px', borderRadius: 4, border: '1px solid #3a3000' }}>
+                        FILE
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 4, lineHeight: 1.3 }}>{item.name}</div>
+                  <div style={{ fontSize: 11, color: '#666', marginBottom: 10, lineHeight: 1.4 }}>{item.description}</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: '#e6b800' }}>{formatCurrency(item.unit_price)}</span>
+                    <span style={{ fontSize: 18, color: inCart ? '#4ade80' : '#555' }}>{inCart ? '✓' : '+'}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Right: cart */}
+        <div style={{ background: '#111', border: '1px solid #1e1e1e', borderRadius: 10, padding: 16, position: 'sticky', top: 80 }}>
+          <h2 style={{ color: '#fff', fontSize: 14, fontWeight: 600, marginBottom: 16 }}>Resumo do Pedido</h2>
+
+          {cart.length === 0 ? (
+            <p style={{ color: '#555', fontSize: 13, textAlign: 'center', padding: '16px 0' }}>
+              Selecione serviços ao lado
+            </p>
+          ) : (
+            <>
+              {cart.map(c => (
+                <div key={c.item.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 12, color: '#ccc', fontWeight: 500 }}>{c.item.name}</div>
+                    <div style={{ fontSize: 11, color: '#888' }}>{formatCurrency(c.item.unit_price)} × {c.quantity}</div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <button onClick={() => updateQty(c.item.id, c.quantity - 1)} style={qtyBtn}>-</button>
+                    <span style={{ color: '#fff', fontSize: 12, minWidth: 16, textAlign: 'center' }}>{c.quantity}</span>
+                    <button onClick={() => updateQty(c.item.id, c.quantity + 1)} style={qtyBtn}>+</button>
+                  </div>
+                  <span style={{ fontSize: 12, color: '#e6b800', fontWeight: 600, minWidth: 60, textAlign: 'right' }}>
+                    {formatCurrency(c.item.unit_price * c.quantity)}
+                  </span>
+                </div>
+              ))}
+
+              <div style={{ borderTop: '1px solid #1e1e1e', paddingTop: 12, marginTop: 8, marginBottom: 14 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#888', fontSize: 13 }}>Total</span>
+                  <span style={{ color: '#e6b800', fontSize: 18, fontWeight: 700 }}>{formatCurrency(cartTotal)}</span>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Notes */}
+          <textarea
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+            placeholder="Observações (opcional)..."
+            rows={3}
+            style={{ ...inputStyle, width: '100%', resize: 'vertical', marginBottom: 12, boxSizing: 'border-box' }}
+            onFocus={e => e.target.style.borderColor = '#e6b800'}
+            onBlur={e => e.target.style.borderColor = '#2a2a2a'}
+          />
+
+          {/* File upload */}
+          {requiresFile && (
+            <div style={{ marginBottom: 12 }}>
+              <label style={labelStyle}>ARQUIVOS DO REMAP <span style={{ color: '#e74c3c' }}>*</span></label>
+              <input type="file" multiple
+                onChange={e => setFiles(Array.from(e.target.files || []))}
+                style={{ marginTop: 6, color: '#888', fontSize: 12 }}
+                accept=".bin,.ori,.mod,.zip,.rar,.pdf"
+              />
+              {files.length > 0 && (
+                <div style={{ marginTop: 6, fontSize: 11, color: '#4ade80' }}>
+                  {files.length} arquivo(s) selecionado(s)
+                </div>
+              )}
+            </div>
+          )}
+
+          {error && (
+            <div style={{ padding: '8px 12px', background: '#1a0a0a', borderRadius: 6, color: '#e74c3c', fontSize: 12, marginBottom: 12 }}>
+              {error}
+            </div>
+          )}
+
+          <button onClick={handleSubmit} disabled={loading || cart.length === 0}
+            style={{
+              width: '100%', padding: '12px',
+              background: cart.length > 0 ? '#e6b800' : '#1a1a1a',
+              color: cart.length > 0 ? '#000' : '#555',
+              border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700,
+              cursor: cart.length > 0 ? 'pointer' : 'not-allowed', letterSpacing: 0.5,
+            }}>
+            {loading ? 'ENVIANDO...' : 'ENVIAR PEDIDO'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const labelStyle: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: '#888', letterSpacing: 1 };
+const inputStyle: React.CSSProperties = {
+  padding: '10px 12px', background: '#0d0d0d',
+  border: '1px solid #2a2a2a', borderRadius: 8,
+  color: '#fff', fontSize: 13, outline: 'none',
+};
+const btnSecondary: React.CSSProperties = {
+  padding: '10px 14px', background: 'transparent',
+  border: '1px solid #333', borderRadius: 8,
+  color: '#ccc', cursor: 'pointer', fontSize: 12, fontWeight: 600,
+};
+const qtyBtn: React.CSSProperties = {
+  width: 22, height: 22, background: '#1a1a1a', border: '1px solid #333',
+  borderRadius: 4, color: '#fff', cursor: 'pointer', fontSize: 14, display: 'flex',
+  alignItems: 'center', justifyContent: 'center', padding: 0,
+};
