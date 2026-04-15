@@ -172,7 +172,9 @@ export default function LoginPage() {
 
         {/* Rodapé */}
         <div style={{ marginTop: 28, paddingTop: 22, borderTop: '1px solid #181818', textAlign: 'center' }}>
-          <span style={{ color: '#3a3a3a', fontSize: 12 }}>Novo Cadastro</span>
+          <a href="/register" style={{ color: '#e6b800', fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>
+            Novo Cadastro
+          </a>
         </div>
 
         {/* Contato no rodapé */}
