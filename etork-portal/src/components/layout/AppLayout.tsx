@@ -86,6 +86,8 @@ export default function AppLayout() {
   const colors = {
     bg: isDark ? '#0a0a0a' : '#f5f5f5',
     surface: isDark ? '#111111' : '#ffffff',
+    sidebar: isDark ? '#111111' : 'rgb(197, 197, 197)',
+    topbar: isDark ? '#111111' : 'rgb(197, 197, 197)',
     border: isDark ? '#222222' : '#e0e0e0',
     text: isDark ? '#e0e0e0' : '#1a1a1a',
     muted: isDark ? '#888888' : '#666666',
@@ -124,7 +126,7 @@ export default function AppLayout() {
       {/* Sidebar */}
       <aside style={{
         width: 240,
-        background: colors.surface,
+        background: colors.sidebar,
         borderRight: `1px solid ${colors.border}`,
         display: 'flex',
         flexDirection: 'column',
@@ -220,7 +222,7 @@ export default function AppLayout() {
       <main style={{ marginLeft: 240, flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         {/* Topbar */}
         <header style={{
-          height: 56, background: colors.surface, borderBottom: `1px solid ${colors.border}`,
+          height: 56, background: colors.topbar, borderBottom: `1px solid ${colors.border}`,
           display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
           padding: '0 24px', gap: 16, position: 'sticky', top: 0, zIndex: 50,
         }}>
