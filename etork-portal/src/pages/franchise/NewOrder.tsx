@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, callFunction, storage } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import type { Item, CartItem } from '../../types';
 import { formatCurrency } from '../../lib/utils';
-import { useTheme } from '../../context/ThemeContext';
 
 export default function FranchiseNewOrder() {
   const { franchisee } = useAuth();
@@ -101,37 +101,47 @@ export default function FranchiseNewOrder() {
     }
   }
 
-  // Cores baseadas no tema
+  // CORES EXPLÍCITAS baseadas no tema
   const colors = {
-    bgCard: isDark ? '#111' : '#ffffff',
+    // Fundos
+    bgPage: isDark ? '#0a0a0a' : '#f5f5f5',
+    bgCard: isDark ? '#111111' : '#ffffff',
     bgCardSelected: isDark ? '#1a1500' : '#fff8e0',
+    bgSection: isDark ? '#111111' : '#ffffff',
+    bgInput: isDark ? '#0d0d0d' : '#f5f5f5',
+    bgVehicleInfo: isDark ? '#0d1a0d' : '#e8f5e9',
+    bgError: isDark ? '#1a0a0a' : '#ffebee',
+    bgSuccess: isDark ? '#0a1a0a' : '#e8f5e9',
+    
+    // Bordas
     borderCard: isDark ? '#1e1e1e' : '#e0e0e0',
     borderCardSelected: isDark ? '#3a3000' : '#e6b800',
-    textPrimary: isDark ? '#fff' : '#1a1a1a',
-    textSecondary: isDark ? '#666' : '#888',
-    textMuted: isDark ? '#555' : '#999',
-    bgInput: isDark ? '#0d0d0d' : '#f5f5f5',
     borderInput: isDark ? '#2a2a2a' : '#ddd',
-    bgSection: isDark ? '#111' : '#ffffff',
     borderSection: isDark ? '#1e1e1e' : '#e0e0e0',
-    bgVehicleInfo: isDark ? '#0d1a0d' : '#e8f5e9',
+    
+    // Textos
+    textPrimary: isDark ? '#ffffff' : '#1a1a1a',
+    textSecondary: isDark ? '#888888' : '#666666',
+    textMuted: isDark ? '#555555' : '#999999',
+    
+    // Cores especiais
+    accent: '#e6b800',
     vehicleInfoColor: isDark ? '#4ade80' : '#2e7d32',
-    badgeFile: isDark ? '#1a1500' : '#fff8e0',
     badgeFileColor: isDark ? '#e6b800' : '#b8860b',
-    bgError: isDark ? '#1a0a0a' : '#ffebee',
     errorColor: isDark ? '#e74c3c' : '#c62828',
-    bgSuccess: isDark ? '#0a1a0a' : '#e8f5e9',
     successColor: isDark ? '#4ade80' : '#2e7d32',
+    
+    // Botões
     btnSecondaryBg: isDark ? 'transparent' : '#f5f5f5',
-    btnSecondaryBorder: isDark ? '#333' : '#ddd',
-    btnSecondaryColor: isDark ? '#ccc' : '#666',
+    btnSecondaryBorder: isDark ? '#333333' : '#dddddd',
+    btnSecondaryColor: isDark ? '#cccccc' : '#666666',
     qtyBtnBg: isDark ? '#1a1a1a' : '#e0e0e0',
-    qtyBtnBorder: isDark ? '#333' : '#ccc',
-    qtyBtnColor: isDark ? '#fff' : '#1a1a1a',
+    qtyBtnBorder: isDark ? '#333333' : '#cccccc',
+    qtyBtnColor: isDark ? '#ffffff' : '#1a1a1a',
   };
 
   return (
-    <div>
+    <div style={{ background: colors.bgPage, minHeight: '100vh' }}>
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ color: colors.textPrimary, fontSize: 20, fontWeight: 700, margin: '0 0 4px' }}>Novo Pedido</h1>
         <p style={{ color: colors.textSecondary, fontSize: 13, margin: 0 }}>Selecione os serviços desejados</p>
@@ -153,7 +163,7 @@ export default function FranchiseNewOrder() {
                   flex: 1, padding: '10px 12px', borderRadius: 8, fontSize: 13, outline: 'none',
                   background: colors.bgInput, border: `1px solid ${colors.borderInput}`, color: colors.textPrimary
                 }}
-                onFocus={e => e.target.style.borderColor = '#e6b800'}
+                onFocus={e => e.target.style.borderColor = colors.accent}
                 onBlur={e => e.target.style.borderColor = colors.borderInput}
               />
               <button 
@@ -185,7 +195,7 @@ export default function FranchiseNewOrder() {
                 flex: 1, minWidth: 160, padding: '10px 12px', borderRadius: 8, fontSize: 13, outline: 'none',
                 background: colors.bgInput, border: `1px solid ${colors.borderInput}`, color: colors.textPrimary
               }}
-              onFocus={e => e.target.style.borderColor = '#e6b800'}
+              onFocus={e => e.target.style.borderColor = colors.accent}
               onBlur={e => e.target.style.borderColor = colors.borderInput}
             />
             {categories.map(cat => (
@@ -193,9 +203,9 @@ export default function FranchiseNewOrder() {
                 style={{
                   padding: '8px 14px', borderRadius: 20, fontSize: 11, fontWeight: 600,
                   border: '1px solid',
-                  background: activeCategory === cat ? '#e6b800' : 'transparent',
+                  background: activeCategory === cat ? colors.accent : 'transparent',
                   color: activeCategory === cat ? '#000' : colors.textSecondary,
-                  borderColor: activeCategory === cat ? '#e6b800' : colors.borderInput,
+                  borderColor: activeCategory === cat ? colors.accent : colors.borderInput,
                   cursor: 'pointer', letterSpacing: 0.5,
                 }}>
                 {cat}
@@ -203,7 +213,7 @@ export default function FranchiseNewOrder() {
             ))}
           </div>
 
-          {/* Items grid */}
+          {/* Items grid - CARDS */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10 }}>
             {filteredItems.map(item => {
               const inCart = cart.find(c => c.item.id === item.id);
@@ -217,7 +227,7 @@ export default function FranchiseNewOrder() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
                     <span style={{ fontSize: 10, color: colors.textMuted, letterSpacing: 1 }}>{item.sku}</span>
                     {item.requires_file && (
-                      <span style={{ fontSize: 9, color: colors.badgeFileColor, background: colors.badgeFile, padding: '2px 6px', borderRadius: 4, border: `1px solid ${colors.borderCardSelected}` }}>
+                      <span style={{ fontSize: 9, color: colors.badgeFileColor, background: isDark ? '#1a1500' : '#fff8e0', padding: '2px 6px', borderRadius: 4, border: `1px solid ${colors.borderCardSelected}` }}>
                         FILE
                       </span>
                     )}
@@ -225,7 +235,7 @@ export default function FranchiseNewOrder() {
                   <div style={{ fontSize: 13, fontWeight: 600, color: colors.textPrimary, marginBottom: 4, lineHeight: 1.3 }}>{item.name}</div>
                   <div style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 10, lineHeight: 1.4 }}>{item.description}</div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 15, fontWeight: 700, color: '#e6b800' }}>{formatCurrency(item.unit_price)}</span>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: colors.accent }}>{formatCurrency(item.unit_price)}</span>
                     <span style={{ fontSize: 18, color: inCart ? '#4ade80' : colors.textMuted }}>{inCart ? '✓' : '+'}</span>
                   </div>
                 </div>
@@ -278,7 +288,7 @@ export default function FranchiseNewOrder() {
                       +
                     </button>
                   </div>
-                  <span style={{ fontSize: 12, color: '#e6b800', fontWeight: 600, minWidth: 60, textAlign: 'right' }}>
+                  <span style={{ fontSize: 12, color: colors.accent, fontWeight: 600, minWidth: 60, textAlign: 'right' }}>
                     {formatCurrency(c.item.unit_price * c.quantity)}
                   </span>
                 </div>
@@ -287,7 +297,7 @@ export default function FranchiseNewOrder() {
               <div style={{ borderTop: `1px solid ${colors.borderSection}`, paddingTop: 12, marginTop: 8, marginBottom: 14 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: colors.textSecondary, fontSize: 13 }}>Total</span>
-                  <span style={{ color: '#e6b800', fontSize: 18, fontWeight: 700 }}>{formatCurrency(cartTotal)}</span>
+                  <span style={{ color: colors.accent, fontSize: 18, fontWeight: 700 }}>{formatCurrency(cartTotal)}</span>
                 </div>
               </div>
             </>
@@ -304,7 +314,7 @@ export default function FranchiseNewOrder() {
               resize: 'vertical', marginBottom: 12, boxSizing: 'border-box',
               background: colors.bgInput, border: `1px solid ${colors.borderInput}`, color: colors.textPrimary
             }}
-            onFocus={e => e.target.style.borderColor = '#e6b800'}
+            onFocus={e => e.target.style.borderColor = colors.accent}
             onBlur={e => e.target.style.borderColor = colors.borderInput}
           />
 
@@ -336,7 +346,7 @@ export default function FranchiseNewOrder() {
           <button onClick={handleSubmit} disabled={loading || cart.length === 0}
             style={{
               width: '100%', padding: '12px',
-              background: cart.length > 0 ? '#e6b800' : colors.bgInput,
+              background: cart.length > 0 ? colors.accent : colors.bgInput,
               color: cart.length > 0 ? '#000' : colors.textMuted,
               border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700,
               cursor: cart.length > 0 ? 'pointer' : 'not-allowed', letterSpacing: 0.5,
