@@ -8,7 +8,7 @@ export default function RegisterPage() {
   const [message, setMessage] = useState({ type: '', text: '' });
 
   async function handleRegister(e: React.FormEvent) {
-    // ISSO IMPEDE A PÁGINA DE ATUALIZAR
+    // ESSAS DUAS LINHAS SÃO AS MAIS IMPORTANTES DO PROJETO AGORA
     e.preventDefault();
     e.stopPropagation();
     
@@ -16,8 +16,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      console.log("Tentando registro com URL:", import.meta.env.VITE_SUPABASE_URL);
-      
+      // O signUp precisa da chave que começa com "ey" no Netlify
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -28,45 +27,48 @@ export default function RegisterPage() {
       if (data.user) {
         setMessage({ 
           type: 'success', 
-          text: 'Conta criada! Verifique seu e-mail ou tente logar.' 
+          text: 'Cadastro realizado! O usuário deve aparecer no Supabase agora.' 
         });
       }
     } catch (err: any) {
-      console.error("Erro no Supabase:", err);
-      setMessage({ type: 'error', text: err.message || 'Erro ao solicitar acesso.' });
+      setMessage({ type: 'error', text: err.message || 'Erro na comunicação com Supabase.' });
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: '"Inter", sans-serif' }}>
-      <div style={{ width: '100%', maxWidth: 400, padding: '0 24px' }}>
-        <div style={{ background: '#111', border: '1px solid #222', borderRadius: 16, padding: 32 }}>
-          <h1 style={{ color: '#fff', fontSize: 18, fontWeight: 600, marginBottom: 28 }}>Solicitar Acesso</h1>
-          
-          <form onSubmit={handleRegister}>
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', fontSize: 11, color: '#888', marginBottom: 6 }}>E-MAIL</label>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} required style={{ width: '100%', padding: '12px', background: '#0d0d0d', border: '1px solid #2a2a2a', borderRadius: 8, color: '#fff' }} />
-            </div>
-            <div style={{ marginBottom: 24 }}>
-              <label style={{ display: 'block', fontSize: 11, color: '#888', marginBottom: 6 }}>SENHA</label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required style={{ width: '100%', padding: '12px', background: '#0d0d0d', border: '1px solid #2a2a2a', borderRadius: 8, color: '#fff' }} />
-            </div>
-
-            {message.text && (
-              <div style={{ padding: '10px', marginBottom: 16, borderRadius: 8, fontSize: 13, background: message.type === 'error' ? '#1a0a0a' : '#0a1a0a', color: message.type === 'error' ? '#e74c3c' : '#2ecc71', border: '1px solid' }}>
-                {message.text}
-              </div>
-            )}
-
-            <button type="submit" disabled={loading} style={{ width: '100%', padding: '13px', background: '#e6b800', color: '#000', border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer' }}>
-              {loading ? 'ENVIANDO...' : 'SOLICITAR ACESSO'}
-            </button>
-          </form>
-          <button onClick={() => window.location.href = '/'} style={{ marginTop: 20, background: 'none', border: 'none', color: '#888', cursor: 'pointer', width: '100%' }}>Voltar</button>
-        </div>
+    <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: '100%', maxWidth: 400, padding: '24px', background: '#111', borderRadius: 16, border: '1px solid #222' }}>
+        <h1 style={{ color: '#fff', marginBottom: 20 }}>Solicitar Acesso</h1>
+        <form onSubmit={handleRegister}>
+          <input 
+            type="email" 
+            placeholder="E-mail" 
+            value={email} 
+            onChange={e => setEmail(e.target.value)} 
+            required 
+            style={{ width: '100%', padding: '12px', marginBottom: 10, background: '#000', color: '#fff', border: '1px solid #333', borderRadius: 8 }}
+          />
+          <input 
+            type="password" 
+            placeholder="Senha" 
+            value={password} 
+            onChange={e => setPassword(e.target.value)} 
+            required 
+            style={{ width: '100%', padding: '12px', marginBottom: 20, background: '#000', color: '#fff', border: '1px solid #333', borderRadius: 8 }}
+          />
+          {message.text && (
+            <div style={{ color: message.type === 'error' ? '#ff4d4d' : '#00ff00', marginBottom: 15 }}>{message.text}</div>
+          )}
+          <button 
+            type="submit" 
+            disabled={loading}
+            style={{ width: '100%', padding: '12px', background: '#e6b800', border: 'none', borderRadius: 8, fontWeight: 'bold', cursor: 'pointer' }}
+          >
+            {loading ? 'CARREGANDO...' : 'CADASTRAR AGORA'}
+          </button>
+        </form>
       </div>
     </div>
   );
