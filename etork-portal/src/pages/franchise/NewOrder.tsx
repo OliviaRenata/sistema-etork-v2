@@ -11,8 +11,16 @@ import { formatCurrency } from '../../lib/utils';
 export default function FranchiseNewOrder() {
   const { franchisee } = useAuth();
   const navigate = useNavigate();
-  const { theme: currentTheme } = useTheme();
-  const isDark = currentTheme === 'dark';
+  
+  // Usar o tema com fallback para evitar erro
+  let isDark = true;
+  try {
+    const { theme } = useTheme();
+    isDark = theme === 'dark';
+  } catch (error) {
+    console.warn('ThemeProvider não encontrado, usando modo escuro como padrão');
+    isDark = true;
+  }
 
   const [items, setItems] = useState<Item[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -101,47 +109,37 @@ export default function FranchiseNewOrder() {
     }
   }
 
-  // CORES EXPLÍCITAS baseadas no tema
+  // Cores baseadas no tema
   const colors = {
-    // Fundos
-    bgPage: isDark ? '#0a0a0a' : '#f5f5f5',
     bgCard: isDark ? '#111111' : '#ffffff',
     bgCardSelected: isDark ? '#1a1500' : '#fff8e0',
-    bgSection: isDark ? '#111111' : '#ffffff',
-    bgInput: isDark ? '#0d0d0d' : '#f5f5f5',
-    bgVehicleInfo: isDark ? '#0d1a0d' : '#e8f5e9',
-    bgError: isDark ? '#1a0a0a' : '#ffebee',
-    bgSuccess: isDark ? '#0a1a0a' : '#e8f5e9',
-    
-    // Bordas
     borderCard: isDark ? '#1e1e1e' : '#e0e0e0',
     borderCardSelected: isDark ? '#3a3000' : '#e6b800',
-    borderInput: isDark ? '#2a2a2a' : '#ddd',
-    borderSection: isDark ? '#1e1e1e' : '#e0e0e0',
-    
-    // Textos
     textPrimary: isDark ? '#ffffff' : '#1a1a1a',
     textSecondary: isDark ? '#888888' : '#666666',
     textMuted: isDark ? '#555555' : '#999999',
-    
-    // Cores especiais
-    accent: '#e6b800',
+    bgInput: isDark ? '#0d0d0d' : '#f5f5f5',
+    borderInput: isDark ? '#2a2a2a' : '#dddddd',
+    bgSection: isDark ? '#111111' : '#ffffff',
+    borderSection: isDark ? '#1e1e1e' : '#e0e0e0',
+    bgVehicleInfo: isDark ? '#0d1a0d' : '#e8f5e9',
     vehicleInfoColor: isDark ? '#4ade80' : '#2e7d32',
+    badgeFile: isDark ? '#1a1500' : '#fff8e0',
     badgeFileColor: isDark ? '#e6b800' : '#b8860b',
+    bgError: isDark ? '#1a0a0a' : '#ffebee',
     errorColor: isDark ? '#e74c3c' : '#c62828',
     successColor: isDark ? '#4ade80' : '#2e7d32',
-    
-    // Botões
     btnSecondaryBg: isDark ? 'transparent' : '#f5f5f5',
     btnSecondaryBorder: isDark ? '#333333' : '#dddddd',
     btnSecondaryColor: isDark ? '#cccccc' : '#666666',
     qtyBtnBg: isDark ? '#1a1a1a' : '#e0e0e0',
     qtyBtnBorder: isDark ? '#333333' : '#cccccc',
     qtyBtnColor: isDark ? '#ffffff' : '#1a1a1a',
+    accent: '#e6b800',
   };
 
   return (
-    <div style={{ background: colors.bgPage, minHeight: '100vh' }}>
+    <div>
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ color: colors.textPrimary, fontSize: 20, fontWeight: 700, margin: '0 0 4px' }}>Novo Pedido</h1>
         <p style={{ color: colors.textSecondary, fontSize: 13, margin: 0 }}>Selecione os serviços desejados</p>
@@ -213,7 +211,7 @@ export default function FranchiseNewOrder() {
             ))}
           </div>
 
-          {/* Items grid - CARDS */}
+          {/* Items grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10 }}>
             {filteredItems.map(item => {
               const inCart = cart.find(c => c.item.id === item.id);
@@ -227,7 +225,7 @@ export default function FranchiseNewOrder() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
                     <span style={{ fontSize: 10, color: colors.textMuted, letterSpacing: 1 }}>{item.sku}</span>
                     {item.requires_file && (
-                      <span style={{ fontSize: 9, color: colors.badgeFileColor, background: isDark ? '#1a1500' : '#fff8e0', padding: '2px 6px', borderRadius: 4, border: `1px solid ${colors.borderCardSelected}` }}>
+                      <span style={{ fontSize: 9, color: colors.badgeFileColor, background: colors.badgeFile, padding: '2px 6px', borderRadius: 4, border: `1px solid ${colors.borderCardSelected}` }}>
                         FILE
                       </span>
                     )}
@@ -268,25 +266,9 @@ export default function FranchiseNewOrder() {
                     <div style={{ fontSize: 11, color: colors.textSecondary }}>{formatCurrency(c.item.unit_price)} × {c.quantity}</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <button 
-                      onClick={() => updateQty(c.item.id, c.quantity - 1)} 
-                      style={{
-                        width: 22, height: 22, borderRadius: 4, cursor: 'pointer', fontSize: 14,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
-                        background: colors.qtyBtnBg, border: `1px solid ${colors.qtyBtnBorder}`, color: colors.qtyBtnColor
-                      }}>
-                      -
-                    </button>
+                    <button onClick={() => updateQty(c.item.id, c.quantity - 1)} style={{ ...qtyBtn, background: colors.qtyBtnBg, borderColor: colors.qtyBtnBorder, color: colors.qtyBtnColor }}>-</button>
                     <span style={{ color: colors.textPrimary, fontSize: 12, minWidth: 16, textAlign: 'center' }}>{c.quantity}</span>
-                    <button 
-                      onClick={() => updateQty(c.item.id, c.quantity + 1)} 
-                      style={{
-                        width: 22, height: 22, borderRadius: 4, cursor: 'pointer', fontSize: 14,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
-                        background: colors.qtyBtnBg, border: `1px solid ${colors.qtyBtnBorder}`, color: colors.qtyBtnColor
-                      }}>
-                      +
-                    </button>
+                    <button onClick={() => updateQty(c.item.id, c.quantity + 1)} style={{ ...qtyBtn, background: colors.qtyBtnBg, borderColor: colors.qtyBtnBorder, color: colors.qtyBtnColor }}>+</button>
                   </div>
                   <span style={{ fontSize: 12, color: colors.accent, fontWeight: 600, minWidth: 60, textAlign: 'right' }}>
                     {formatCurrency(c.item.unit_price * c.quantity)}
@@ -358,3 +340,8 @@ export default function FranchiseNewOrder() {
     </div>
   );
 }
+
+const qtyBtn: React.CSSProperties = {
+  width: 22, height: 22, borderRadius: 4, cursor: 'pointer', fontSize: 14,
+  display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
+};
