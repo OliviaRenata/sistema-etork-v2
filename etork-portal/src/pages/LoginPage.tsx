@@ -172,11 +172,7 @@ export default function LoginPage() {
 
         {/* Rodapé */}
         <div style={{ marginTop: 28, paddingTop: 22, borderTop: '1px solid #181818', textAlign: 'center' }}>
-          <span style={{ color: '#3a3a3a', fontSize: 12 }}>Não tem acesso? </span>
-          <a href="https://wa.me/5567992549181" target="_blank" rel="noreferrer"
-            style={{ color: '#e6b800', fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>
-            Solicite acesso via WhatsApp →
-          </a>
+          <span style={{ color: '#3a3a3a', fontSize: 12 }}>Novo Cadastro</span>
         </div>
 
         {/* Contato no rodapé */}
