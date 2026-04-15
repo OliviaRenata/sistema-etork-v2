@@ -230,8 +230,8 @@ export default function LoginPage() {
         </div>
 
         {/* Contato no rodapé */}
-        <div style={{ position: 'absolute', bottom: 20, left: 0, right: 0, textAlign: 'center' }}>
-          <p style={{ fontSize: 10, color: '#252525', letterSpacing: 0.5, margin: 0 }}>
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, textAlign: 'center', background: '#000', padding: '14px 0' }}>
+          <p style={{ fontSize: 10, color: '#999', letterSpacing: 0.5, margin: 0 }}>
             (67) 99254-9181 · @etorkbrasil · Campo Grande/MS
           </p>
         </div>

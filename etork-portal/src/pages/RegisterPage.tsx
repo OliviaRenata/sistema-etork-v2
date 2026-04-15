@@ -78,7 +78,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', fontFamily: '"Inter", sans-serif' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', background: '#000', fontFamily: '"Inter", sans-serif' }}>
       <div style={{ width: 460, minHeight: '100vh', flexShrink: 0, background: '#0a0a0a', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '48px 44px', position: 'relative' }}>
         <div style={{ position: 'absolute', right: 0, top: '10%', bottom: '10%', width: 1, background: 'linear-gradient(to bottom, transparent, rgba(230,184,0,0.4) 40%, rgba(230,184,0,0.4) 60%, transparent)' }} />
 
@@ -218,21 +218,21 @@ export default function RegisterPage() {
           <a href="/login" style={{ color: '#e6b800', fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>Fazer Login</a>
         </div>
 
-        <div style={{ position: 'absolute', bottom: 20, left: 0, right: 0, textAlign: 'center' }}>
-          <p style={{ fontSize: 10, color: '#252525', letterSpacing: 0.5, margin: 0 }}>(67) 99254-9181 · @etorkbrasil · Campo Grande/MS</p>
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, textAlign: 'center', background: '#000', padding: '14px 0' }}>
+          <p style={{ fontSize: 10, color: '#999', letterSpacing: 0.5, margin: 0 }}>(67) 99254-9181 · @etorkbrasil · Campo Grande/MS</p>
         </div>
       </div>
 
       <div style={{ flex: 1, background: '#000', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, transparent 0%, #cc2200 30%, #e6b800 60%, transparent 100%)' }} />
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(230,184,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(230,184,0,0.04) 1px, transparent 1px)', backgroundSize: '48px 48px' }} />
-        <div style={{ position: 'absolute', top: '38%', left: '50%', transform: 'translate(-50%, -50%)', width: 480, height: 480, borderRadius: '50%', background: 'radial-gradient(circle, rgba(230,184,0,0.06) 0%, transparent 68%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', top: '38%', left: '50%', transform: 'translate(-50%, -50%)', width: 420, height: 420, borderRadius: '50%', background: 'radial-gradient(circle, rgba(230,184,0,0.06) 0%, transparent 68%)', pointerEvents: 'none' }} />
         <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 420, padding: 24, textAlign: 'center' }}>
-<img 
-  src={logoImg} 
-  alt="Etork Brasil" 
-  style={{ width: 180, maxWidth: '100%', marginBottom: 24, filter: 'invert(1)' }} 
-/>
+          <img 
+            src={logoImg} 
+            alt="Etork Brasil" 
+            style={{ width: 180, maxWidth: '100%', marginBottom: 24, objectFit: 'contain' }} 
+          />
           <div style={{ color: '#fff', fontSize: 22, fontWeight: 700, marginBottom: 12 }}>Bem-vindo ao portal Etork</div>
           <p style={{ color: '#999', fontSize: 14, lineHeight: 1.7, margin: 0 }}>Cadastre sua conta e acesse o painel de franqueados para acompanhar pedidos, finanças e novidades da rede.</p>
         </div>
