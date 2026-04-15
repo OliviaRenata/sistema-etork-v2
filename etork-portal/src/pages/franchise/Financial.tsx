@@ -12,13 +12,22 @@ export default function FranchiseFinancial() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!franchisee) return;
+    if (!franchisee) {
+      setRecords([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
     supabase
       .from('financial_records')
       .select('*, order:orders(order_number)')
       .eq('franchisee_id', franchisee.id)
       .order('created_at', { ascending: false })
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('Erro carregando financeiro do franqueado', error);
+        }
         setRecords((data || []) as unknown as FinancialRecord[]);
         setLoading(false);
       });
@@ -27,8 +36,20 @@ export default function FranchiseFinancial() {
   const totalDebit = records.filter(r => r.type === 'debit').reduce((s, r) => s + r.amount, 0);
   const totalCredit = records.filter(r => r.type === 'credit' || r.type === 'payment').reduce((s, r) => s + r.amount, 0);
 
+  if (!franchisee && !loading) {
+    return (
+      <div style={{ padding: 24, color: 'var(--text)' }}>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 24 }}>
+          <h1 style={{ color: 'var(--text)', fontSize: 20, fontWeight: 700, margin: '0 0 8px' }}>Financeiro</h1>
+          <p style={{ color: 'var(--muted)', margin: '0 0 18px' }}>Seu usuário ainda não está vinculado a um cadastro de franqueado.</p>
+          <div style={{ color: 'var(--muted)', fontSize: 13 }}>Aguarde a ativação ou ajuste pelo administrador do portal.</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div>
+    <div style={{ color: 'var(--text)' }}>
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ color: '#fff', fontSize: 20, fontWeight: 700, margin: '0 0 4px' }}>Financeiro</h1>
         <p style={{ color: '#666', fontSize: 13, margin: 0 }}>Histórico de movimentações da sua conta</p>

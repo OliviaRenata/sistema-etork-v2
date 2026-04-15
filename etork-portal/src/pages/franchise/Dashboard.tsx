@@ -6,6 +6,7 @@ import { supabase } from '../../lib/supabase';
 import type { Order, DashboardStats } from '../../types';
 import { ORDER_STATUS_LABEL, ORDER_STATUS_COLOR } from '../../types';
 import StatusBadge from '../../components/ui/StatusBadge';
+import { PlusIcon, ArrowRightIcon, WaveIcon } from '../../components/ui/Icons';
 import { formatCurrency, formatDate } from '../../lib/utils';
 
 export default function FranchiseDashboard() {
@@ -77,8 +78,8 @@ export default function FranchiseDashboard() {
     <div>
       {/* Header */}
       <div style={{ marginBottom: 28 }}>
-        <h1 style={{ color: '#fff', fontSize: 22, fontWeight: 700, margin: '0 0 4px' }}>
-          {greeting()}, {profile?.full_name?.split(' ')[0]} 👋
+        <h1 style={{ color: '#fff', fontSize: 22, fontWeight: 700, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 8 }}>
+          {greeting()}, {profile?.full_name?.split(' ')[0]} <WaveIcon width={20} height={20} />
         </h1>
         <p style={{ color: '#666', fontSize: 14, margin: 0 }}>
           {franchisee?.company_name} · Código: {franchisee?.code}
@@ -106,7 +107,7 @@ export default function FranchiseDashboard() {
           transition: 'background 0.15s',
         }}
       >
-        ⊕ Novo Pedido
+        <PlusIcon width={16} height={16} /> Novo Pedido
       </Link>
 
       {/* Recent orders */}
@@ -118,14 +119,14 @@ export default function FranchiseDashboard() {
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
           <h2 style={{ color: '#fff', fontSize: 14, fontWeight: 600, margin: 0 }}>Pedidos Recentes</h2>
-          <Link to="/orders" style={{ color: '#e6b800', fontSize: 12, textDecoration: 'none' }}>Ver todos →</Link>
+          <Link to="/orders" style={{ color: '#e6b800', fontSize: 12, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>Ver todos <ArrowRightIcon width={12} height={12} /></Link>
         </div>
 
         {loading ? (
           <div style={{ padding: 32, textAlign: 'center', color: '#555', fontSize: 13 }}>Carregando...</div>
         ) : recentOrders.length === 0 ? (
           <div style={{ padding: 32, textAlign: 'center', color: '#555', fontSize: 13 }}>
-            Nenhum pedido ainda. <Link to="/orders/new" style={{ color: '#e6b800' }}>Criar primeiro pedido →</Link>
+            Nenhum pedido ainda. <Link to="/orders/new" style={{ color: '#e6b800', display: 'inline-flex', alignItems: 'center', gap: 4 }}>Criar primeiro pedido <ArrowRightIcon width={12} height={12} /></Link>
           </div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>

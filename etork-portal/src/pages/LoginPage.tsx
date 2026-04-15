@@ -44,9 +44,10 @@ export default function LoginPage() {
 
   return (
     <div style={{
-      minHeight: '100vh', background: '#0a0a0a', display: 'flex',
+      minHeight: '100vh', background: 'var(--bg)', display: 'flex',
       alignItems: 'center', justifyContent: 'center', fontFamily: '"Inter", sans-serif',
       position: 'relative', overflow: 'hidden',
+      color: 'var(--text)',
     }}>
       {/* Background grid e Glow (mantidos conforme seu original) */}
       <div style={{ position: 'absolute', inset: 0, opacity: 0.04, backgroundImage: 'linear-gradient(#e6b800 1px, transparent 1px), linear-gradient(90deg, #e6b800 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
@@ -59,9 +60,9 @@ export default function LoginPage() {
         </div>
 
         {/* Card */}
-        <div style={{ background: '#111', border: '1px solid #222', borderRadius: 16, padding: 32 }}>
-          <h1 style={{ color: '#fff', fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Acessar Portal</h1>
-          <p style={{ color: '#555', fontSize: 13, marginBottom: 28 }}>Entre com suas credenciais de franqueado</p>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: 32 }}>
+          <h1 style={{ color: 'var(--text)', fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Acessar Portal</h1>
+          <p style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 28 }}>Entre com suas credenciais de franqueado</p>
 
           <form onSubmit={handleSubmit}>
             <div style={{ marginBottom: 16 }}>
@@ -69,7 +70,7 @@ export default function LoginPage() {
               <input
                 type="email" value={email} onChange={e => setEmail(e.target.value)} required
                 placeholder="seu@email.com"
-                style={{ width: '100%', padding: '12px', background: '#0d0d0d', border: '1px solid #2a2a2a', borderRadius: 8, color: '#fff', fontSize: 14, outline: 'none' }}
+                style={{ width: '100%', padding: '12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 14, outline: 'none' }}
               />
             </div>
 
@@ -78,7 +79,7 @@ export default function LoginPage() {
               <input
                 type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required
                 placeholder="••••••••"
-                style={{ width: '100%', padding: '12px', background: '#0d0d0d', border: '1px solid #2a2a2a', borderRadius: 8, color: '#fff', fontSize: 14, outline: 'none', paddingRight: 40 }}
+                style={{ width: '100%', padding: '12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 14, outline: 'none', paddingRight: 40 }}
               />
               <button
                 type="button"
@@ -105,7 +106,7 @@ export default function LoginPage() {
               <button 
                 type="button" 
                 onClick={handleForgotPassword}
-                style={{ background: 'none', border: 'none', color: '#e6b800', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: 0 }}
               >
                 ESQUECEU A SENHA?
               </button>

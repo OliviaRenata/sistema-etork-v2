@@ -1,9 +1,10 @@
 // src/pages/admin/Dashboard.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import type { Order } from '../../types';
 import StatusBadge from '../../components/ui/StatusBadge';
+import { DashboardIcon, OrdersIcon, FranchiseesIcon, FinanceIcon, WarningIcon, ArrowRightIcon } from '../../components/ui/Icons';
 import { formatCurrency, formatDate } from '../../lib/utils';
 
 interface Stats {
@@ -65,12 +66,12 @@ export default function AdminDashboard() {
       {stats && (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 28 }}>
-            <AdminStat label="Franqueados" value={stats.total_franchisees.toString()} color="#a855f7" icon="◉" />
-            <AdminStat label="Total de Pedidos" value={stats.total_orders.toString()} color="#3b82f6" icon="◈" />
-            <AdminStat label="Aguardando" value={stats.pending.toString()} color="#f59e0b" icon="⏳" urgent={stats.pending > 0} />
-            <AdminStat label="Em Produção" value={stats.in_production.toString()} color="#3b82f6" icon="⚙" />
-            <AdminStat label="Receita do Mês" value={formatCurrency(stats.revenue_month)} color="#22c55e" icon="◎" />
-            <AdminStat label="Receita Total" value={formatCurrency(stats.revenue_total)} color="#e6b800" icon="◎" />
+            <AdminStat label="Franqueados" value={stats.total_franchisees.toString()} color="#a855f7" icon={<FranchiseesIcon width={16} height={16} />} />
+            <AdminStat label="Total de Pedidos" value={stats.total_orders.toString()} color="#3b82f6" icon={<OrdersIcon width={16} height={16} />} />
+            <AdminStat label="Aguardando" value={stats.pending.toString()} color="#f59e0b" icon={<WarningIcon width={16} height={16} />} urgent={stats.pending > 0} />
+            <AdminStat label="Em Produção" value={stats.in_production.toString()} color="#3b82f6" icon={<DashboardIcon width={16} height={16} />} />
+            <AdminStat label="Receita do Mês" value={formatCurrency(stats.revenue_month)} color="#22c55e" icon={<FinanceIcon width={16} height={16} />} />
+            <AdminStat label="Receita Total" value={formatCurrency(stats.revenue_total)} color="#e6b800" icon={<FinanceIcon width={16} height={16} />} />
           </div>
 
           {/* Urgent alert */}
@@ -80,7 +81,7 @@ export default function AdminDashboard() {
               background: '#1a1200', border: '1px solid #3a2a00',
               borderRadius: 10, display: 'flex', alignItems: 'center', gap: 12,
             }}>
-              <span style={{ fontSize: 18 }}>⚠️</span>
+              <WarningIcon width={18} height={18} style={{ color: '#f59e0b' }} />
               <div>
                 <div style={{ color: '#f59e0b', fontSize: 13, fontWeight: 700 }}>
                   {stats.pending} pedido(s) aguardando processamento
@@ -93,8 +94,9 @@ export default function AdminDashboard() {
                 marginLeft: 'auto', padding: '8px 16px',
                 background: '#e6b800', color: '#000', borderRadius: 8,
                 fontSize: 11, fontWeight: 700, textDecoration: 'none',
+                display: 'inline-flex', alignItems: 'center', gap: 4,
               }}>
-                Ver Pedidos →
+                Ver Pedidos <ArrowRightIcon width={14} height={14} />
               </Link>
             </div>
           )}
@@ -105,7 +107,7 @@ export default function AdminDashboard() {
       <div style={{ background: '#111', border: '1px solid #1e1e1e', borderRadius: 12, overflow: 'hidden' }}>
         <div style={{ padding: '14px 20px', borderBottom: '1px solid #1e1e1e', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ color: '#fff', fontSize: 14, fontWeight: 600, margin: 0 }}>Pedidos Recentes</h2>
-          <Link to="/admin/orders" style={{ color: '#e6b800', fontSize: 12, textDecoration: 'none' }}>Ver todos →</Link>
+          <Link to="/admin/orders" style={{ color: '#e6b800', fontSize: 12, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>Ver todos <ArrowRightIcon width={12} height={12} /></Link>
         </div>
         {loading ? (
           <div style={{ padding: 32, textAlign: 'center', color: '#555' }}>Carregando...</div>
@@ -129,7 +131,7 @@ export default function AdminDashboard() {
                   <td style={{ padding: '11px 16px', color: '#fff', fontWeight: 600, fontSize: 13 }}>{formatCurrency(order.total_amount)}</td>
                   <td style={{ padding: '11px 16px' }}><StatusBadge status={order.status} /></td>
                   <td style={{ padding: '11px 16px' }}>
-                    <Link to={`/admin/orders/${order.id}`} style={{ color: '#e6b800', fontSize: 12, textDecoration: 'none' }}>Detalhes →</Link>
+                    <Link to={`/admin/orders/${order.id}`} style={{ color: '#e6b800', fontSize: 12, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>Detalhes <ArrowRightIcon width={12} height={12} /></Link>
                   </td>
                 </tr>
               ))}
@@ -141,7 +143,7 @@ export default function AdminDashboard() {
   );
 }
 
-function AdminStat({ label, value, color, icon, urgent = false }: { label: string; value: string; color: string; icon: string; urgent?: boolean }) {
+function AdminStat({ label, value, color, icon, urgent = false }: { label: string; value: string; color: string; icon: ReactNode; urgent?: boolean }) {
   return (
     <div style={{
       background: urgent ? '#1a1200' : '#111',

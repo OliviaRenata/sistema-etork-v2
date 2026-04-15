@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import type { Order, OrderStatus } from '../../types';
 import { ORDER_STATUS_LABEL } from '../../types';
 import StatusBadge from '../../components/ui/StatusBadge';
+import { PlusIcon, CarIcon, ArrowRightIcon } from '../../components/ui/Icons';
 import { formatCurrency, formatDate } from '../../lib/utils';
 
 export default function FranchiseOrders() {
@@ -54,10 +55,11 @@ export default function FranchiseOrders() {
           <p style={{ color: '#666', fontSize: 13, margin: 0 }}>{orders.length} pedidos no total</p>
         </div>
         <Link to="/orders/new" style={{
+          display: 'inline-flex', alignItems: 'center', gap: 8,
           padding: '10px 18px', background: '#e6b800', color: '#000',
           borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none',
         }}>
-          ⊕ Novo Pedido
+          <PlusIcon width={16} height={16} /> Novo Pedido
         </Link>
       </div>
 
@@ -96,7 +98,9 @@ export default function FranchiseOrders() {
         ) : filtered.length === 0 ? (
           <div style={{ padding: 40, textAlign: 'center', color: '#555' }}>
             Nenhum pedido encontrado.{' '}
-            <Link to="/orders/new" style={{ color: '#e6b800' }}>Criar novo →</Link>
+            <Link to="/orders/new" style={{ color: '#e6b800', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              Criar novo <ArrowRightIcon width={12} height={12} />
+            </Link>
           </div>
         ) : (
           filtered.map(order => (
@@ -109,8 +113,8 @@ export default function FranchiseOrders() {
                 <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>{formatDate(order.created_at)}</div>
               </div>
               {order.vehicle_plate && (
-                <div style={{ padding: '4px 10px', background: '#1a1a1a', borderRadius: 6, fontSize: 12, color: '#888', fontFamily: 'monospace', letterSpacing: 1 }}>
-                  🚗 {order.vehicle_plate}
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: '#1a1a1a', borderRadius: 6, fontSize: 12, color: '#888', fontFamily: 'monospace', letterSpacing: 1 }}>
+                  <CarIcon width={12} height={12} /> {order.vehicle_plate}
                 </div>
               )}
               <div style={{ flex: 1 }}>

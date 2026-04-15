@@ -121,7 +121,9 @@ export default function AdminOrders() {
                   <td style={{ padding: '12px 16px' }}>
                     <span style={{ fontSize: 13, color: '#e6b800', fontWeight: 700 }}>{order.order_number}</span>
                     {order.vehicle_plate && (
-                      <div style={{ fontSize: 10, color: '#555', marginTop: 2 }}>🚗 {order.vehicle_plate}</div>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#555', marginTop: 2 }}>
+                        <CarIcon width={12} height={12} /> {order.vehicle_plate}
+                      </div>
                     )}
                   </td>
                   <td style={{ padding: '12px 16px', fontSize: 13, color: '#ccc' }}>
@@ -138,8 +140,8 @@ export default function AdminOrders() {
                   </td>
                   <td style={{ padding: '12px 16px' }}>
                     <Link to={`/admin/orders/${order.id}`}
-                      style={{ color: '#e6b800', fontSize: 12, textDecoration: 'none', fontWeight: 600 }}>
-                      Detalhes →
+                      style={{ color: '#e6b800', fontSize: 12, textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      Detalhes <ArrowRightIcon width={12} height={12} />
                     </Link>
                   </td>
                 </tr>

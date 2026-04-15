@@ -32,9 +32,17 @@ export default function RegisterPage() {
       if (error) throw error;
 
       if (data.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([{ id: data.user.id, role: 'franchisee', full_name: email }]);
+
+        if (profileError) {
+          throw profileError;
+        }
+
         setMessage({ 
           type: 'success', 
-          text: 'Cadastro realizado! O usu�rio deve aparecer no Supabase agora.' 
+          text: 'Cadastro realizado! Agora você já tem um perfil de franqueado e pode entrar.' 
         });
       }
     } catch (err: any) {
@@ -46,9 +54,10 @@ export default function RegisterPage() {
 
   return (
     <div style={{
-      minHeight: '100vh', background: '#0a0a0a', display: 'flex',
+      minHeight: '100vh', background: 'var(--bg)', display: 'flex',
       alignItems: 'center', justifyContent: 'center', fontFamily: '"Inter", sans-serif',
       position: 'relative', overflow: 'hidden',
+      color: 'var(--text)',
     }}>
       {/* Background grid e Glow */}
       <div style={{ position: 'absolute', inset: 0, opacity: 0.04, backgroundImage: 'linear-gradient(#e6b800 1px, transparent 1px), linear-gradient(90deg, #e6b800 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
@@ -61,9 +70,9 @@ export default function RegisterPage() {
         </div>
 
         {/* Card */}
-        <div style={{ background: '#111', border: '1px solid #222', borderRadius: 16, padding: 32 }}>
-          <h1 style={{ color: '#fff', fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Novo Cadastro</h1>
-          <p style={{ color: '#555', fontSize: 13, marginBottom: 28 }}>Crie sua conta de franqueado</p>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: 32 }}>
+          <h1 style={{ color: 'var(--text)', fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Novo Cadastro</h1>
+          <p style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 28 }}>Crie sua conta de franqueado</p>
 
           <form onSubmit={handleRegister}>
             <div style={{ marginBottom: 16 }}>
@@ -74,7 +83,7 @@ export default function RegisterPage() {
                 value={email} 
                 onChange={e => setEmail(e.target.value)} 
                 required 
-                style={{ width: '100%', padding: '12px', background: '#0d0d0d', color: '#fff', border: '1px solid #2a2a2a', borderRadius: 8, fontSize: 14, outline: 'none' }}
+                style={{ width: '100%', padding: '12px', background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 14, outline: 'none' }}
               />
             </div>
             <div style={{ marginBottom: 16, position: 'relative' }}>
@@ -85,7 +94,7 @@ export default function RegisterPage() {
                 value={password} 
                 onChange={e => setPassword(e.target.value)} 
                 required 
-                style={{ width: '100%', padding: '12px', background: '#0d0d0d', color: '#fff', border: '1px solid #2a2a2a', borderRadius: 8, fontSize: 14, outline: 'none', paddingRight: 40 }}
+                style={{ width: '100%', padding: '12px', background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 14, outline: 'none', paddingRight: 40 }}
               />
               <button
                 type="button"
@@ -114,7 +123,7 @@ export default function RegisterPage() {
                 value={confirmPassword} 
                 onChange={e => setConfirmPassword(e.target.value)} 
                 required 
-                style={{ width: '100%', padding: '12px', background: '#0d0d0d', color: '#fff', border: '1px solid #2a2a2a', borderRadius: 8, fontSize: 14, outline: 'none', paddingRight: 40 }}
+                style={{ width: '100%', padding: '12px', background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 14, outline: 'none', paddingRight: 40 }}
               />
               <button
                 type="button"
@@ -148,7 +157,7 @@ export default function RegisterPage() {
             <button 
               type="submit" 
               disabled={loading}
-              style={{ width: '100%', padding: '13px', background: loading ? '#2a2a00' : '#e6b800', color: '#000', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer' }}
+              style={{ width: '100%', padding: '13px', background: loading ? '#2a2a00' : 'var(--accent)', color: '#000', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer' }}
             >
               {loading ? 'CARREGANDO...' : 'CADASTRAR AGORA'}
             </button>
@@ -159,7 +168,7 @@ export default function RegisterPage() {
             <span style={{ color: '#555', fontSize: 12 }}>Já tem conta? </span>
             <button 
               type="button"
-              style={{ background: 'none', border: 'none', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
+              style={{ background: 'none', border: 'none', color: 'var(--text)', fontSize: 12, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
               onClick={() => window.location.href = '/login'}
             >
               Fazer Login

@@ -19,8 +19,13 @@ export default function AdminFinancial() {
         .limit(200),
       supabase.from('franchisees').select('id, company_name, code, balance, credit_limit').order('company_name'),
     ]).then(([recRes, francRes]) => {
+      if (recRes.error) console.error('Erro ao buscar registros financeiros', recRes.error);
+      if (francRes.error) console.error('Erro ao buscar franqueados', francRes.error);
       setRecords((recRes.data || []) as unknown as FinancialRecord[]);
       setFranchisees((francRes.data || []) as unknown as Franchisee[]);
+      setLoading(false);
+    }).catch((error) => {
+      console.error('Erro carregando financeiro', error);
       setLoading(false);
     });
   }, []);
@@ -55,15 +60,15 @@ export default function AdminFinancial() {
   }
 
   return (
-    <div>
+    <div style={{ color: 'var(--text)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
           <h1 style={{ color: '#fff', fontSize: 20, fontWeight: 700, margin: '0 0 4px' }}>Financeiro</h1>
           <p style={{ color: '#666', fontSize: 13, margin: 0 }}>Movimentações de todos os franqueados</p>
         </div>
         <button onClick={exportCSV} style={{
-          padding: '9px 18px', background: 'transparent', border: '1px solid #333',
-          borderRadius: 8, color: '#e6b800', cursor: 'pointer', fontSize: 12, fontWeight: 700,
+          padding: '9px 18px', background: 'transparent', border: '1px solid var(--border)',
+          borderRadius: 8, color: 'var(--accent)', cursor: 'pointer', fontSize: 12, fontWeight: 700,
         }}>
           ↓ Exportar CSV
         </button>
@@ -112,7 +117,7 @@ export default function AdminFinancial() {
       </div>
 
       {/* Table */}
-      <div style={{ background: '#111', border: '1px solid #1e1e1e', borderRadius: 12, overflow: 'hidden' }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
         {loading ? (
           <div style={{ padding: 32, textAlign: 'center', color: '#555' }}>Carregando...</div>
         ) : (
@@ -128,11 +133,11 @@ export default function AdminFinancial() {
               {filtered.map(r => (
                 <tr key={r.id} style={{ borderBottom: '1px solid #161616' }}>
                   <td style={{ padding: '10px 14px', fontSize: 11, color: '#666' }}>{formatDateShort(r.created_at)}</td>
-                  <td style={{ padding: '10px 14px', fontSize: 12, color: '#ccc' }}>
+                  <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text)' }}>
                     {(r.franchisee_id as unknown as { company_name: string })?.company_name || '—'}
                   </td>
                   <td style={{ padding: '10px 14px', fontSize: 12, color: '#888' }}>{r.description}</td>
-                  <td style={{ padding: '10px 14px', fontSize: 12, color: '#e6b800' }}>
+                  <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--accent)' }}>
                     {(r.order as unknown as { order_number: string })?.order_number || '—'}
                   </td>
                   <td style={{ padding: '10px 14px' }}>

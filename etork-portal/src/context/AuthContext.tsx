@@ -48,14 +48,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function loadProfile(userId: string) {
     try {
-      const { data: prof } = await supabase
-        .from('profiles').select('*').eq('id', userId).single();
-      setProfile(prof);
+      const { data: prof, error } = await supabase
+        .from('profiles').select('*').eq('id', userId).maybeSingle();
+
+      if (error) {
+        console.error('Erro carregando perfil', error);
+      }
+      setProfile(prof ?? null);
 
       if (prof?.role === 'franchisee') {
-        const { data: franc } = await supabase
-          .from('franchisees').select('*').eq('user_id', userId).single();
-        setFranchisee(franc);
+        const { data: franc, error: francError } = await supabase
+          .from('franchisees').select('*').eq('user_id', userId).maybeSingle();
+
+        if (francError) {
+          console.error('Erro carregando franqueado', francError);
+        }
+        setFranchisee(franc ?? null);
       }
     } finally {
       setLoading(false);

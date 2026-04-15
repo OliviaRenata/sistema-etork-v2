@@ -5,6 +5,7 @@ import { supabase, callFunction, storage } from '../../lib/supabase';
 import type { Order, OrderStatusHistory, OrderFile, OrderStatus } from '../../types';
 import { ORDER_STATUS_LABEL } from '../../types';
 import StatusBadge from '../../components/ui/StatusBadge';
+import { ArrowRightIcon, DocumentIcon } from '../../components/ui/Icons';
 import { formatCurrency, formatDate } from '../../lib/utils';
 
 const STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
@@ -83,7 +84,9 @@ export default function AdminOrderDetail() {
     <div>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
-        <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: 20 }}>←</button>
+        <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32 }}>
+          <ArrowRightIcon width={18} height={18} style={{ transform: 'rotate(180deg)' }} />
+        </button>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <h1 style={{ color: '#e6b800', fontSize: 22, fontWeight: 700, margin: 0 }}>{order.order_number}</h1>
@@ -141,7 +144,11 @@ export default function AdminOrderDetail() {
                   padding: '10px 12px', background: '#0d0d0d', borderRadius: 8, marginBottom: 6,
                 }}>
                   <div>
-                    <div style={{ fontSize: 12, color: '#ccc', fontWeight: 500 }}>📄 {file.file_name}</div>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#ccc', fontWeight: 500 }}>
+                      <DocumentIcon width={14} height={14} /> {file.file_name}
+                     color: '#ccc', fontWeight: 500 }}>
+                      <DocumentIcon width={14} height={14} /> {file.file_name}
+                    </div>
                     <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>
                       {file.file_size ? `${(file.file_size / 1024).toFixed(1)} KB · ` : ''}{formatDate(file.created_at)}
                     </div>
@@ -164,8 +171,13 @@ export default function AdminOrderDetail() {
                   <div style={{ position: 'absolute', left: 3.5, top: 14, bottom: -8, width: 1, background: '#222' }} />
                 )}
                 <div>
-                  <div style={{ fontSize: 12, color: '#ccc' }}>
-                    {h.from_status ? `${ORDER_STATUS_LABEL[h.from_status]} → ` : ''}
+                  <div style={{ fontSize: 12, color: '#ccc', display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+                    {h.from_status && (
+                      <>
+                        <span>{ORDER_STATUS_LABEL[h.from_status]}</span>
+                        <ArrowRightIcon width={12} height={12} />
+                      </>
+                    )}
                     <strong style={{ color: '#e6b800' }}>{ORDER_STATUS_LABEL[h.to_status]}</strong>
                   </div>
                   {h.notes && <div style={{ fontSize: 11, color: '#666', marginTop: 2 }}>{h.notes}</div>}
@@ -201,8 +213,9 @@ export default function AdminOrderDetail() {
                       color: s === 'cancelado' ? '#e74c3c' : '#e6b800',
                       borderColor: s === 'cancelado' ? '#3a1a1a' : '#3a3000',
                       cursor: 'pointer', letterSpacing: 0.5,
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
                     }}>
-                    {ORDER_STATUS_LABEL[s]} →
+                    {ORDER_STATUS_LABEL[s]} <ArrowRightIcon width={12} height={12} />
                   </button>
                 ))}
               </div>
