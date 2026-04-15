@@ -240,7 +240,7 @@ export default function LoginPage() {
       {/* ─── DIREITA: área BRANCA com logo RESPONSIVA ocupando TODO espaço ──── */}
       <div style={{
         flex: 1,              // ← ocupa todo espaço restante (responsivo!)
-        background: '#ffffff', // ← FUNDO BRANCO como na imagem
+        background: '#000000', // ← FUNDO BRANCO como na imagem
         position: 'relative',
         overflow: 'hidden',
         display: 'flex',
