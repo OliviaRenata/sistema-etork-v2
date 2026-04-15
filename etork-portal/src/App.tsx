@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 
 // Pages
 import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 import FranchiseDashboard from './pages/franchise/Dashboard';
 import FranchiseOrders from './pages/franchise/Orders';
 import FranchiseNewOrder from './pages/franchise/NewOrder';
@@ -22,7 +23,13 @@ function Router() {
   const { user, profile, loading } = useAuth();
 
   if (loading) return <LoadingScreen />;
-  if (!user) return <Routes><Route path="*" element={<LoginPage />} /></Routes>;
+  if (!user) return (
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>
+  );
 
   const isAdmin = profile?.role === 'admin';
 
