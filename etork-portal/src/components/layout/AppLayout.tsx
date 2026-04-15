@@ -86,8 +86,8 @@ export default function AppLayout() {
   const colors = {
     bg: isDark ? '#0a0a0a' : '#f5f5f5',
     surface: isDark ? '#111111' : '#ffffff',
-    sidebar: isDark ? '#111111' : 'rgb(239, 239, 239)',
-    topbar: isDark ? '#111111' : 'rgb(239, 239, 239)',
+    sidebar: isDark ? '#111111' : 'rgb(245, 245, 245)',
+    topbar: isDark ? '#111111' : 'rgb(245, 245, 245)',
     border: isDark ? '#222222' : '#e0e0e0',
     text: isDark ? '#e0e0e0' : '#1a1a1a',
     muted: isDark ? '#888888' : '#666666',
