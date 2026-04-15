@@ -37,7 +37,7 @@ export default function AdminFinancial() {
     const header = 'Data,Franqueado,Descrição,Pedido,Tipo,Valor,Status\n';
     const rows = filtered.map(r => [
       formatDateShort(r.created_at),
-      (r.franchisee as unknown as { company_name: string })?.company_name || '',
+      (r.franchisee_id as unknown as { company_name: string })?.company_name || '',
       r.description,
       (r.order as unknown as { order_number: string })?.order_number || '',
       r.type,
@@ -129,7 +129,7 @@ export default function AdminFinancial() {
                 <tr key={r.id} style={{ borderBottom: '1px solid #161616' }}>
                   <td style={{ padding: '10px 14px', fontSize: 11, color: '#666' }}>{formatDateShort(r.created_at)}</td>
                   <td style={{ padding: '10px 14px', fontSize: 12, color: '#ccc' }}>
-                    {(r.franchisee as unknown as { company_name: string })?.company_name || '—'}
+                    {(r.franchisee_id as unknown as { company_name: string })?.company_name || '—'}
                   </td>
                   <td style={{ padding: '10px 14px', fontSize: 12, color: '#888' }}>{r.description}</td>
                   <td style={{ padding: '10px 14px', fontSize: 12, color: '#e6b800' }}>

@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       else setLoading(false);
     });
 
-    const { data: { subscription } } = auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) loadProfile(session.user.id);
