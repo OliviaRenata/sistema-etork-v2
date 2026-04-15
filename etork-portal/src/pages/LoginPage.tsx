@@ -204,7 +204,7 @@ export default function LoginPage() {
 
       {/* ─── DIREITA: branding visual ──────────────────────────────── */}
       <div style={{
-        flex: 1, background: '#060606',
+        flex: '0 0 420px', maxWidth: 420, background: '#000',
         position: 'relative', overflow: 'hidden',
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
