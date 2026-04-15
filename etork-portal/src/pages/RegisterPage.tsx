@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { supabase } from '../lib/supabase';
+// src/pages/RegisterPage.tsx
 
-const logoUrl = new URL('../assets/logo.svg', import.meta.url).href;
+import logoImg from '../assets/logoetork.png';
+import { useState, FormEvent } from 'react';
+import { supabase } from '../lib/supabase';
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -24,15 +25,15 @@ const labelStyle: React.CSSProperties = {
 };
 
 export default function RegisterPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [confirmPassword, setConfirmPassword] = useState<string>('');
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [message, setMessage] = useState<{ type: string; text: string }>({ type: '', text: '' });
 
-  async function handleRegister(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleRegister(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     setMessage({ type: '', text: '' });
 
     if (password !== confirmPassword) {
@@ -60,9 +61,17 @@ export default function RegisterPage() {
           type: 'success',
           text: 'Cadastro realizado! Agora você pode entrar com seu e-mail e senha.',
         });
+        
+        setEmail('');
+        setPassword('');
+        setConfirmPassword('');
       }
-    } catch (err: any) {
-      setMessage({ type: 'error', text: err.message || 'Erro ao registrar no Supabase.' });
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      setMessage({ 
+        type: 'error', 
+        text: error?.message || 'Erro ao registrar no Supabase.' 
+      });
     } finally {
       setLoading(false);
     }
@@ -73,12 +82,12 @@ export default function RegisterPage() {
       <div style={{ width: 460, minHeight: '100vh', flexShrink: 0, background: '#0a0a0a', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '48px 44px', position: 'relative' }}>
         <div style={{ position: 'absolute', right: 0, top: '10%', bottom: '10%', width: 1, background: 'linear-gradient(to bottom, transparent, rgba(230,184,0,0.4) 40%, rgba(230,184,0,0.4) 60%, transparent)' }} />
 
-        <div style={{ marginBottom: 44 }}>
-          <div>
-            <div style={{ fontSize: 38, fontWeight: 900, color: '#fff', letterSpacing: -1.5, lineHeight: 1 }}>ETORK</div>
-            <div style={{ fontSize: 10, color: '#e6b800', fontWeight: 800, letterSpacing: 5, marginTop: 3 }}>BRASIL</div>
-            <div style={{ fontSize: 9, color: '#333', letterSpacing: 2.5, marginTop: 6 }}>REMAP · CHIP · PERFORMANCE</div>
-          </div>
+        <div style={{ marginBottom: 44, textAlign: 'center' }}>
+          <img
+            src={logoImg}
+            alt="Etork Brasil"
+            style={{ height: 60, width: 'auto', objectFit: 'contain', display: 'block', margin: '0 auto' }}
+          />
         </div>
 
         <div style={{ marginBottom: 32 }}>
@@ -92,12 +101,12 @@ export default function RegisterPage() {
             <input
               type="email"
               value={email}
-              onChange={e => setEmail(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
               required
               placeholder="seu@email.com"
               style={inputStyle}
-              onFocus={e => e.currentTarget.style.borderColor = '#e6b800'}
-              onBlur={e => e.currentTarget.style.borderColor = '#2a2a2a'}
+              onFocus={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = '#e6b800'}
+              onBlur={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = '#2a2a2a'}
             />
           </div>
 
@@ -106,15 +115,44 @@ export default function RegisterPage() {
             <input
               type={showPassword ? 'text' : 'password'}
               value={password}
-              onChange={e => setPassword(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
               required
               placeholder="••••••••"
               style={{ ...inputStyle, paddingRight: 42 }}
-              onFocus={e => e.currentTarget.style.borderColor = '#e6b800'}
-              onBlur={e => e.currentTarget.style.borderColor = '#2a2a2a'}
+              onFocus={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = '#e6b800'}
+              onBlur={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = '#2a2a2a'}
             />
-            <button type="button" onClick={() => setShowPassword(s => !s)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: 14, padding: 0, lineHeight: 1 }}>
-              {showPassword ? '🙈' : '👁️'}
+            <button 
+              type="button" 
+              onClick={() => setShowPassword(!showPassword)} 
+              style={{ 
+                position: 'absolute', 
+                right: 12, 
+                top: '50%', 
+                transform: 'translateY(-50%)', 
+                background: 'none', 
+                border: 'none', 
+                color: '#888', 
+                cursor: 'pointer', 
+                fontSize: 14, 
+                padding: 0, 
+                lineHeight: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+              {showPassword ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                  <line x1="2" y1="2" x2="22" y2="22"/>
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              )}
             </button>
           </div>
 
@@ -123,15 +161,44 @@ export default function RegisterPage() {
             <input
               type={showPassword ? 'text' : 'password'}
               value={confirmPassword}
-              onChange={e => setConfirmPassword(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)}
               required
               placeholder="••••••••"
               style={{ ...inputStyle, paddingRight: 42 }}
-              onFocus={e => e.currentTarget.style.borderColor = '#e6b800'}
-              onBlur={e => e.currentTarget.style.borderColor = '#2a2a2a'}
+              onFocus={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = '#e6b800'}
+              onBlur={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = '#2a2a2a'}
             />
-            <button type="button" onClick={() => setShowPassword(s => !s)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: 14, padding: 0, lineHeight: 1 }}>
-              {showPassword ? '🙈' : '👁️'}
+            <button 
+              type="button" 
+              onClick={() => setShowPassword(!showPassword)} 
+              style={{ 
+                position: 'absolute', 
+                right: 12, 
+                top: '50%', 
+                transform: 'translateY(-50%)', 
+                background: 'none', 
+                border: 'none', 
+                color: '#888', 
+                cursor: 'pointer', 
+                fontSize: 14, 
+                padding: 0, 
+                lineHeight: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+              {showPassword ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                  <line x1="2" y1="2" x2="22" y2="22"/>
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              )}
             </button>
           </div>
 
@@ -156,12 +223,16 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      <div style={{ flex: 1, background: '#060606', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ flex: 1, background: '#000', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, transparent 0%, #cc2200 30%, #e6b800 60%, transparent 100%)' }} />
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(230,184,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(230,184,0,0.04) 1px, transparent 1px)', backgroundSize: '48px 48px' }} />
         <div style={{ position: 'absolute', top: '38%', left: '50%', transform: 'translate(-50%, -50%)', width: 480, height: 480, borderRadius: '50%', background: 'radial-gradient(circle, rgba(230,184,0,0.06) 0%, transparent 68%)', pointerEvents: 'none' }} />
         <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 420, padding: 24, textAlign: 'center' }}>
-          <img src={logoUrl} alt="Etork Brasil" style={{ width: 180, maxWidth: '100%', marginBottom: 24, filter: 'brightness(0) invert(1)' }} />
+          <img 
+            src={logoImg} 
+            alt="Etork Brasil" 
+            style={{ width: 180, maxWidth: '100%', marginBottom: 24, filter: 'brightness(0) invert(1)' }} 
+          />
           <div style={{ color: '#fff', fontSize: 22, fontWeight: 700, marginBottom: 12 }}>Bem-vindo ao portal Etork</div>
           <p style={{ color: '#999', fontSize: 14, lineHeight: 1.7, margin: 0 }}>Cadastre sua conta e acesse o painel de franqueados para acompanhar pedidos, finanças e novidades da rede.</p>
         </div>
