@@ -10,8 +10,8 @@ import App from './App';
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
-      <ThemeProvider>      {/* ← ThemeProvider deve ser o primeiro */}
-        <AuthProvider>     {/* ← AuthProvider dentro do ThemeProvider */}
+      <ThemeProvider>
+        <AuthProvider>
           <App />
         </AuthProvider>
       </ThemeProvider>
