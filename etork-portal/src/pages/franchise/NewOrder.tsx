@@ -122,6 +122,12 @@ export default function FranchiseNewOrder() {
     errorColor: isDark ? '#e74c3c' : '#c62828',
     bgSuccess: isDark ? '#0a1a0a' : '#e8f5e9',
     successColor: isDark ? '#4ade80' : '#2e7d32',
+    btnSecondaryBg: isDark ? 'transparent' : '#f5f5f5',
+    btnSecondaryBorder: isDark ? '#333' : '#ddd',
+    btnSecondaryColor: isDark ? '#ccc' : '#666',
+    qtyBtnBg: isDark ? '#1a1a1a' : '#e0e0e0',
+    qtyBtnBorder: isDark ? '#333' : '#ccc',
+    qtyBtnColor: isDark ? '#fff' : '#1a1a1a',
   };
 
   return (
@@ -136,21 +142,29 @@ export default function FranchiseNewOrder() {
         <div>
           {/* Vehicle plate */}
           <div style={{ background: colors.bgSection, border: `1px solid ${colors.borderSection}`, borderRadius: 10, padding: 16, marginBottom: 16 }}>
-            <label style={{ ...labelStyle, color: colors.textSecondary }}>PLACA DO VEÍCULO (opcional)</label>
+            <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: colors.textSecondary }}>PLACA DO VEÍCULO (opcional)</label>
             <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
               <input
                 value={vehiclePlate}
                 onChange={e => setVehiclePlate(e.target.value.toUpperCase())}
                 placeholder="ABC-1234 ou ABC1D23"
                 maxLength={8}
-                style={{ ...inputStyle, flex: 1, background: colors.bgInput, borderColor: colors.borderInput, color: colors.textPrimary }}
+                style={{
+                  flex: 1, padding: '10px 12px', borderRadius: 8, fontSize: 13, outline: 'none',
+                  background: colors.bgInput, border: `1px solid ${colors.borderInput}`, color: colors.textPrimary
+                }}
                 onFocus={e => e.target.style.borderColor = '#e6b800'}
                 onBlur={e => e.target.style.borderColor = colors.borderInput}
               />
               <button 
                 onClick={lookupPlate} 
                 disabled={plateLoading || vehiclePlate.length < 7}
-                style={{ ...btnSecondary, ...(plateLoading || vehiclePlate.length < 7 ? { opacity: 0.5 } : {}) }}>
+                style={{
+                  padding: '10px 14px', background: colors.btnSecondaryBg,
+                  border: `1px solid ${colors.btnSecondaryBorder}`, borderRadius: 8,
+                  color: colors.btnSecondaryColor, cursor: 'pointer', fontSize: 12, fontWeight: 600,
+                  ...(plateLoading || vehiclePlate.length < 7 ? { opacity: 0.5 } : {})
+                }}>
                 {plateLoading ? '...' : 'Consultar'}
               </button>
             </div>
@@ -167,7 +181,10 @@ export default function FranchiseNewOrder() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar serviço..."
-              style={{ ...inputStyle, flex: 1, minWidth: 160, background: colors.bgInput, borderColor: colors.borderInput, color: colors.textPrimary }}
+              style={{
+                flex: 1, minWidth: 160, padding: '10px 12px', borderRadius: 8, fontSize: 13, outline: 'none',
+                background: colors.bgInput, border: `1px solid ${colors.borderInput}`, color: colors.textPrimary
+              }}
               onFocus={e => e.target.style.borderColor = '#e6b800'}
               onBlur={e => e.target.style.borderColor = colors.borderInput}
             />
@@ -241,9 +258,25 @@ export default function FranchiseNewOrder() {
                     <div style={{ fontSize: 11, color: colors.textSecondary }}>{formatCurrency(c.item.unit_price)} × {c.quantity}</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <button onClick={() => updateQty(c.item.id, c.quantity - 1)} style={{ ...qtyBtn, background: colors.bgInput, borderColor: colors.borderInput, color: colors.textPrimary }}>-</button>
+                    <button 
+                      onClick={() => updateQty(c.item.id, c.quantity - 1)} 
+                      style={{
+                        width: 22, height: 22, borderRadius: 4, cursor: 'pointer', fontSize: 14,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
+                        background: colors.qtyBtnBg, border: `1px solid ${colors.qtyBtnBorder}`, color: colors.qtyBtnColor
+                      }}>
+                      -
+                    </button>
                     <span style={{ color: colors.textPrimary, fontSize: 12, minWidth: 16, textAlign: 'center' }}>{c.quantity}</span>
-                    <button onClick={() => updateQty(c.item.id, c.quantity + 1)} style={{ ...qtyBtn, background: colors.bgInput, borderColor: colors.borderInput, color: colors.textPrimary }}>+</button>
+                    <button 
+                      onClick={() => updateQty(c.item.id, c.quantity + 1)} 
+                      style={{
+                        width: 22, height: 22, borderRadius: 4, cursor: 'pointer', fontSize: 14,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
+                        background: colors.qtyBtnBg, border: `1px solid ${colors.qtyBtnBorder}`, color: colors.qtyBtnColor
+                      }}>
+                      +
+                    </button>
                   </div>
                   <span style={{ fontSize: 12, color: '#e6b800', fontWeight: 600, minWidth: 60, textAlign: 'right' }}>
                     {formatCurrency(c.item.unit_price * c.quantity)}
@@ -266,7 +299,11 @@ export default function FranchiseNewOrder() {
             onChange={e => setNotes(e.target.value)}
             placeholder="Observações (opcional)..."
             rows={3}
-            style={{ ...inputStyle, width: '100%', resize: 'vertical', marginBottom: 12, boxSizing: 'border-box', background: colors.bgInput, borderColor: colors.borderInput, color: colors.textPrimary }}
+            style={{
+              width: '100%', padding: '10px 12px', borderRadius: 8, fontSize: 13, outline: 'none',
+              resize: 'vertical', marginBottom: 12, boxSizing: 'border-box',
+              background: colors.bgInput, border: `1px solid ${colors.borderInput}`, color: colors.textPrimary
+            }}
             onFocus={e => e.target.style.borderColor = '#e6b800'}
             onBlur={e => e.target.style.borderColor = colors.borderInput}
           />
@@ -274,7 +311,9 @@ export default function FranchiseNewOrder() {
           {/* File upload */}
           {requiresFile && (
             <div style={{ marginBottom: 12 }}>
-              <label style={{ ...labelStyle, color: colors.textSecondary }}>ARQUIVOS DO REMAP <span style={{ color: '#e74c3c' }}>*</span></label>
+              <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: colors.textSecondary }}>
+                ARQUIVOS DO REMAP <span style={{ color: '#e74c3c' }}>*</span>
+              </label>
               <input type="file" multiple
                 onChange={e => setFiles(Array.from(e.target.files || []))}
                 style={{ marginTop: 6, color: colors.textSecondary, fontSize: 12 }}
@@ -309,20 +348,3 @@ export default function FranchiseNewOrder() {
     </div>
   );
 }
-
-const labelStyle: React.CSSProperties = { fontSize: 11, fontWeight: 600, letterSpacing: 1 };
-const inputStyle: React.CSSProperties = {
-  padding: '10px 12px',
-  borderRadius: 8,
-  fontSize: 13, outline: 'none',
-};
-const btnSecondary: React.CSSProperties = {
-  padding: '10px 14px', background: 'transparent',
-  border: '1px solid #333', borderRadius: 8,
-  color: '#ccc', cursor: 'pointer', fontSize: 12, fontWeight: 600,
-};
-const qtyBtn: React.CSSProperties = {
-  width: 22, height: 22,
-  borderRadius: 4, cursor: 'pointer', fontSize: 14, display: 'flex',
-  alignItems: 'center', justifyContent: 'center', padding: 0,
-};
