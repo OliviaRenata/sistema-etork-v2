@@ -56,7 +56,7 @@ export default function RegisterPage() {
 
         {/* Card */}
         <div style={{ background: '#111', border: '1px solid #222', borderRadius: 16, padding: 32 }}>
-          <h1 style={{ color: '#fff', fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Cadastrar</h1>
+          <h1 style={{ color: '#fff', fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Novo Cadastro</h1>
           <p style={{ color: '#555', fontSize: 13, marginBottom: 28 }}>Crie sua conta de franqueado</p>
 
           <form onSubmit={handleRegister}>

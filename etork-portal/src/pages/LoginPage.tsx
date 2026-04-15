@@ -127,7 +127,7 @@ export default function LoginPage() {
               style={{ background: 'none', border: 'none', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
               onClick={() => window.location.href = '/register'} // Ou use <Link> se tiver rotas
             >
-              Solicitar Acesso
+              Novo Cadastro
             </button>
           </div>
         </div>
