@@ -330,7 +330,7 @@ export default function LoginPage() {
           justifyContent: 'center',
           gap: 48,
           padding: '20px 32px',
-          background: '#fff',
+          background: '#000000',
         }}>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 20, fontWeight: 800, color: '#e6b800' }}>2017</div>
