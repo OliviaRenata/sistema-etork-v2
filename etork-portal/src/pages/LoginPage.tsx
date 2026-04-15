@@ -203,11 +203,18 @@ export default function LoginPage() {
       </div>
 
       {/* ─── DIREITA: branding visual ──────────────────────────────── */}
+      {/* CORRIGIDO: fundo 100% preto, logo inteira e centralizado */}
       <div style={{
-        flex: '0 0 420px', maxWidth: 420, background: '#000',
-        position: 'relative', overflow: 'hidden',
-        display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
+        flex: '0 0 420px', 
+        maxWidth: 420, 
+        background: '#000',  // ← fundo completamente preto
+        position: 'relative', 
+        overflow: 'hidden',
+        display: 'flex', 
+        flexDirection: 'column',
+        alignItems: 'center', 
+        justifyContent: 'center',
+        minHeight: '100vh',   // ← garante altura total
       }}>
 
         {/* Faixa vermelha no topo */}
@@ -220,8 +227,8 @@ export default function LoginPage() {
         <div style={{
           position: 'absolute', inset: 0,
           backgroundImage: [
-            'linear-gradient(rgba(230,184,0,0.04) 1px, transparent 1px)',
-            'linear-gradient(90deg, rgba(230,184,0,0.04) 1px, transparent 1px)',
+            'linear-gradient(rgba(230,184,0,0.03) 1px, transparent 1px)',
+            'linear-gradient(90deg, rgba(230,184,0,0.03) 1px, transparent 1px)',
           ].join(', '),
           backgroundSize: '48px 48px',
         }} />
@@ -231,7 +238,7 @@ export default function LoginPage() {
           position: 'absolute', top: '38%', left: '50%',
           transform: 'translate(-50%, -50%)',
           width: 480, height: 480, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(230,184,0,0.06) 0%, transparent 68%)',
+          background: 'radial-gradient(circle, rgba(230,184,0,0.05) 0%, transparent 68%)',
           pointerEvents: 'none',
         }} />
 
@@ -239,14 +246,14 @@ export default function LoginPage() {
         <div style={{
           position: 'absolute', bottom: '20%', right: '20%',
           width: 200, height: 200, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(204,34,0,0.05) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(204,34,0,0.04) 0%, transparent 70%)',
           pointerEvents: 'none',
         }} />
 
         {/* Xadrez decorativo canto superior direito */}
         <div style={{
           position: 'absolute', top: 24, right: 24,
-          width: 48, height: 48, opacity: 0.12,
+          width: 48, height: 48, opacity: 0.1,
           backgroundImage: 'repeating-conic-gradient(#e6b800 0% 25%, transparent 0% 50%)',
           backgroundSize: '12px 12px',
           borderRadius: 4,
@@ -255,7 +262,7 @@ export default function LoginPage() {
         {/* Xadrez decorativo canto inferior esquerdo */}
         <div style={{
           position: 'absolute', bottom: 90, left: 32,
-          width: 64, height: 64, opacity: 0.07,
+          width: 64, height: 64, opacity: 0.06,
           backgroundImage: 'repeating-conic-gradient(#cc2200 0% 25%, transparent 0% 50%)',
           backgroundSize: '16px 16px',
           borderRadius: 4,
@@ -280,12 +287,20 @@ export default function LoginPage() {
             PORTAL DE FRANQUEADOS
           </div>
 
-          {/* Título principal */}
+          {/* LOGO CORRIGIDA: inteira, sem cortes, altura ajustada */}
           <div style={{ marginBottom: 8 }}>
             <img
               src={logoImg}
               alt="Etork Brasil"
-              style={{ height: 140, width: 'auto', objectFit: 'contain', display: 'block', margin: '0 auto', filter: 'brightness(1.1)' }}
+              style={{ 
+                maxWidth: '100%',      // ← não ultrapassa o container
+                height: 'auto',        // ← altura automática mantém proporção
+                width: 'auto',         // ← largura automática
+                maxHeight: 180,        // ← limite de altura (opcional, evita excesso)
+                objectFit: 'contain', 
+                display: 'block', 
+                margin: '0 auto' 
+              }}
             />
           </div>
 
