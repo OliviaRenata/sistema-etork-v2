@@ -1,8 +1,35 @@
+// src/pages/LoginPage.tsx
+//
+// ════════════════════════════════════════════════════════════
+// COMO USAR SUA LOGO SEM DEFORMAR:
+//
+// 1. Copie o arquivo  logoetork.png  para a pasta:
+//       src/assets/logoetork.png
+//
+// 2. Descomente a linha de import abaixo:
+//       import logoImg from '../assets/logoetork.png';
+//
+// 3. No JSX, substitua o bloco <LogoFallback /> por:
+//       <img
+//         src={logoImg}
+//         alt="Etork Brasil"
+//         style={{
+//           height: 60,          // ← defina apenas a altura
+//           width: 'auto',       // ← a largura se ajusta sozinha
+//           objectFit: 'contain',
+//           display: 'block',
+//         }}
+//       />
+//
+// ⚠️  NUNCA defina width E height ao mesmo tempo sem objectFit,
+//     pois isso estica/comprime a imagem.
+// ════════════════════════════════════════════════════════════
+
+// import logoImg from '../assets/logoetork.png'; // ← descomente após copiar a logo
+
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { supabase } from '../lib/supabase'; // Importe o supabase direto para funções extras
-
-const logoUrl = new URL('../assets/logo.svg', import.meta.url).href;
+import { supabase } from '../lib/supabase';
 
 export default function LoginPage() {
   const { signIn } = useAuth();
@@ -19,136 +46,314 @@ export default function LoginPage() {
     try {
       await signIn(email, password);
     } catch (err: unknown) {
-      setMessage({ type: 'error', text: (err as Error).message || 'Erro ao fazer login.' });
+      setMessage({ type: 'error', text: (err as Error).message || 'Credenciais inválidas.' });
     } finally {
       setLoading(false);
     }
   }
 
-  // Função para Esqueci Senha (via E-mail)
   async function handleForgotPassword() {
     if (!email) {
-      setMessage({ type: 'error', text: 'Digite seu e-mail primeiro para recuperar a senha.' });
+      setMessage({ type: 'error', text: 'Digite seu e-mail primeiro.' });
       return;
     }
     setLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
-    
-    if (error) {
-      setMessage({ type: 'error', text: error.message });
-    } else {
-      setMessage({ type: 'success', text: 'E-mail de recuperação enviado!' });
-    }
+    setMessage(error
+      ? { type: 'error', text: error.message }
+      : { type: 'success', text: 'E-mail de recuperação enviado! Verifique sua caixa.' }
+    );
     setLoading(false);
   }
 
   return (
-    <div style={{
-      minHeight: '100vh', background: 'var(--bg)', display: 'flex',
-      alignItems: 'center', justifyContent: 'center', fontFamily: '"Inter", sans-serif',
-      position: 'relative', overflow: 'hidden',
-      color: 'var(--text)',
-    }}>
-      {/* Background grid e Glow (mantidos conforme seu original) */}
-      <div style={{ position: 'absolute', inset: 0, opacity: 0.04, backgroundImage: 'linear-gradient(#e6b800 1px, transparent 1px), linear-gradient(90deg, #e6b800 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+    <div style={{ minHeight: '100vh', display: 'flex', fontFamily: '"Inter", "Helvetica Neue", sans-serif' }}>
 
-      <div style={{ width: '100%', maxWidth: 400, padding: '0 24px', position: 'relative' }}>
-        {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <img src={logoUrl} alt="ETORK Brasil" style={{ width: 220, maxWidth: '100%', height: 'auto', display: 'inline-block' }} />
+      {/* ─── ESQUERDA: formulário ───────────────────────────────── */}
+      <div style={{
+        width: 460, minHeight: '100vh', flexShrink: 0,
+        background: '#0a0a0a',
+        display: 'flex', flexDirection: 'column', justifyContent: 'center',
+        padding: '48px 44px', position: 'relative',
+      }}>
+        {/* Borda direita dourada */}
+        <div style={{
+          position: 'absolute', right: 0, top: '10%', bottom: '10%', width: 1,
+          background: 'linear-gradient(to bottom, transparent, rgba(230,184,0,0.4) 40%, rgba(230,184,0,0.4) 60%, transparent)',
+        }} />
+
+        {/* Logo — substitua pelo <img> quando tiver o arquivo */}
+        <div style={{ marginBottom: 44 }}>
+          {/* ↓↓↓ SUBSTITUA ESTE BLOCO PELO <img> QUANDO TIVER A LOGO ↓↓↓ */}
+          <div>
+            <div style={{ fontSize: 38, fontWeight: 900, color: '#fff', letterSpacing: -1.5, lineHeight: 1 }}>ETORK</div>
+            <div style={{ fontSize: 10, color: '#e6b800', fontWeight: 800, letterSpacing: 5, marginTop: 3 }}>BRASIL</div>
+            <div style={{ fontSize: 9, color: '#333', letterSpacing: 2.5, marginTop: 6 }}>REMAP · CHIP · PERFORMANCE</div>
+          </div>
+          {/* ↑↑↑ FIM DO BLOCO FALLBACK ↑↑↑ */}
         </div>
 
-        {/* Card */}
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: 32 }}>
-          <h1 style={{ color: 'var(--text)', fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Acessar Portal</h1>
-          <p style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 28 }}>Entre com suas credenciais de franqueado</p>
+        {/* Cabeçalho */}
+        <div style={{ marginBottom: 32 }}>
+          <h1 style={{ color: '#fff', fontSize: 21, fontWeight: 700, margin: '0 0 6px' }}>Bem-vindo de volta</h1>
+          <p style={{ color: '#444', fontSize: 13, margin: 0 }}>Acesse seu painel de franqueado</p>
+        </div>
 
-          <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#888', marginBottom: 6 }}>E-MAIL</label>
-              <input
-                type="email" value={email} onChange={e => setEmail(e.target.value)} required
-                placeholder="seu@email.com"
-                style={{ width: '100%', padding: '12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 14, outline: 'none' }}
-              />
-            </div>
+        {/* Formulário */}
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: 14 }}>
+            <label style={labelStyle}>E-MAIL</label>
+            <input
+              type="email" value={email} onChange={e => setEmail(e.target.value)}
+              required placeholder="seu@email.com"
+              style={inputStyle}
+              onFocus={e => e.target.style.borderColor = '#e6b800'}
+              onBlur={e => e.target.style.borderColor = '#1e1e1e'}
+            />
+          </div>
 
-            <div style={{ marginBottom: 8, position: 'relative' }}>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#888', marginBottom: 6 }}>SENHA</label>
+          <div style={{ marginBottom: 6 }}>
+            <label style={labelStyle}>SENHA</label>
+            <div style={{ position: 'relative' }}>
               <input
-                type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required
-                placeholder="••••••••"
-                style={{ width: '100%', padding: '12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 14, outline: 'none', paddingRight: 40 }}
+                type={showPassword ? 'text' : 'password'}
+                value={password} onChange={e => setPassword(e.target.value)}
+                required placeholder="••••••••"
+                style={{ ...inputStyle, paddingRight: 42 }}
+                onFocus={e => e.target.style.borderColor = '#e6b800'}
+                onBlur={e => e.target.style.borderColor = '#1e1e1e'}
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                style={{ position: 'absolute', right: 10, top: 30, background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                {showPassword ? (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
-                    <path d="M2 2L22 22" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                ) : (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
-                  </svg>
-                )}
+              <button type="button" onClick={() => setShowPassword(s => !s)}
+                style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: 14, padding: 0, lineHeight: 1 }}>
+                {showPassword
+                  ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
+                  : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                }
               </button>
             </div>
+          </div>
 
-            {/* Link Esqueci Senha */}
-            <div style={{ textAlign: 'right', marginBottom: 24 }}>
-              <button 
-                type="button" 
-                onClick={handleForgotPassword}
-                style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: 0 }}
-              >
-                ESQUECEU A SENHA?
-              </button>
+          <div style={{ textAlign: 'right', marginBottom: 22 }}>
+            <button type="button" onClick={handleForgotPassword}
+              style={{ background: 'none', border: 'none', color: '#e6b800', fontSize: 11, fontWeight: 700, cursor: 'pointer', letterSpacing: 0.5 }}>
+              ESQUECEU A SENHA?
+            </button>
+          </div>
+
+          {message.text && (
+            <div style={{
+              padding: '10px 14px', marginBottom: 14, borderRadius: 8, fontSize: 12, lineHeight: 1.5,
+              background: message.type === 'error' ? '#130808' : '#081308',
+              border: `1px solid ${message.type === 'error' ? '#3a1010' : '#103a10'}`,
+              color: message.type === 'error' ? '#f87171' : '#4ade80',
+            }}>
+              {message.type === 'error' ? '✕ ' : '✓ '}{message.text}
             </div>
+          )}
 
-            {message.text && (
-              <div style={{
-                padding: '10px', marginBottom: 16, borderRadius: 8, fontSize: 13,
-                background: message.type === 'error' ? '#1a0a0a' : '#0a1a0a',
-                border: message.type === 'error' ? '1px solid #3a1a1a' : '1px solid #1a3a1a',
-                color: message.type === 'error' ? '#e74c3c' : '#2ecc71',
+          <button type="submit" disabled={loading}
+            style={{
+              width: '100%', padding: '14px',
+              background: loading ? '#1a1600' : '#e6b800',
+              color: '#000', border: 'none', borderRadius: 8,
+              fontSize: 13, fontWeight: 800, letterSpacing: 1.5,
+              cursor: loading ? 'not-allowed' : 'pointer',
+              transition: 'background 0.15s, box-shadow 0.15s',
+              boxShadow: loading ? 'none' : '0 4px 24px rgba(230,184,0,0.18)',
+            }}
+            onMouseEnter={e => { if (!loading) { (e.currentTarget).style.background = '#ffd000'; } }}
+            onMouseLeave={e => { if (!loading) { (e.currentTarget).style.background = '#e6b800'; } }}
+          >
+            {loading ? 'ENTRANDO...' : 'ENTRAR NO PORTAL →'}
+          </button>
+        </form>
+
+        {/* Rodapé */}
+        <div style={{ marginTop: 28, paddingTop: 22, borderTop: '1px solid #181818', textAlign: 'center' }}>
+          <span style={{ color: '#3a3a3a', fontSize: 12 }}>Não tem acesso? </span>
+          <a href="https://wa.me/5567992549181" target="_blank" rel="noreferrer"
+            style={{ color: '#e6b800', fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>
+            Solicite acesso via WhatsApp →
+          </a>
+        </div>
+
+        {/* Contato no rodapé */}
+        <div style={{ position: 'absolute', bottom: 20, left: 0, right: 0, textAlign: 'center' }}>
+          <p style={{ fontSize: 10, color: '#252525', letterSpacing: 0.5, margin: 0 }}>
+            (67) 99254-9181 · @etorkbrasil · Campo Grande/MS
+          </p>
+        </div>
+      </div>
+
+      {/* ─── DIREITA: branding visual ──────────────────────────────── */}
+      <div style={{
+        flex: 1, background: '#060606',
+        position: 'relative', overflow: 'hidden',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+      }}>
+
+        {/* Faixa vermelha no topo */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+          background: 'linear-gradient(90deg, transparent 0%, #cc2200 30%, #e6b800 60%, transparent 100%)',
+        }} />
+
+        {/* Grade de fundo */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          backgroundImage: [
+            'linear-gradient(rgba(230,184,0,0.04) 1px, transparent 1px)',
+            'linear-gradient(90deg, rgba(230,184,0,0.04) 1px, transparent 1px)',
+          ].join(', '),
+          backgroundSize: '48px 48px',
+        }} />
+
+        {/* Glow dourado */}
+        <div style={{
+          position: 'absolute', top: '38%', left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 480, height: 480, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(230,184,0,0.06) 0%, transparent 68%)',
+          pointerEvents: 'none',
+        }} />
+
+        {/* Glow vermelho menor */}
+        <div style={{
+          position: 'absolute', bottom: '20%', right: '20%',
+          width: 200, height: 200, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(204,34,0,0.05) 0%, transparent 70%)',
+          pointerEvents: 'none',
+        }} />
+
+        {/* Xadrez decorativo canto superior direito */}
+        <div style={{
+          position: 'absolute', top: 24, right: 24,
+          width: 48, height: 48, opacity: 0.12,
+          backgroundImage: 'repeating-conic-gradient(#e6b800 0% 25%, transparent 0% 50%)',
+          backgroundSize: '12px 12px',
+          borderRadius: 4,
+        }} />
+
+        {/* Xadrez decorativo canto inferior esquerdo */}
+        <div style={{
+          position: 'absolute', bottom: 90, left: 32,
+          width: 64, height: 64, opacity: 0.07,
+          backgroundImage: 'repeating-conic-gradient(#cc2200 0% 25%, transparent 0% 50%)',
+          backgroundSize: '16px 16px',
+          borderRadius: 4,
+        }} />
+
+        {/* Conteúdo central */}
+        <div style={{ position: 'relative', textAlign: 'center', padding: '0 56px', maxWidth: 560 }}>
+
+          {/* Badge pulsante */}
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            background: '#0d0d0d', border: '1px solid #2a2200',
+            borderRadius: 30, padding: '7px 18px', marginBottom: 36,
+            fontSize: 10, color: '#e6b800', letterSpacing: 2, fontWeight: 700,
+          }}>
+            <span style={{
+              width: 7, height: 7, borderRadius: '50%', background: '#e6b800',
+              display: 'inline-block',
+              boxShadow: '0 0 6px #e6b800',
+              animation: 'etorkPulse 2s ease-in-out infinite',
+            }} />
+            PORTAL DE FRANQUEADOS
+          </div>
+
+          {/* Título principal */}
+          <div style={{ marginBottom: 8 }}>
+            <div style={{
+              fontSize: 72, fontWeight: 900, color: '#fff',
+              letterSpacing: -4, lineHeight: 0.88,
+              textShadow: '0 0 40px rgba(230,184,0,0.08)',
+            }}>
+              ETORK
+            </div>
+            <div style={{
+              fontSize: 72, fontWeight: 900, color: '#e6b800',
+              letterSpacing: -4, lineHeight: 0.88,
+              textShadow: '0 0 40px rgba(230,184,0,0.15)',
+            }}>
+              BRASIL
+            </div>
+          </div>
+
+          {/* Linha vermelha */}
+          <div style={{ width: 50, height: 3, background: '#cc2200', margin: '28px auto', borderRadius: 2 }} />
+
+          {/* Descrição */}
+          <p style={{ color: '#3a3a3a', fontSize: 14, lineHeight: 1.9, margin: '0 auto 40px' }}>
+            Plataforma de gestão de pedidos,<br />
+            arquivos de remap e financeiro<br />
+            para franqueados da rede Etork.
+          </p>
+
+          {/* Pilares */}
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+            {[
+              { icon: '🗺', label: 'REMAP' },
+              { icon: '⚡', label: 'CHIP' },
+              { icon: '🏁', label: 'PERFORMANCE' },
+            ].map(({ icon, label }) => (
+              <div key={label} style={{
+                padding: '9px 20px',
+                background: '#0a0a0a', border: '1px solid #1a1a1a',
+                borderRadius: 24, fontSize: 10, fontWeight: 700,
+                color: '#555', letterSpacing: 1.5,
+                display: 'flex', alignItems: 'center', gap: 6,
               }}>
-                {message.text}
+                <span style={{ fontSize: 12 }}>{icon}</span> {label}
               </div>
-            )}
-
-            <button
-              type="submit" disabled={loading}
-              style={{ width: '100%', padding: '13px', background: loading ? '#2a2a00' : '#e6b800', color: '#000', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer' }}
-            >
-              {loading ? 'PROCESSANDO...' : 'ENTRAR'}
-            </button>
-          </form>
-
-          {/* Link para Cadastro */}
-          <div style={{ marginTop: 20, textAlign: 'center' }}>
-            <span style={{ color: '#555', fontSize: 12 }}>Não tem conta? </span>
-            <button 
-              type="button"
-              style={{ background: 'none', border: 'none', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
-              onClick={() => window.location.href = '/register'} // Ou use <Link> se tiver rotas
-            >
-              Novo Cadastro
-            </button>
+            ))}
           </div>
         </div>
 
-        <p style={{ textAlign: 'center', marginTop: 20, fontSize: 11, color: '#333' }}>
-          Portal exclusivo para franqueados Etork Brasil
-        </p>
+        {/* Barra inferior com stats */}
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0,
+          borderTop: '1px solid #111',
+          display: 'grid', gridTemplateColumns: '1fr 1fr 1fr',
+        }}>
+          {[
+            { num: '2017', txt: 'Fundação' },
+            { num: 'MS', txt: 'Campo Grande' },
+            { num: '100%', txt: 'Próprio' },
+          ].map((s, i) => (
+            <div key={i} style={{
+              padding: '18px 12px', textAlign: 'center',
+              borderRight: i < 2 ? '1px solid #111' : 'none',
+            }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: '#e6b800', letterSpacing: -0.5 }}>{s.num}</div>
+              <div style={{ fontSize: 9, color: '#333', marginTop: 3, letterSpacing: 1.5 }}>{s.txt.toUpperCase()}</div>
+            </div>
+          ))}
+        </div>
+
+        <style>{`
+          @keyframes etorkPulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 6px #e6b800; }
+            50% { opacity: 0.4; box-shadow: 0 0 2px #e6b800; }
+          }
+        `}</style>
       </div>
     </div>
   );
 }
+
+const labelStyle: React.CSSProperties = {
+  display: 'block', fontSize: 10, fontWeight: 700,
+  color: '#444', letterSpacing: 1.5, marginBottom: 7,
+};
+
+const inputStyle: React.CSSProperties = {
+  width: '100%', padding: '12px 14px',
+  background: '#0d0d0d', border: '1px solid #1e1e1e',
+  borderRadius: 8, color: '#fff', fontSize: 13,
+  outline: 'none', boxSizing: 'border-box',
+  transition: 'border-color 0.15s',
+};
