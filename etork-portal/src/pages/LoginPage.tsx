@@ -25,7 +25,7 @@
 //     pois isso estica/comprime a imagem.
 // ════════════════════════════════════════════════════════════
 
-// import logoImg from '../assets/logoetork.png'; // ← descomente após copiar a logo
+import logoImg from '../assets/logoetork.png';
 
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
@@ -69,7 +69,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', fontFamily: '"Inter", "Helvetica Neue", sans-serif' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', fontFamily: '"Inter", "Helvetica Neue", sans-serif' }}>
 
       {/* ─── ESQUERDA: formulário ───────────────────────────────── */}
       <div style={{
@@ -84,15 +84,12 @@ export default function LoginPage() {
           background: 'linear-gradient(to bottom, transparent, rgba(230,184,0,0.4) 40%, rgba(230,184,0,0.4) 60%, transparent)',
         }} />
 
-        {/* Logo — substitua pelo <img> quando tiver o arquivo */}
-        <div style={{ marginBottom: 44 }}>
-          {/* ↓↓↓ SUBSTITUA ESTE BLOCO PELO <img> QUANDO TIVER A LOGO ↓↓↓ */}
-          <div>
-            <div style={{ fontSize: 38, fontWeight: 900, color: '#fff', letterSpacing: -1.5, lineHeight: 1 }}>ETORK</div>
-            <div style={{ fontSize: 10, color: '#e6b800', fontWeight: 800, letterSpacing: 5, marginTop: 3 }}>BRASIL</div>
-            <div style={{ fontSize: 9, color: '#333', letterSpacing: 2.5, marginTop: 6 }}>REMAP · CHIP · PERFORMANCE</div>
-          </div>
-          {/* ↑↑↑ FIM DO BLOCO FALLBACK ↑↑↑ */}
+        <div style={{ marginBottom: 44, textAlign: 'center' }}>
+          <img
+            src={logoImg}
+            alt="Etork Brasil"
+            style={{ height: 72, width: 'auto', objectFit: 'contain', display: 'block', margin: '0 auto' }}
+          />
         </div>
 
         {/* Cabeçalho */}
@@ -148,8 +145,19 @@ export default function LoginPage() {
               background: message.type === 'error' ? '#130808' : '#081308',
               border: `1px solid ${message.type === 'error' ? '#3a1010' : '#103a10'}`,
               color: message.type === 'error' ? '#f87171' : '#4ade80',
+              display: 'flex', alignItems: 'center', gap: 8,
             }}>
-              {message.type === 'error' ? '✕ ' : '✓ '}{message.text}
+              {message.type === 'error' ? (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 6L9 17l-5-5" />
+                </svg>
+              )}
+              <span>{message.text}</span>
             </div>
           )}
 
@@ -162,11 +170,20 @@ export default function LoginPage() {
               cursor: loading ? 'not-allowed' : 'pointer',
               transition: 'background 0.15s, box-shadow 0.15s',
               boxShadow: loading ? 'none' : '0 4px 24px rgba(230,184,0,0.18)',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             }}
             onMouseEnter={e => { if (!loading) { (e.currentTarget).style.background = '#ffd000'; } }}
             onMouseLeave={e => { if (!loading) { (e.currentTarget).style.background = '#e6b800'; } }}
           >
-            {loading ? 'ENTRANDO...' : 'ENTRAR NO PORTAL →'}
+            {loading ? 'ENTRANDO...' : (
+              <>
+                ENTRAR NO PORTAL
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
+                </svg>
+              </>
+            )}
           </button>
         </form>
 
@@ -265,20 +282,11 @@ export default function LoginPage() {
 
           {/* Título principal */}
           <div style={{ marginBottom: 8 }}>
-            <div style={{
-              fontSize: 72, fontWeight: 900, color: '#fff',
-              letterSpacing: -4, lineHeight: 0.88,
-              textShadow: '0 0 40px rgba(230,184,0,0.08)',
-            }}>
-              ETORK
-            </div>
-            <div style={{
-              fontSize: 72, fontWeight: 900, color: '#e6b800',
-              letterSpacing: -4, lineHeight: 0.88,
-              textShadow: '0 0 40px rgba(230,184,0,0.15)',
-            }}>
-              BRASIL
-            </div>
+            <img
+              src={logoImg}
+              alt="Etork Brasil"
+              style={{ height: 140, width: 'auto', objectFit: 'contain', display: 'block', margin: '0 auto', filter: 'brightness(1.1)' }}
+            />
           </div>
 
           {/* Linha vermelha */}
@@ -294,9 +302,33 @@ export default function LoginPage() {
           {/* Pilares */}
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
             {[
-              { icon: '🗺', label: 'REMAP' },
-              { icon: '⚡', label: 'CHIP' },
-              { icon: '🏁', label: 'PERFORMANCE' },
+              {
+                icon: (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 3h18v6H3z" />
+                    <path d="M3 9l9 6 9-6" />
+                    <path d="M12 15v6" />
+                  </svg>
+                ),
+                label: 'REMAP',
+              },
+              {
+                icon: (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                  </svg>
+                ),
+                label: 'CHIP',
+              },
+              {
+                icon: (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 3h14l4 4v14H3z" />
+                    <path d="M7 7h10v4H7z" />
+                  </svg>
+                ),
+                label: 'PERFORMANCE',
+              },
             ].map(({ icon, label }) => (
               <div key={label} style={{
                 padding: '9px 20px',
@@ -305,7 +337,8 @@ export default function LoginPage() {
                 color: '#555', letterSpacing: 1.5,
                 display: 'flex', alignItems: 'center', gap: 6,
               }}>
-                <span style={{ fontSize: 12 }}>{icon}</span> {label}
+                <span style={{ display: 'inline-flex', width: 16, height: 16, alignItems: 'center', justifyContent: 'center' }}>{icon}</span>
+                {label}
               </div>
             ))}
           </div>
