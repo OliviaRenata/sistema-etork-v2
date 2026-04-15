@@ -325,7 +325,7 @@ export default function LoginPage() {
           bottom: 0,
           left: 0,
           right: 0,
-          borderTop: '1px solid #eee',
+          borderTop: '1px solid #3f3f3f',
           display: 'flex',
           justifyContent: 'center',
           gap: 48,
