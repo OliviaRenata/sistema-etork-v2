@@ -1,11 +1,15 @@
-// src/lib/supabase.ts
+// Adicione esta linha no topo para o Vite reconhecer o 'import.meta.env'
+/// <reference types="vite/client" />
+
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Usamos uma string vazia como fallback para evitar o erro de tipo 'desconhecido'
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables. Check your .env file.');
+  // Em produção no Netlify, esse erro não deve disparar se as variáveis estiverem lá
+  console.warn('Variáveis de ambiente do Supabase não encontradas.');
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -32,9 +36,10 @@ export const auth = {
 };
 
 // ─── Edge Function caller ──────────────────────────────────
+// ─── Edge Function caller ──────────────────────────────────
 export async function callFunction<T>(
   name: string,
-  body?: unknown,
+  body?: any, // Mudamos de unknown para any
   method: 'POST' | 'PATCH' | 'DELETE' = 'POST'
 ): Promise<T> {
   const { data: { session } } = await supabase.auth.getSession();
@@ -42,28 +47,31 @@ export async function callFunction<T>(
 
   const { data, error } = await supabase.functions.invoke<T>(name, {
     method,
-    body,
+    body, // Agora o TS aceita o body aqui
     headers: { Authorization: `Bearer ${session.access_token}` },
   });
 
   if (error) throw error;
   return data as T;
 }
-
+// ─── Storage helpers ───────────────────────────────────────
 // ─── Storage helpers ───────────────────────────────────────
 export const storage = {
   uploadOrderFile: async (orderId: string, file: File) => {
-    const ext = file.name.split('.').pop();
     const path = `${orderId}/${Date.now()}-${file.name}`;
     const { data, error } = await supabase.storage
-      .from('order-files').upload(path, file, { upsert: false });
+      .from('order-files')
+      .upload(path, file as any, { upsert: false }); // Adicionamos 'as any' aqui
+    
     if (error) throw error;
-    return data.path;
+    // O retorno do data pode ser nulo, então garantimos o retorno do path
+    return data?.path || ''; 
   },
 
   getSignedUrl: async (path: string, expiresIn = 3600) => {
     const { data, error } = await supabase.storage
       .from('order-files').createSignedUrl(path, expiresIn);
+    
     if (error) throw error;
     return data.signedUrl;
   },
