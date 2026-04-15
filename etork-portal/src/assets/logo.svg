@@ -1,0 +1,19 @@
+<svg width="240" height="60" viewBox="0 0 240 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="240" height="60" rx="12" fill="#000" />
+  <rect x="0.5" y="0.5" width="239" height="59" rx="11.5" stroke="#E6B800" stroke-opacity="0.4" />
+  <path d="M18 14H27L37 31L47 14H56L42 46H32L18 14Z" fill="#fff" />
+  <path d="M60 16H70L78 35L86 16H96L84 46H74L60 16Z" fill="#fff" />
+  <path d="M106 14H118L126 46H116L114 38H104L102 46H92L100 16H110L112 24H122L124 16H134L126 46H116L106 14Z" fill="#fff" />
+  <path d="M148 14H158L164 35L170 14H180L172 46H162L152 14Z" fill="#fff" />
+  <path d="M192 14H202L216 46H206L200 34L194 46H184L192 14Z" fill="#fff" />
+  <rect x="28" y="35" width="5" height="8" rx="2.5" fill="#E6B800" />
+  <rect x="116" y="35" width="5" height="8" rx="2.5" fill="#E6B800" />
+  <rect x="190" y="35" width="5" height="8" rx="2.5" fill="#E6B800" />
+  <g transform="translate(10 10)">
+    <rect x="0" y="0" width="16" height="10" rx="2" fill="#009B3A" />
+    <rect x="4" y="2" width="8" height="6" rx="1" fill="#FFCC29" />
+    <circle cx="8" cy="5" r="2" fill="#3E4095" />
+  </g>
+  <path d="M180 33H220L225 27L220 20H180V33Z" fill="#E52623" />
+  <path d="M180 33H220L225 27L220 20H180V33Z" stroke="#fff" stroke-opacity="0.35" />
+</svg>

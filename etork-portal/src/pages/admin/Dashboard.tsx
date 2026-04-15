@@ -57,10 +57,10 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div>
+    <div style={{ color: 'var(--text)' }}>
       <div style={{ marginBottom: 28 }}>
-        <h1 style={{ color: '#fff', fontSize: 22, fontWeight: 700, margin: '0 0 4px' }}>Painel Administrativo</h1>
-        <p style={{ color: '#666', fontSize: 13, margin: 0 }}>Visão geral das operações Etork Brasil</p>
+        <h1 style={{ color: 'var(--text)', fontSize: 22, fontWeight: 700, margin: '0 0 4px' }}>Painel Administrativo</h1>
+        <p style={{ color: 'var(--muted)', fontSize: 13, margin: 0 }}>Visão geral das operações Etork Brasil</p>
       </div>
 
       {stats && (
@@ -106,32 +106,32 @@ export default function AdminDashboard() {
       {/* Recent orders */}
       <div style={{ background: '#111', border: '1px solid #1e1e1e', borderRadius: 12, overflow: 'hidden' }}>
         <div style={{ padding: '14px 20px', borderBottom: '1px solid #1e1e1e', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ color: '#fff', fontSize: 14, fontWeight: 600, margin: 0 }}>Pedidos Recentes</h2>
+          <h2 style={{ color: 'var(--text)', fontSize: 14, fontWeight: 600, margin: 0 }}>Pedidos Recentes</h2>
           <Link to="/admin/orders" style={{ color: '#e6b800', fontSize: 12, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>Ver todos <ArrowRightIcon width={12} height={12} /></Link>
         </div>
         {loading ? (
-          <div style={{ padding: 32, textAlign: 'center', color: '#555' }}>Carregando...</div>
+          <div style={{ padding: 32, textAlign: 'center', color: 'var(--muted)' }}>Carregando...</div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #1a1a1a' }}>
+              <tr style={{ borderBottom: '1px solid var(--border)' }}>
                 {['Pedido', 'Franqueado', 'Data', 'Valor', 'Status', ''].map(h => (
-                  <th key={h} style={{ padding: '9px 16px', textAlign: 'left', fontSize: 10, color: '#555', letterSpacing: 1 }}>{h}</th>
+                  <th key={h} style={{ padding: '9px 16px', textAlign: 'left', fontSize: 10, color: 'var(--muted)', letterSpacing: 1 }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {recent.map(order => (
                 <tr key={order.id} style={{ borderBottom: '1px solid #161616' }}>
-                  <td style={{ padding: '11px 16px', color: '#e6b800', fontWeight: 700, fontSize: 13 }}>{order.order_number}</td>
-                  <td style={{ padding: '11px 16px', color: '#ccc', fontSize: 12 }}>
+                  <td style={{ padding: '11px 16px', color: 'var(--accent)', fontWeight: 700, fontSize: 13 }}>{order.order_number}</td>
+                  <td style={{ padding: '11px 16px', color: 'var(--text)', fontSize: 12 }}>
                     {(order.franchisee as unknown as { company_name: string })?.company_name || '—'}
                   </td>
-                  <td style={{ padding: '11px 16px', color: '#666', fontSize: 12 }}>{formatDate(order.created_at)}</td>
-                  <td style={{ padding: '11px 16px', color: '#fff', fontWeight: 600, fontSize: 13 }}>{formatCurrency(order.total_amount)}</td>
+                  <td style={{ padding: '11px 16px', color: 'var(--muted)', fontSize: 12 }}>{formatDate(order.created_at)}</td>
+                  <td style={{ padding: '11px 16px', color: 'var(--text)', fontWeight: 600, fontSize: 13 }}>{formatCurrency(order.total_amount)}</td>
                   <td style={{ padding: '11px 16px' }}><StatusBadge status={order.status} /></td>
                   <td style={{ padding: '11px 16px' }}>
-                    <Link to={`/admin/orders/${order.id}`} style={{ color: '#e6b800', fontSize: 12, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>Detalhes <ArrowRightIcon width={12} height={12} /></Link>
+                    <Link to={`/admin/orders/${order.id}`} style={{ color: 'var(--accent)', fontSize: 12, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>Detalhes <ArrowRightIcon width={12} height={12} /></Link>
                   </td>
                 </tr>
               ))}
@@ -146,8 +146,8 @@ export default function AdminDashboard() {
 function AdminStat({ label, value, color, icon, urgent = false }: { label: string; value: string; color: string; icon: ReactNode; urgent?: boolean }) {
   return (
     <div style={{
-      background: urgent ? '#1a1200' : '#111',
-      border: `1px solid ${urgent ? '#3a2a00' : '#1e1e1e'}`,
+      background: urgent ? '#1a1200' : 'var(--surface)',
+      border: `1px solid ${urgent ? '#3a2a00' : 'var(--border)'}`,
       borderRadius: 10, padding: '14px 16px',
       borderLeft: `3px solid ${color}`,
     }}>
@@ -155,7 +155,7 @@ function AdminStat({ label, value, color, icon, urgent = false }: { label: strin
         <span style={{ fontSize: 12, color }}>{icon}</span>
         <span style={{ fontSize: 10, color: '#666', letterSpacing: 1 }}>{label.toUpperCase()}</span>
       </div>
-      <div style={{ fontSize: 20, fontWeight: 700, color: urgent ? color : '#fff' }}>{value}</div>
+      <div style={{ fontSize: 20, fontWeight: 700, color: urgent ? color : 'var(--text)' }}>{value}</div>
     </div>
   );
 }

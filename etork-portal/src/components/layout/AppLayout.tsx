@@ -6,6 +6,8 @@ import { useTheme } from '../../context/ThemeContext';
 import NotificationBell from '../ui/NotificationBell';
 import { DashboardIcon, OrdersIcon, FranchiseesIcon, FinanceIcon, PlusIcon, MoonIcon, SunIcon } from '../ui/Icons';
 
+const logoUrl = new URL('../../assets/logo.svg', import.meta.url).href;
+
 export default function AppLayout() {
   const { profile, franchisee, isAdmin, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
@@ -52,14 +54,9 @@ export default function AppLayout() {
         transform: sidebarOpen ? 'translateX(0)' : undefined,
       }}>
         {/* Logo */}
-        <div style={{ padding: '24px 20px 20px', borderBottom: '1px solid #222' }}>
-          <div style={{ fontSize: 20, fontWeight: 900, color: '#fff', letterSpacing: '-0.5px', lineHeight: 1.1 }}>
-            ETORK
-          </div>
-          <div style={{ fontSize: 10, color: 'var(--accent)', fontWeight: 700, letterSpacing: 3, marginTop: 2 }}>
-            BRASIL
-          </div>
-          <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 6, letterSpacing: 1.5 }}>
+        <div style={{ padding: '24px 20px 20px', borderBottom: '1px solid var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10 }}>
+          <img src={logoUrl} alt="ETORK Brasil" style={{ width: 170, height: 'auto', display: 'block' }} />
+          <div style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 1.5 }}>
             REMAP · CHIP · PERFORMANCE
           </div>
         </div>

@@ -17,7 +17,13 @@ export default function FranchiseOrders() {
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    if (!franchisee) return;
+    if (!franchisee) {
+      setOrders([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
     loadOrders();
 
     const channel = supabase.channel('franchise-orders')
@@ -47,16 +53,27 @@ export default function FranchiseOrders() {
       (o.vehicle_plate || '').toLowerCase().includes(search.toLowerCase()))
   );
 
+  if (!franchisee && !loading) {
+    return (
+      <div style={{ padding: 24, color: 'var(--text)' }}>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 24 }}>
+          <h1 style={{ margin: 0, fontSize: 22, color: 'var(--text)' }}>Aguardando ativação</h1>
+          <p style={{ color: 'var(--muted)', marginTop: 8 }}>Seu cadastro de franqueado não está vinculado ainda. Aguarde o administrador concluir.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div>
+    <div style={{ color: 'var(--text)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
-          <h1 style={{ color: '#fff', fontSize: 20, fontWeight: 700, margin: '0 0 4px' }}>Meus Pedidos</h1>
-          <p style={{ color: '#666', fontSize: 13, margin: 0 }}>{orders.length} pedidos no total</p>
+          <h1 style={{ color: 'var(--text)', fontSize: 20, fontWeight: 700, margin: '0 0 4px' }}>Meus Pedidos</h1>
+          <p style={{ color: 'var(--muted)', fontSize: 13, margin: 0 }}>{orders.length} pedidos no total</p>
         </div>
         <Link to="/orders/new" style={{
           display: 'inline-flex', alignItems: 'center', gap: 8,
-          padding: '10px 18px', background: '#e6b800', color: '#000',
+          padding: '10px 18px', background: 'var(--accent)', color: '#000',
           borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none',
         }}>
           <PlusIcon width={16} height={16} /> Novo Pedido
@@ -69,9 +86,9 @@ export default function FranchiseOrders() {
           <button key={s} onClick={() => setFilter(s)} style={{
             padding: '6px 12px', borderRadius: 20, fontSize: 11, fontWeight: 600,
             border: '1px solid',
-            background: filter === s ? '#e6b800' : 'transparent',
-            color: filter === s ? '#000' : '#888',
-            borderColor: filter === s ? '#e6b800' : '#333',
+            background: filter === s ? 'var(--accent)' : 'transparent',
+            color: filter === s ? '#000' : 'var(--muted)',
+            borderColor: filter === s ? 'var(--accent)' : 'var(--border)',
             cursor: 'pointer',
           }}>
             {s === 'todos' ? 'Todos' : ORDER_STATUS_LABEL[s as OrderStatus]}
@@ -83,48 +100,48 @@ export default function FranchiseOrders() {
           placeholder="Buscar pedido ou placa..."
           style={{
             marginLeft: 'auto', padding: '8px 12px',
-            background: '#111', border: '1px solid #2a2a2a',
-            borderRadius: 8, color: '#fff', fontSize: 12, outline: 'none', width: 220,
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            borderRadius: 8, color: 'var(--text)', fontSize: 12, outline: 'none', width: 220,
           }}
-          onFocus={e => e.target.style.borderColor = '#e6b800'}
-          onBlur={e => e.target.style.borderColor = '#2a2a2a'}
+          onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+          onBlur={e => e.target.style.borderColor = 'var(--border)'}
         />
       </div>
 
       {/* Orders list */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {loading ? (
-          <div style={{ padding: 40, textAlign: 'center', color: '#555' }}>Carregando...</div>
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>Carregando...</div>
         ) : filtered.length === 0 ? (
-          <div style={{ padding: 40, textAlign: 'center', color: '#555' }}>
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}>
             Nenhum pedido encontrado.{' '}
-            <Link to="/orders/new" style={{ color: '#e6b800', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <Link to="/orders/new" style={{ color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
               Criar novo <ArrowRightIcon width={12} height={12} />
             </Link>
           </div>
         ) : (
           filtered.map(order => (
             <div key={order.id} style={{
-              background: '#111', border: '1px solid #1e1e1e', borderRadius: 10,
+              background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10,
               padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 20,
             }}>
               <div style={{ minWidth: 120 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#e6b800' }}>{order.order_number}</div>
-                <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>{formatDate(order.created_at)}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent)' }}>{order.order_number}</div>
+                <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{formatDate(order.created_at)}</div>
               </div>
               {order.vehicle_plate && (
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: '#1a1a1a', borderRadius: 6, fontSize: 12, color: '#888', fontFamily: 'monospace', letterSpacing: 1 }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: 'var(--surface)', borderRadius: 6, fontSize: 12, color: 'var(--muted)', fontFamily: 'monospace', letterSpacing: 1 }}>
                   <CarIcon width={12} height={12} /> {order.vehicle_plate}
                 </div>
               )}
               <div style={{ flex: 1 }}>
                 <StatusBadge status={order.status} />
               </div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', minWidth: 100, textAlign: 'right' }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', minWidth: 100, textAlign: 'right' }}>
                 {formatCurrency(order.total_amount)}
               </div>
               {order.notes && (
-                <div style={{ fontSize: 11, color: '#555', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div style={{ fontSize: 11, color: 'var(--muted)', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {order.notes}
                 </div>
               )}

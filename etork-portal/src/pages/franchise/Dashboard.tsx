@@ -16,7 +16,14 @@ export default function FranchiseDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!franchisee) return;
+    if (!franchisee) {
+      setStats(null);
+      setRecentOrders([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
     loadData();
 
     // Realtime subscription for order updates
@@ -74,14 +81,25 @@ export default function FranchiseDashboard() {
     return 'Boa noite';
   };
 
+  if (!franchisee && !loading) {
+    return (
+      <div style={{ color: 'var(--text)', padding: 24 }}>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 24 }}>
+          <h1 style={{ margin: 0, fontSize: 22, color: 'var(--text)' }}>Aguardando ativação</h1>
+          <p style={{ color: 'var(--muted)', marginTop: 8 }}>Seu cadastro de franqueado ainda não foi vinculado. Peça ao administrador para concluir a ativação.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div>
+    <div style={{ color: 'var(--text)' }}>
       {/* Header */}
       <div style={{ marginBottom: 28 }}>
-        <h1 style={{ color: '#fff', fontSize: 22, fontWeight: 700, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <h1 style={{ color: 'var(--text)', fontSize: 22, fontWeight: 700, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 8 }}>
           {greeting()}, {profile?.full_name?.split(' ')[0]} <WaveIcon width={20} height={20} />
         </h1>
-        <p style={{ color: '#666', fontSize: 14, margin: 0 }}>
+        <p style={{ color: 'var(--muted)', fontSize: 14, margin: 0 }}>
           {franchisee?.company_name} · Código: {franchisee?.code}
         </p>
       </div>
@@ -89,7 +107,7 @@ export default function FranchiseDashboard() {
       {/* Stats grid */}
       {stats && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 28 }}>
-          <StatCard label="Saldo Disponível" value={formatCurrency(stats.balance + stats.credit_limit)} accent="#e6b800" />
+          <StatCard label="Saldo Disponível" value={formatCurrency(stats.balance + stats.credit_limit)} accent="var(--accent)" />
           <StatCard label="Pedidos Ativos" value={stats.pending_orders.toString()} accent="#3b82f6" />
           <StatCard label="Pedidos este Mês" value={stats.orders_this_month.toString()} accent="#a855f7" />
           <StatCard label="Total Gasto" value={formatCurrency(stats.total_spent)} accent="#22c55e" />
@@ -112,20 +130,20 @@ export default function FranchiseDashboard() {
 
       {/* Recent orders */}
       <div style={{
-        background: '#111', border: '1px solid #1e1e1e', borderRadius: 12, overflow: 'hidden',
+        background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden',
       }}>
         <div style={{
-          padding: '16px 20px', borderBottom: '1px solid #1e1e1e',
+          padding: '16px 20px', borderBottom: '1px solid var(--border)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
-          <h2 style={{ color: '#fff', fontSize: 14, fontWeight: 600, margin: 0 }}>Pedidos Recentes</h2>
-          <Link to="/orders" style={{ color: '#e6b800', fontSize: 12, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>Ver todos <ArrowRightIcon width={12} height={12} /></Link>
+          <h2 style={{ color: 'var(--text)', fontSize: 14, fontWeight: 600, margin: 0 }}>Pedidos Recentes</h2>
+          <Link to="/orders" style={{ color: 'var(--accent)', fontSize: 12, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>Ver todos <ArrowRightIcon width={12} height={12} /></Link>
         </div>
 
         {loading ? (
-          <div style={{ padding: 32, textAlign: 'center', color: '#555', fontSize: 13 }}>Carregando...</div>
+          <div style={{ padding: 32, textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>Carregando...</div>
         ) : recentOrders.length === 0 ? (
-          <div style={{ padding: 32, textAlign: 'center', color: '#555', fontSize: 13 }}>
+          <div style={{ padding: 32, textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>
             Nenhum pedido ainda. <Link to="/orders/new" style={{ color: '#e6b800', display: 'inline-flex', alignItems: 'center', gap: 4 }}>Criar primeiro pedido <ArrowRightIcon width={12} height={12} /></Link>
           </div>
         ) : (
@@ -139,14 +157,14 @@ export default function FranchiseDashboard() {
             </thead>
             <tbody>
               {recentOrders.map(order => (
-                <tr key={order.id} style={{ borderBottom: '1px solid #161616' }}>
-                  <td style={{ padding: '12px 20px', fontSize: 13, color: '#e6b800', fontWeight: 600 }}>
+                <tr key={order.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td style={{ padding: '12px 20px', fontSize: 13, color: 'var(--accent)', fontWeight: 600 }}>
                     {order.order_number}
                   </td>
-                  <td style={{ padding: '12px 20px', fontSize: 13, color: '#888' }}>
+                  <td style={{ padding: '12px 20px', fontSize: 13, color: 'var(--muted)' }}>
                     {formatDate(order.created_at)}
                   </td>
-                  <td style={{ padding: '12px 20px', fontSize: 13, color: '#fff', fontWeight: 600 }}>
+                  <td style={{ padding: '12px 20px', fontSize: 13, color: 'var(--text)', fontWeight: 600 }}>
                     {formatCurrency(order.total_amount)}
                   </td>
                   <td style={{ padding: '12px 20px' }}>
@@ -165,14 +183,14 @@ export default function FranchiseDashboard() {
 function StatCard({ label, value, accent }: { label: string; value: string; accent: string }) {
   return (
     <div style={{
-      background: '#111', border: '1px solid #1e1e1e',
+      background: 'var(--surface)', border: '1px solid var(--border)',
       borderRadius: 10, padding: '16px 18px',
       borderLeft: `3px solid ${accent}`,
     }}>
-      <div style={{ fontSize: 11, color: '#666', fontWeight: 600, letterSpacing: 1, marginBottom: 8 }}>
+      <div style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 600, letterSpacing: 1, marginBottom: 8 }}>
         {label.toUpperCase()}
       </div>
-      <div style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>
+      <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>
         {value}
       </div>
     </div>

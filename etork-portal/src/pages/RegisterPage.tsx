@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 
+const logoUrl = new URL('../assets/logo.svg', import.meta.url).href;
+
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -65,8 +67,7 @@ export default function RegisterPage() {
       <div style={{ width: '100%', maxWidth: 400, padding: '0 24px', position: 'relative' }}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div style={{ fontSize: 42, fontWeight: 900, color: '#fff', letterSpacing: -1, lineHeight: 1 }}>ETORK</div>
-          <div style={{ fontSize: 11, color: '#e6b800', fontWeight: 700, letterSpacing: 5, marginTop: 4 }}>BRASIL</div>
+          <img src={logoUrl} alt="ETORK Brasil" style={{ width: 220, maxWidth: '100%', height: 'auto', display: 'inline-block' }} />
         </div>
 
         {/* Card */}
