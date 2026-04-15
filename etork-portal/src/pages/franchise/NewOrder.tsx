@@ -11,16 +11,8 @@ import { formatCurrency } from '../../lib/utils';
 export default function FranchiseNewOrder() {
   const { franchisee } = useAuth();
   const navigate = useNavigate();
-  
-  // Usar o tema com fallback para evitar erro
-  let isDark = true;
-  try {
-    const { theme } = useTheme();
-    isDark = theme === 'dark';
-  } catch (error) {
-    console.warn('ThemeProvider não encontrado, usando modo escuro como padrão');
-    isDark = true;
-  }
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   const [items, setItems] = useState<Item[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);

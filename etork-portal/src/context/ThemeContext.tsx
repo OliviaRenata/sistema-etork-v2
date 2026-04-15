@@ -21,6 +21,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
+    console.log('Theme changed to:', theme);
     localStorage.setItem('theme', theme);
     // Aplicar classes CSS no body para estilos globais
     if (theme === 'dark') {
