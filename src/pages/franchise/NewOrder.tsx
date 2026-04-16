@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, callFunction, storage } from '../../lib/supabase';
 import { useTheme } from '../../context/ThemeContext';
+// Importando o serviço da API Placas
+import { fetchVehicleByPlate } from '../../lib/vehicleService';
 
 type FormData = {
   plate: string;
@@ -60,6 +62,7 @@ export default function FranchiseNewOrder() {
 
   const [mapFiles, setMapFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
+  const [fetchingPlate, setFetchingPlate] = useState(false);
   const [error, setError] = useState('');
 
   const updateField = <K extends keyof FormData>(key: K, value: FormData[K]) =>
@@ -67,6 +70,32 @@ export default function FranchiseNewOrder() {
 
   const toggleSelection = (list: string[], item: string) =>
     list.includes(item) ? list.filter(i => i !== item) : [...list, item];
+
+  // Função para buscar dados automaticamente ao digitar a placa
+  const handlePlateLookup = async () => {
+    const cleanPlate = formData.plate.replace(/[^a-zA-Z0-9]/g, '');
+    if (cleanPlate.length >= 7) {
+      setFetchingPlate(true);
+      try {
+        const data = await fetchVehicleByPlate(cleanPlate);
+        if (data) {
+          setFormData(prev => ({
+            ...prev,
+            model: data.model || prev.model,
+            year: data.year || prev.year,
+            engine: data.engine || prev.engine,
+            fuel: data.fuel || prev.fuel,
+            chassi: data.chassi || prev.chassi,
+            cv: data.cv || prev.cv
+          }));
+        }
+      } catch (err) {
+        console.error("Erro na busca automática:", err);
+      } finally {
+        setFetchingPlate(false);
+      }
+    }
+  };
 
   const submitOrder = async () => {
     if (!formData.plate.trim() || mapFiles.length === 0) {
@@ -148,7 +177,6 @@ export default function FranchiseNewOrder() {
     borderLeft: '3px solid #e6b800',
     paddingLeft: '10px',
     textTransform: 'uppercase',
-    letterSpacing: '0.05em',
   };
 
   const badge = (active: boolean): React.CSSProperties => ({
@@ -162,7 +190,6 @@ export default function FranchiseNewOrder() {
     fontWeight: active ? 700 : 400,
     transition: 'all 0.15s',
     textAlign: 'center',
-    lineHeight: 1.3,
   });
 
   return (
@@ -173,10 +200,10 @@ export default function FranchiseNewOrder() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <div>
             <h1 style={{ fontSize: '22px', fontWeight: 800, color: isDark ? '#fff' : '#111', margin: 0 }}>
-              ENVIAR ARQUIVOS
+              NOVO PEDIDO DE REMAP
             </h1>
             <p style={{ fontSize: '13px', color: '#888', marginTop: '3px' }}>
-              {loading ? 'Processando...' : 'Preencha os dados técnicos para processamento do remap.'}
+              {fetchingPlate ? 'Buscando dados da placa...' : 'Preencha os detalhes técnicos abaixo.'}
             </p>
           </div>
           <button
@@ -188,22 +215,22 @@ export default function FranchiseNewOrder() {
         </div>
 
         {/* Layout: 3 colunas */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr 1fr', gap: '16px', alignItems: 'start' }}>
 
-          {/* ── COLUNA 1 ── */}
+          {/* ── COLUNA 1: VEÍCULO ── */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-
-            {/* Dados do Veículo */}
             <div style={card}>
               <p style={sectionTitle}>1. Dados do Veículo</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                <div>
+                <div style={{ gridColumn: 'span 2' }}>
                   <label style={label}>Placa / Frota *</label>
-                  <input style={input} value={formData.plate} onChange={e => updateField('plate', e.target.value.toUpperCase())} placeholder="BRA2E19" />
-                </div>
-                <div>
-                  <label style={label}>Chassi</label>
-                  <input style={input} value={formData.chassi} onChange={e => updateField('chassi', e.target.value)} placeholder="Opcional" />
+                  <input 
+                    style={{...input, borderColor: fetchingPlate ? '#e6b800' : isDark ? '#333' : '#d1d5db'}} 
+                    value={formData.plate} 
+                    onChange={e => updateField('plate', e.target.value.toUpperCase())} 
+                    onBlur={handlePlateLookup}
+                    placeholder="BRA2E19" 
+                  />
                 </div>
                 <div style={{ gridColumn: 'span 2' }}>
                   <label style={label}>Modelo *</label>
@@ -221,7 +248,7 @@ export default function FranchiseNewOrder() {
                   <input style={input} value={formData.engine} onChange={e => updateField('engine', e.target.value)} placeholder="Ex: 2.0 TDI" />
                 </div>
                 <div>
-                  <label style={label}>CV *</label>
+                  <label style={label}>Potência (CV) *</label>
                   <input style={input} value={formData.cv} onChange={e => updateField('cv', e.target.value)} placeholder="Ex: 180" />
                 </div>
                 <div>
@@ -230,44 +257,13 @@ export default function FranchiseNewOrder() {
                     {fuelOptions.map(f => <option key={f} value={f}>{f}</option>)}
                   </select>
                 </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <label style={label}>Chassi</label>
+                  <input style={input} value={formData.chassi} onChange={e => updateField('chassi', e.target.value)} placeholder="Opcional" />
+                </div>
                 <div>
                   <label style={label}>KM Atual</label>
                   <input style={input} value={formData.km} onChange={e => updateField('km', e.target.value)} placeholder="Ex: 85.000" />
-                </div>
-                <div>
-                  <label style={label}>DTC / Avarias</label>
-                  <input style={input} value={formData.dtc} onChange={e => updateField('dtc', e.target.value)} placeholder="Códigos de erro" />
-                </div>
-              </div>
-            </div>
-
-            {/* Identificação da ECU */}
-            <div style={card}>
-              <p style={sectionTitle}>2. Identificação da ECU</p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                <div>
-                  <label style={label}>Nº Hardware (HW)</label>
-                  <input style={input} value={formData.hw_number} onChange={e => updateField('hw_number', e.target.value)} placeholder="Ex: 0281017" />
-                </div>
-                <div>
-                  <label style={label}>Nº Software (SW)</label>
-                  <input style={input} value={formData.sw_number} onChange={e => updateField('sw_number', e.target.value)} placeholder="Ex: 1037517" />
-                </div>
-                <div>
-                  <label style={label}>System / Módulo</label>
-                  <input style={input} value={formData.system} onChange={e => updateField('system', e.target.value)} placeholder="Ex: EDC17C46" />
-                </div>
-                <div>
-                  <label style={label}>Protocolo</label>
-                  <input style={input} value={formData.protocol} onChange={e => updateField('protocol', e.target.value)} placeholder="Ex: 742" />
-                </div>
-                <div style={{ gridColumn: 'span 2' }}>
-                  <label style={label}>Modo de Leitura</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
-                    {(['OBD', 'BANCADA', 'BOOT', 'VR'] as const).map(m => (
-                      <button key={m} type="button" onClick={() => updateField('readingMode', m)} style={badge(formData.readingMode === m)}>{m}</button>
-                    ))}
-                  </div>
                 </div>
                 <div>
                   <label style={label}>Câmbio</label>
@@ -278,18 +274,40 @@ export default function FranchiseNewOrder() {
                     <option value="DSG/Dualogic">DSG/Dualogic</option>
                   </select>
                 </div>
+              </div>
+            </div>
+
+            <div style={card}>
+              <p style={sectionTitle}>2. ECU & Sistema</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div>
-                  <label style={label}>SW Upgrade</label>
-                  <input style={input} value={formData.sw_upgrade} onChange={e => updateField('sw_upgrade', e.target.value)} placeholder="Versão upgrade" />
+                  <label style={label}>Nº HW</label>
+                  <input style={input} value={formData.hw_number} onChange={e => updateField('hw_number', e.target.value)} placeholder="Hardware" />
+                </div>
+                <div>
+                  <label style={label}>Nº SW</label>
+                  <input style={input} value={formData.sw_number} onChange={e => updateField('sw_number', e.target.value)} placeholder="Software" />
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <label style={label}>Módulo / Sistema</label>
+                  <input style={input} value={formData.system} onChange={e => updateField('system', e.target.value)} placeholder="Ex: EDC17C46" />
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <label style={label}>Modo de Leitura</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+                    {(['OBD', 'BANCADA', 'BOOT', 'VR'] as const).map(m => (
+                      <button key={m} type="button" onClick={() => updateField('readingMode', m)} style={badge(formData.readingMode === m)}>{m}</button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* ── COLUNA 2: Performance ── */}
+          {/* ── COLUNA 2: PERFORMANCE ── */}
           <div style={card}>
-            <p style={sectionTitle}>3. Performance</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+            <p style={sectionTitle}>3. Soluções Requeridas</p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
               {performanceOptions.map(opt => (
                 <button key={opt} type="button" onClick={() => updateField('performance', toggleSelection(formData.performance, opt))} style={badge(formData.performance.includes(opt))}>
                   {opt}
@@ -298,13 +316,11 @@ export default function FranchiseNewOrder() {
             </div>
           </div>
 
-          {/* ── COLUNA 3 ── */}
+          {/* ── COLUNA 3: FERRAMENTA & ENVIO ── */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-
-            {/* Ferramenta */}
             <div style={card}>
-              <p style={sectionTitle}>4. Ferramenta Utilizada *</p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+              <p style={sectionTitle}>4. Ferramenta *</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
                 {toolOptions.map(opt => (
                   <button key={opt} type="button" onClick={() => updateField('tool', toggleSelection(formData.tool, opt))} style={badge(formData.tool.includes(opt))}>
                     {opt}
@@ -312,60 +328,39 @@ export default function FranchiseNewOrder() {
                 ))}
               </div>
               {formData.tool.includes('Outra') && (
-                <div style={{ marginTop: '10px' }}>
-                  <label style={label}>Especifique a ferramenta</label>
-                  <input style={input} value={formData.toolOther} onChange={e => updateField('toolOther', e.target.value)} placeholder="Nome da ferramenta" />
-                </div>
+                <input style={{ ...input, marginTop: '10px' }} value={formData.toolOther} onChange={e => updateField('toolOther', e.target.value)} placeholder="Qual ferramenta?" />
               )}
             </div>
 
-            {/* Upload */}
             <div style={card}>
-              <p style={sectionTitle}>5. Arquivos de Mapa *</p>
+              <p style={sectionTitle}>5. Arquivo Original / Leitura *</p>
               <div
                 onClick={() => document.getElementById('map-upload')?.click()}
                 style={{
                   border: `2px dashed ${isDark ? '#333' : '#d1d5db'}`,
-                  borderRadius: '8px',
-                  padding: '20px',
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  background: isDark ? '#111' : '#fafafa',
-                  color: mapFiles.length > 0 ? '#e6b800' : '#888',
-                  fontSize: '13px',
-                  fontWeight: mapFiles.length > 0 ? 700 : 400,
+                  borderRadius: '8px', padding: '20px', textAlign: 'center', cursor: 'pointer',
+                  background: isDark ? '#111' : '#fafafa', color: '#888', fontSize: '13px',
                 }}
               >
-                {mapFiles.length > 0 ? `✓ ${mapFiles.length} arquivo(s) selecionado(s)` : '+ Clique para selecionar arquivos (ID, ORI, MOD)'}
+                {mapFiles.length > 0 ? `✓ ${mapFiles.length} arquivos selecionados` : '+ Selecionar Arquivos'}
                 <input id="map-upload" type="file" multiple hidden onChange={e => setMapFiles(Array.from(e.target.files || []))} />
               </div>
-              {mapFiles.length > 0 && (
-                <ul style={{ marginTop: '8px', padding: 0, listStyle: 'none' }}>
-                  {mapFiles.map((f, i) => (
-                    <li key={i} style={{ fontSize: '11px', color: '#888', padding: '3px 0', borderBottom: `1px solid ${isDark ? '#1e1e1e' : '#f0f0f0'}` }}>
-                      📎 {f.name}
-                    </li>
-                  ))}
-                </ul>
-              )}
             </div>
 
-            {/* Observações */}
             <div style={card}>
-              <p style={sectionTitle}>6. Observações Técnicas</p>
+              <p style={sectionTitle}>6. Notas e DTCs</p>
               <textarea
-                style={{ ...input, minHeight: '90px', resize: 'vertical' }}
+                style={{ ...input, minHeight: '80px', resize: 'none' }}
                 value={formData.notes}
                 onChange={e => updateField('notes', e.target.value)}
-                placeholder="Descreva qualquer informação adicional relevante para o serviço..."
+                placeholder="DTCs apagados ou observações importantes..."
               />
             </div>
 
-            {/* Ações */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {error && (
-                <div style={{ background: '#dc2626', color: '#fff', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', textAlign: 'center' }}>
-                  ⚠️ {error}
+                <div style={{ background: '#dc2626', color: '#fff', padding: '10px', borderRadius: '8px', fontSize: '13px', textAlign: 'center' }}>
+                  {error}
                 </div>
               )}
               <button
@@ -373,27 +368,15 @@ export default function FranchiseNewOrder() {
                 disabled={loading}
                 style={{
                   background: loading ? '#555' : '#e6b800',
-                  color: loading ? '#aaa' : '#000',
-                  border: 'none',
-                  borderRadius: '10px',
-                  padding: '16px',
-                  fontWeight: 800,
-                  fontSize: '14px',
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  letterSpacing: '0.05em',
+                  color: '#000', border: 'none', borderRadius: '10px', padding: '16px',
+                  fontWeight: 900, fontSize: '14px', cursor: loading ? 'not-allowed' : 'pointer',
                 }}
               >
-                {loading ? 'PROCESSANDO...' : '🚀 ENVIAR PEDIDO'}
-              </button>
-              <button
-                onClick={() => navigate('/orders')}
-                style={{ background: 'transparent', color: '#888', border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`, borderRadius: '10px', padding: '12px', cursor: 'pointer', fontSize: '13px' }}
-              >
-                Cancelar
+                {loading ? 'ENVIANDO...' : '🚀 ENVIAR SOLICITAÇÃO'}
               </button>
             </div>
-
           </div>
+
         </div>
       </div>
     </div>
