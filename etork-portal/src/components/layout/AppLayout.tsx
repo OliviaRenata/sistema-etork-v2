@@ -1,6 +1,6 @@
 // src/components/layout/AppLayout.tsx
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -79,6 +79,16 @@ export default function AppLayout() {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
+
+  // Atualizar data/hora a cada segundo
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const isDark = theme === 'dark';
 
@@ -242,8 +252,13 @@ export default function AppLayout() {
             {isDark ? 'Claro' : 'Escuro'}
           </button>
           <div style={{ width: 1, height: 20, background: colors.border }} />
-          <div style={{ fontSize: 12, color: colors.muted }}>
-            {new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })}
+          <div style={{ fontSize: 12, color: colors.muted, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span>
+              {currentDateTime.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })}
+            </span>
+            <span>
+              {currentDateTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </span>
           </div>
         </header>
 

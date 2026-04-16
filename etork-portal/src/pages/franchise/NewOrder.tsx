@@ -1,84 +1,102 @@
 // src/pages/franchise/NewOrder.tsx
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, callFunction, storage } from '../../lib/supabase';
-import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import type { Item, CartItem } from '../../types';
-import { formatCurrency } from '../../lib/utils';
+
+type FormData = {
+  plate: string;
+  chassi: string;
+  model: string;
+  year: string;
+  engine: string;
+  cv: string;
+  fuel: string;
+  dtc: string;
+  performance: string[];
+  tool: string;
+  notes: string;
+};
+
+const fuelOptions = ['Flex', 'Diesel', 'Álcool / Gasolina'];
+const yearOptions = Array.from({ length: 30 }, (_, index) => `${new Date().getFullYear() - index}`);
+const performanceOptions = [
+  'DPF & EGR (OFF)',
+  'Potência STG1',
+  'Potência STG2',
+  'Pop and Bangs',
+  'VMAX',
+  'Start Stop (OFF)',
+  'DTC Removal',
+  'Remap Rápido',
+  'Slip Fix',
+];
+const toolOptions = [
+  'KTAG (Original)',
+  'KTAG (Pirata)',
+  'KESS V2/KESS3',
+  'New Genius',
+  'New Transdata',
+  'KZ Prog',
+  'DFOX',
+  'KT200',
+  'Outra',
+];
 
 export default function FranchiseNewOrder() {
-  const { franchisee } = useAuth();
   const navigate = useNavigate();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  const [items, setItems] = useState<Item[]>([]);
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [formData, setFormData] = useState<FormData>({
+    plate: '',
+    chassi: '',
+    model: '',
+    year: '',
+    engine: '',
+    cv: '',
+    fuel: fuelOptions[0],
+    dtc: '',
+    performance: [],
+    tool: '',
+    notes: '',
+  });
   const [files, setFiles] = useState<File[]>([]);
-  const [vehiclePlate, setVehiclePlate] = useState('');
-  const [vehicleInfo, setVehicleInfo] = useState<Record<string, string> | null>(null);
-  const [notes, setNotes] = useState('');
+  const [extraFiles, setExtraFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
-  const [plateLoading, setPlateLoading] = useState(false);
   const [error, setError] = useState('');
-  const [search, setSearch] = useState('');
-  const [activeCategory, setActiveCategory] = useState('Todos');
+  const [successMessage, setSuccessMessage] = useState('');
 
-  useEffect(() => {
-    supabase.from('items').select('*').eq('active', true).order('category', { ascending: true })
-      .then(({ data }) => setItems(data || []));
-  }, []);
-
-  const categories = ['Todos', ...Array.from(new Set(items.map(i => i.category)))];
-
-  const filteredItems = items.filter(item =>
-    (activeCategory === 'Todos' || item.category === activeCategory) &&
-    (item.name.toLowerCase().includes(search.toLowerCase()) || item.sku.toLowerCase().includes(search.toLowerCase()))
-  );
-
-  function addToCart(item: Item) {
-    setCart(prev => {
-      const existing = prev.find(c => c.item.id === item.id);
-      if (existing) return prev.map(c => c.item.id === item.id ? { ...c, quantity: c.quantity + 1 } : c);
-      return [...prev, { item, quantity: 1 }];
-    });
+  function updateField<K extends keyof FormData>(key: K, value: FormData[K]) {
+    setFormData(prev => ({ ...prev, [key]: value }));
   }
 
-  function updateQty(itemId: string, qty: number) {
-    if (qty <= 0) setCart(prev => prev.filter(c => c.item.id !== itemId));
-    else setCart(prev => prev.map(c => c.item.id === itemId ? { ...c, quantity: qty } : c));
-  }
-
-  const cartTotal = cart.reduce((sum, c) => sum + c.item.unit_price * c.quantity, 0);
-  const requiresFile = cart.some(c => c.item.requires_file);
-
-  async function lookupPlate() {
-    if (!vehiclePlate || vehiclePlate.length < 7) return;
-    setPlateLoading(true);
-    try {
-      const plate = vehiclePlate.replace(/[^A-Z0-9]/gi, '').toUpperCase();
-      await fetch(`https://brasilapi.com.br/api/cep/v1/${plate}`).catch(() => null);
-      setVehicleInfo({ plate, status: 'Consulta realizada', queried_at: new Date().toLocaleString('pt-BR') });
-    } catch {
-      setVehicleInfo(null);
-    } finally {
-      setPlateLoading(false);
+  async function submitOrder(sendAnother = false) {
+    if (!formData.plate.trim()) {
+      setError('Informe a placa/frota.');
+      return;
     }
-  }
-
-  async function handleSubmit() {
-    if (cart.length === 0) { setError('Adicione pelo menos um item ao pedido.'); return; }
-    if (requiresFile && files.length === 0) { setError('Um ou mais itens selecionados exigem upload de arquivo.'); return; }
+    if (files.length === 0) {
+      setError('Envie pelo menos um arquivo de mapa (ORI, MOD, BIN).');
+      return;
+    }
 
     setError('');
     setLoading(true);
+    setSuccessMessage('');
+
     try {
       const result = await callFunction<{ order: { id: string } }>('create-order', {
-        notes,
-        vehicle_plate: vehiclePlate || undefined,
-        items: cart.map(c => ({ item_id: c.item.id, quantity: c.quantity })),
+        vehicle_plate: formData.plate.trim(),
+        chassi: formData.chassi.trim() || undefined,
+        model: formData.model.trim() || undefined,
+        year: formData.year || undefined,
+        engine: formData.engine.trim() || undefined,
+        cv: formData.cv.trim() || undefined,
+        fuel: formData.fuel,
+        dtc: formData.dtc.trim() || undefined,
+        notes: `Ferramenta: ${formData.tool || 'Não informada'} | Performance: ${formData.performance.join(', ') || 'Nenhuma'} | Obs: ${formData.notes.trim()}`,
       });
 
       for (const file of files) {
@@ -89,251 +107,350 @@ export default function FranchiseNewOrder() {
           file_path: path,
           file_size: file.size,
           mime_type: file.type,
-          uploaded_by: (await supabase.auth.getUser()).data.user!.id,
         });
       }
 
-      navigate('/orders');
+      for (const file of extraFiles) {
+        const path = await storage.uploadOrderFile(result.order.id, file);
+        await supabase.from('order_files').insert({
+          order_id: result.order.id,
+          file_name: file.name,
+          file_path: path,
+          file_size: file.size,
+          mime_type: file.type,
+        });
+      }
+
+      if (sendAnother) {
+        setFiles([]);
+        setExtraFiles([]);
+        setFormData({
+          plate: '',
+          chassi: '',
+          model: '',
+          year: '',
+          engine: '',
+          cv: '',
+          fuel: fuelOptions[0],
+          dtc: '',
+          performance: [],
+          tool: '',
+          notes: '',
+        });
+        setSuccessMessage('Pedido enviado com sucesso. Preencha outro pedido abaixo.');
+      } else {
+        navigate('/orders');
+      }
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erro ao criar pedido.');
+      setError((err as Error).message || 'Erro ao enviar pedido.');
     } finally {
       setLoading(false);
     }
   }
 
-  // Cores baseadas no tema
-  const colors = {
-    bgCard: isDark ? '#111111' : '#ffffff',
-    bgCardSelected: isDark ? '#1a1500' : '#fff8e0',
-    borderCard: isDark ? '#1e1e1e' : '#e0e0e0',
-    borderCardSelected: isDark ? '#3a3000' : '#e6b800',
-    textPrimary: isDark ? '#ffffff' : '#1a1a1a',
-    textSecondary: isDark ? '#888888' : '#666666',
-    textMuted: isDark ? '#555555' : '#999999',
-    bgInput: isDark ? '#0d0d0d' : '#f5f5f5',
-    borderInput: isDark ? '#2a2a2a' : '#dddddd',
-    bgSection: isDark ? '#111111' : '#ffffff',
-    borderSection: isDark ? '#1e1e1e' : '#e0e0e0',
-    bgVehicleInfo: isDark ? '#0d1a0d' : '#e8f5e9',
-    vehicleInfoColor: isDark ? '#4ade80' : '#2e7d32',
-    badgeFile: isDark ? '#1a1500' : '#fff8e0',
-    badgeFileColor: isDark ? '#e6b800' : '#b8860b',
-    bgError: isDark ? '#1a0a0a' : '#ffebee',
-    errorColor: isDark ? '#e74c3c' : '#c62828',
-    successColor: isDark ? '#4ade80' : '#2e7d32',
-    btnSecondaryBg: isDark ? 'transparent' : '#f5f5f5',
-    btnSecondaryBorder: isDark ? '#333333' : '#dddddd',
-    btnSecondaryColor: isDark ? '#cccccc' : '#666666',
-    qtyBtnBg: isDark ? '#1a1a1a' : '#e0e0e0',
-    qtyBtnBorder: isDark ? '#333333' : '#cccccc',
-    qtyBtnColor: isDark ? '#ffffff' : '#1a1a1a',
-    accent: '#e6b800',
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '12px 14px',
+    borderRadius: 10,
+    background: isDark ? '#111' : '#fff',
+    border: `1px solid ${isDark ? '#333' : '#dcdcdc'}`,
+    color: isDark ? '#eee' : '#111',
+    fontSize: 13,
+    outline: 'none',
+  };
+
+  const labelStyle: React.CSSProperties = {
+    display: 'block',
+    marginBottom: 8,
+    fontSize: 12,
+    fontWeight: 700,
+    color: isDark ? '#bbb' : '#555',
+    letterSpacing: 0.5,
+  };
+
+  const sectionStyle: React.CSSProperties = {
+    background: isDark ? '#121212' : '#fafafa',
+    border: `1px solid ${isDark ? '#222' : '#e5e5e5'}`,
+    borderRadius: 16,
+    padding: 20,
   };
 
   return (
-    <div>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ color: colors.textPrimary, fontSize: 20, fontWeight: 700, margin: '0 0 4px' }}>Novo Pedido</h1>
-        <p style={{ color: colors.textSecondary, fontSize: 13, margin: 0 }}>Selecione os serviços desejados</p>
+    <div style={{ maxWidth: 1080, margin: '0 auto', padding: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 24 }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: 28, color: isDark ? '#fff' : '#111' }}>Enviar Novos Arquivos</h1>
+          <p style={{ margin: '8px 0 0', color: isDark ? '#aaa' : '#666' }}>
+            Preencha os dados do veículo e faça o upload dos arquivos conforme solicitado.
+          </p>
+        </div>
+        <button
+          onClick={() => navigate('/orders')}
+          style={{
+            background: '#c53030',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 10,
+            padding: '12px 20px',
+            cursor: 'pointer',
+            fontWeight: 700,
+            boxShadow: '0 12px 24px rgba(197, 46, 46, 0.18)',
+          }}
+        >
+          Voltar para Meus Arquivos
+        </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20, alignItems: 'start' }}>
-        {/* Left: catalog */}
-        <div>
-          {/* Vehicle plate */}
-          <div style={{ background: colors.bgSection, border: `1px solid ${colors.borderSection}`, borderRadius: 10, padding: 16, marginBottom: 16 }}>
-            <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: colors.textSecondary }}>PLACA DO VEÍCULO (opcional)</label>
-            <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-              <input
-                value={vehiclePlate}
-                onChange={e => setVehiclePlate(e.target.value.toUpperCase())}
-                placeholder="ex: ABC1D23"
-                maxLength={8}
-                style={{
-                  flex: 1, padding: '10px 12px', borderRadius: 8, fontSize: 13, outline: 'none',
-                  background: colors.bgInput, border: `1px solid ${colors.borderInput}`, color: colors.textPrimary
-                }}
-                onFocus={e => e.target.style.borderColor = colors.accent}
-                onBlur={e => e.target.style.borderColor = colors.borderInput}
-              />
-              <button 
-                onClick={lookupPlate} 
-                disabled={plateLoading || vehiclePlate.length < 7}
-                style={{
-                  padding: '10px 14px', background: colors.btnSecondaryBg,
-                  border: `1px solid ${colors.btnSecondaryBorder}`, borderRadius: 8,
-                  color: colors.btnSecondaryColor, cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                  ...(plateLoading || vehiclePlate.length < 7 ? { opacity: 0.5 } : {})
-                }}>
-                {plateLoading ? '...' : 'Consultar'}
-              </button>
+      {successMessage && (
+        <div style={{ marginBottom: 16, padding: '14px 16px', background: '#163a0f', color: '#d1fae5', borderRadius: 12 }}>
+          {successMessage}
+        </div>
+      )}
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+        <div style={sectionStyle}>
+          <h2 style={{ marginTop: 0, marginBottom: 18, color: isDark ? '#fff' : '#111' }}>Informações do Veículo</h2>
+
+          <label style={labelStyle}>PLACA / FROTA</label>
+          <input
+            value={formData.plate}
+            onChange={e => updateField('plate', e.target.value.toUpperCase())}
+            placeholder="ABC1D23"
+            style={inputStyle}
+          />
+
+          <label style={labelStyle}>CHASSI</label>
+          <input
+            value={formData.chassi}
+            onChange={e => updateField('chassi', e.target.value)}
+            placeholder="XXXXXXXXXXXXXXX"
+            style={inputStyle}
+          />
+
+          <label style={labelStyle}>MODELO / MARCA</label>
+          <input
+            value={formData.model}
+            onChange={e => updateField('model', e.target.value)}
+            placeholder="Ex: Jeep Compass"
+            style={inputStyle}
+          />
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div>
+              <label style={labelStyle}>ANO</label>
+              <select
+                value={formData.year}
+                onChange={e => updateField('year', e.target.value)}
+                style={inputStyle}
+              >
+                <option value="">Selecione</option>
+                {yearOptions.map(year => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
             </div>
-            {vehicleInfo && (
-              <div style={{ marginTop: 8, padding: '8px 12px', background: colors.bgVehicleInfo, borderRadius: 6, fontSize: 12, color: colors.vehicleInfoColor }}>
-                ✓ Placa {vehicleInfo.plate} consultada em {vehicleInfo.queried_at}
-              </div>
-            )}
+            <div>
+              <label style={labelStyle}>MOTOR</label>
+              <input
+                value={formData.engine}
+                onChange={e => updateField('engine', e.target.value)}
+                placeholder="Ex: 2.0 Turbo"
+                style={inputStyle}
+              />
+            </div>
           </div>
 
-          {/* Search + categories */}
-          <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Buscar serviço..."
-              style={{
-                flex: 1, minWidth: 160, padding: '10px 12px', borderRadius: 8, fontSize: 13, outline: 'none',
-                background: colors.bgInput, border: `1px solid ${colors.borderInput}`, color: colors.textPrimary
-              }}
-              onFocus={e => e.target.style.borderColor = colors.accent}
-              onBlur={e => e.target.style.borderColor = colors.borderInput}
-            />
-            {categories.map(cat => (
-              <button key={cat} onClick={() => setActiveCategory(cat)}
-                style={{
-                  padding: '8px 14px', borderRadius: 20, fontSize: 11, fontWeight: 600,
-                  border: '1px solid',
-                  background: activeCategory === cat ? colors.accent : 'transparent',
-                  color: activeCategory === cat ? '#000' : colors.textSecondary,
-                  borderColor: activeCategory === cat ? colors.accent : colors.borderInput,
-                  cursor: 'pointer', letterSpacing: 0.5,
-                }}>
-                {cat}
-              </button>
-            ))}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div>
+              <label style={labelStyle}>CV</label>
+              <input
+                value={formData.cv}
+                onChange={e => updateField('cv', e.target.value)}
+                placeholder="Ex: 250"
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>COMBUSTÍVEL</label>
+              <select
+                value={formData.fuel}
+                onChange={e => updateField('fuel', e.target.value)}
+                style={inputStyle}
+              >
+                {fuelOptions.map(option => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          {/* Items grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10 }}>
-            {filteredItems.map(item => {
-              const inCart = cart.find(c => c.item.id === item.id);
+          <label style={labelStyle}>DTC / AVARIAS</label>
+          <input
+            value={formData.dtc}
+            onChange={e => updateField('dtc', e.target.value)}
+            placeholder="Descreva DTCs ou avarias"
+            style={inputStyle}
+          />
+        </div>
+
+        <div style={sectionStyle}>
+          <h2 style={{ marginTop: 0, marginBottom: 18, color: isDark ? '#fff' : '#111' }}>Performance e Ferramentas</h2>
+
+          <label style={labelStyle}>PERFORMANCE - SELECIONE OS SERVIÇOS</label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, marginBottom: 18 }}>
+            {performanceOptions.map(option => {
+              const active = formData.performance.includes(option);
               return (
-                <div key={item.id} style={{
-                  background: inCart ? colors.bgCardSelected : colors.bgCard,
-                  border: `1px solid ${inCart ? colors.borderCardSelected : colors.borderCard}`,
-                  borderRadius: 10, padding: 14,
-                  cursor: 'pointer', transition: 'all 0.15s',
-                }} onClick={() => addToCart(item)}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-                    <span style={{ fontSize: 10, color: colors.textMuted, letterSpacing: 1 }}>{item.sku}</span>
-                    {item.requires_file && (
-                      <span style={{ fontSize: 9, color: colors.badgeFileColor, background: colors.badgeFile, padding: '2px 6px', borderRadius: 4, border: `1px solid ${colors.borderCardSelected}` }}>
-                        FILE
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: colors.textPrimary, marginBottom: 4, lineHeight: 1.3 }}>{item.name}</div>
-                  <div style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 10, lineHeight: 1.4 }}>{item.description}</div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 15, fontWeight: 700, color: colors.accent }}>{formatCurrency(item.unit_price)}</span>
-                    <span style={{ fontSize: 18, color: inCart ? '#4ade80' : colors.textMuted }}>{inCart ? '✓' : '+'}</span>
-                  </div>
-                </div>
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => {
+                    const next = active
+                      ? formData.performance.filter(item => item !== option)
+                      : [...formData.performance, option];
+                    updateField('performance', next);
+                  }}
+                  style={{
+                    padding: '10px 12px',
+                    borderRadius: 10,
+                    border: '1px solid',
+                    borderColor: active ? '#dc2626' : isDark ? '#2d2d2d' : '#d1d5db',
+                    background: active ? '#dc2626' : isDark ? '#141414' : '#fff',
+                    color: active ? '#fff' : isDark ? '#eee' : '#111',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    fontSize: 12,
+                  }}
+                >
+                  {option}
+                </button>
               );
             })}
           </div>
+
+          <label style={labelStyle}>FERRAMENTA UTILIZADA</label>
+          <select
+            value={formData.tool}
+            onChange={e => updateField('tool', e.target.value)}
+            style={inputStyle}
+          >
+            <option value="">Selecione a ferramenta</option>
+            {toolOptions.map(option => (
+              <option key={option} value={option}>{option}</option>
+            ))}
+          </select>
         </div>
+      </div>
 
-        {/* Right: cart */}
-        <div style={{ 
-          background: colors.bgSection, 
-          border: `1px solid ${colors.borderSection}`, 
-          borderRadius: 10, 
-          padding: 16, 
-          position: 'sticky', 
-          top: 80 
-        }}>
-          <h2 style={{ color: colors.textPrimary, fontSize: 14, fontWeight: 600, marginBottom: 16 }}>Resumo do Pedido</h2>
+      <div style={{ ...sectionStyle, marginTop: 20 }}>
+        <h2 style={{ marginTop: 0, marginBottom: 18, color: isDark ? '#fff' : '#111' }}>Upload de Arquivos</h2>
 
-          {cart.length === 0 ? (
-            <p style={{ color: colors.textMuted, fontSize: 13, textAlign: 'center', padding: '16px 0' }}>
-              Selecione serviços ao lado
-            </p>
-          ) : (
-            <>
-              {cart.map(c => (
-                <div key={c.item.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 12, color: colors.textPrimary, fontWeight: 500 }}>{c.item.name}</div>
-                    <div style={{ fontSize: 11, color: colors.textSecondary }}>{formatCurrency(c.item.unit_price)} × {c.quantity}</div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <button onClick={() => updateQty(c.item.id, c.quantity - 1)} style={{ ...qtyBtn, background: colors.qtyBtnBg, borderColor: colors.qtyBtnBorder, color: colors.qtyBtnColor }}>-</button>
-                    <span style={{ color: colors.textPrimary, fontSize: 12, minWidth: 16, textAlign: 'center' }}>{c.quantity}</span>
-                    <button onClick={() => updateQty(c.item.id, c.quantity + 1)} style={{ ...qtyBtn, background: colors.qtyBtnBg, borderColor: colors.qtyBtnBorder, color: colors.qtyBtnColor }}>+</button>
-                  </div>
-                  <span style={{ fontSize: 12, color: colors.accent, fontWeight: 600, minWidth: 60, textAlign: 'right' }}>
-                    {formatCurrency(c.item.unit_price * c.quantity)}
-                  </span>
-                </div>
-              ))}
-
-              <div style={{ borderTop: `1px solid ${colors.borderSection}`, paddingTop: 12, marginTop: 8, marginBottom: 14 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: colors.textSecondary, fontSize: 13 }}>Total</span>
-                  <span style={{ color: colors.accent, fontSize: 18, fontWeight: 700 }}>{formatCurrency(cartTotal)}</span>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Notes */}
-          <textarea
-            value={notes}
-            onChange={e => setNotes(e.target.value)}
-            placeholder="Observações (opcional)..."
-            rows={3}
-            style={{
-              width: '100%', padding: '10px 12px', borderRadius: 8, fontSize: 13, outline: 'none',
-              resize: 'vertical', marginBottom: 12, boxSizing: 'border-box',
-              background: colors.bgInput, border: `1px solid ${colors.borderInput}`, color: colors.textPrimary
-            }}
-            onFocus={e => e.target.style.borderColor = colors.accent}
-            onBlur={e => e.target.style.borderColor = colors.borderInput}
+        <label style={labelStyle}>ARQUIVOS DE MAPA (ORI, MOD, BIN)</label>
+        <div style={{ marginBottom: 18 }}>
+          <input
+            type="file"
+            multiple
+            accept=".bin,.ori,.mod"
+            onChange={e => setFiles(Array.from(e.target.files || []))}
+            style={{ ...inputStyle, padding: '14px 12px' }}
           />
-
-          {/* File upload */}
-          {requiresFile && (
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: colors.textSecondary }}>
-                ARQUIVOS DO REMAP <span style={{ color: '#e74c3c' }}>*</span>
-              </label>
-              <input type="file" multiple
-                onChange={e => setFiles(Array.from(e.target.files || []))}
-                style={{ marginTop: 6, color: colors.textSecondary, fontSize: 12 }}
-                accept=".bin,.ori,.mod,.zip,.rar,.pdf"
-              />
-              {files.length > 0 && (
-                <div style={{ marginTop: 6, fontSize: 11, color: colors.successColor }}>
-                  {files.length} arquivo(s) selecionado(s)
-                </div>
-              )}
+          {files.length > 0 && (
+            <div style={{ marginTop: 8, color: isDark ? '#d1fae5' : '#065f46', fontSize: 12 }}>
+              {files.length} arquivo(s) selecionado(s)
             </div>
           )}
-
-          {error && (
-            <div style={{ padding: '8px 12px', background: colors.bgError, borderRadius: 6, color: colors.errorColor, fontSize: 12, marginBottom: 12 }}>
-              {error}
-            </div>
-          )}
-
-          <button onClick={handleSubmit} disabled={loading || cart.length === 0}
-            style={{
-              width: '100%', padding: '12px',
-              background: cart.length > 0 ? colors.accent : colors.bgInput,
-              color: cart.length > 0 ? '#000' : colors.textMuted,
-              border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700,
-              cursor: cart.length > 0 ? 'pointer' : 'not-allowed', letterSpacing: 0.5,
-            }}>
-            {loading ? 'ENVIANDO...' : 'ENVIAR PEDIDO'}
-          </button>
         </div>
+
+        <label style={labelStyle}>FOTO / PDF</label>
+        <div style={{ marginBottom: 18 }}>
+          <input
+            type="file"
+            multiple
+            accept="image/*,.pdf"
+            onChange={e => setExtraFiles(Array.from(e.target.files || []))}
+            style={{ ...inputStyle, padding: '14px 12px' }}
+          />
+          {extraFiles.length > 0 && (
+            <div style={{ marginTop: 8, color: isDark ? '#d1fae5' : '#065f46', fontSize: 12 }}>
+              {extraFiles.length} arquivo(s) selecionado(s)
+            </div>
+          )}
+        </div>
+
+        <label style={labelStyle}>OBSERVAÇÕES</label>
+        <textarea
+          value={formData.notes}
+          onChange={e => updateField('notes', e.target.value)}
+          rows={5}
+          placeholder="Insira observações adicionais..."
+          style={{ ...inputStyle, minHeight: 140, resize: 'vertical' }}
+        />
+      </div>
+
+      {error && (
+        <div style={{ marginTop: 20, padding: '14px 16px', background: '#fee2e2', color: '#991b1b', borderRadius: 12 }}>
+          {error}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 24 }}>
+        <button
+          type="button"
+          onClick={() => submitOrder(false)}
+          disabled={loading}
+          style={{
+            flex: 1,
+            minWidth: 180,
+            background: '#dc2626',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 12,
+            padding: '14px 18px',
+            cursor: 'pointer',
+            fontWeight: 700,
+          }}
+        >
+          {loading ? 'ENVIANDO...' : 'ENVIAR'}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => submitOrder(true)}
+          disabled={loading}
+          style={{
+            flex: 1,
+            minWidth: 180,
+            background: '#1f2937',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 12,
+            padding: '14px 18px',
+            cursor: 'pointer',
+            fontWeight: 700,
+          }}
+        >
+          {loading ? 'ENVIANDO...' : 'ENVIAR E ENVIAR NOVO'}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => navigate('/orders')}
+          style={{
+            flex: 1,
+            minWidth: 180,
+            background: isDark ? '#1f2937' : '#f3f4f6',
+            color: isDark ? '#fff' : '#111',
+            border: '1px solid',
+            borderColor: isDark ? '#374151' : '#d1d5db',
+            borderRadius: 12,
+            padding: '14px 18px',
+            cursor: 'pointer',
+            fontWeight: 700,
+          }}
+        >
+          CANCELAR
+        </button>
       </div>
     </div>
   );
 }
-
-const qtyBtn: React.CSSProperties = {
-  width: 22, height: 22, borderRadius: 4, cursor: 'pointer', fontSize: 14,
-  display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
-};
