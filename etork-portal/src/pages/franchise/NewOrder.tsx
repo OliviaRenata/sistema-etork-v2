@@ -1,5 +1,3 @@
-// src/pages/franchise/NewOrder.tsx
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, callFunction, storage } from '../../lib/supabase';
@@ -15,48 +13,52 @@ type FormData = {
   fuel: string;
   dtc: string;
   performance: string[];
-  tool: string;
+  tool: string[]; // Alterado para array para múltipla seleção
   notes: string;
 };
 
 const fuelOptions = ['Flex', 'Diesel', 'Álcool / Gasolina'];
 const yearOptions = Array.from({ length: 30 }, (_, index) => `${new Date().getFullYear() - index}`);
+
 const performanceOptions = [
   'DPF & EGR (OFF)',
   'DPF (OFF)',
   'EGR (OFF)',
   'Sistema SCR OFF',
-  'Combo DPF, EGR, SCR OFF (Utilitários Geral)',
+  'Combo DPF, EGR, SCR OFF',
   'Sonda/O2 (OFF)',
   'MAF (OFF)',
-  'Sistema Eolis Renault Master Módulo Bosch',
+  'Eolis Renault Master',
   'Potência (STG1)',
   'Potência (STG2)',
-  'DPF & EGR (OFF) + Potência (STG1 ou STG2)',
-  'Combo Agricultura EGR + Potência STG1',
+  'DPF/EGR + Potência',
+  'Agri EGR + STG1',
   "Pop and Bang's",
-  'VMAX/Limitador de Velocidade (OFF)',
-  'Hard Cut (Veículos Diesel)',
-  "DTC's (OFF) sobre o DTC P0420 (Solução Cat OFF)",
-  'Remoção de Código de Falha por OBD Genérico (DTC)',
+  'VMAX (OFF)',
+  'Hard Cut (Diesel)',
+  'Solução Cat (P0420)',
+  'DTC OFF (OBD)',
   'Start Stop',
-  'TVA (OFF) - Borboleta de Admissão',
+  'TVA (OFF)',
   'Bomba d\'Água (OFF)',
-  'Heliçe Viscosa OFF (Somente Linha John Deere)',
-  'Redução de Torque por Sistema SCR (Caminhão)',
-  'Decode Módulo do Motor Mercedes (MR) ou Cabine (FR)',
-  'Correção de Checksum',
-  'Voltar para Parâmetros Originais de Fábrica',
-  'Comparar Arquivos Originais/Verificação',
-  'Pedidos Especiais (conforme campo de observação)',
+  'Heliçe Viscosa (JD)',
+  'Redução Torque SCR',
+  'Decode MR/FR MB',
+  'Checksum',
+  'Original de Fábrica',
+  'Comparar/Verificar',
+  'Pedidos Especiais',
 ];
+
 const toolOptions = [
-  'KTAG (Original)',
-  'KTAG (Pirata)',
-  'KESS V2/KESS3',
-  'New Genius',
-  'New Transdata',
-  'KZ Prog',
+  'KTAG ORIGINAL',
+  'KESS V2 ORIGINAL',
+  'KESS3 ORIGINAL',
+  'NEW GENIUS',
+  'NEW TRANSDATA',
+  'KZ PROG',
+  'KESS PIRATA',
+  'KTAG PIRATA',
   'DFOX',
   'KT200',
   'Outra',
@@ -77,9 +79,10 @@ export default function FranchiseNewOrder() {
     fuel: fuelOptions[0],
     dtc: '',
     performance: [],
-    tool: '',
+    tool: [],
     notes: '',
   });
+
   const [files, setFiles] = useState<File[]>([]);
   const [extraFiles, setExtraFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
@@ -90,19 +93,21 @@ export default function FranchiseNewOrder() {
     setFormData(prev => ({ ...prev, [key]: value }));
   }
 
+  const toggleSelection = (list: string[], item: string) => 
+    list.includes(item) ? list.filter(i => i !== item) : [...list, item];
+
   async function submitOrder(sendAnother = false) {
     if (!formData.plate.trim()) {
       setError('Informe a placa/frota.');
       return;
     }
     if (files.length === 0) {
-      setError('Envie pelo menos um arquivo de mapa (ORI, MOD, BIN).');
+      setError('Envie pelo menos um arquivo de mapa.');
       return;
     }
 
     setError('');
     setLoading(true);
-    setSuccessMessage('');
 
     try {
       const result = await callFunction<{ order: { id: string } }>('create-order', {
@@ -114,21 +119,11 @@ export default function FranchiseNewOrder() {
         cv: formData.cv.trim() || undefined,
         fuel: formData.fuel,
         dtc: formData.dtc.trim() || undefined,
-        notes: `Ferramenta: ${formData.tool || 'Não informada'} | Performance: ${formData.performance.join(', ') || 'Nenhuma'} | Obs: ${formData.notes.trim()}`,
+        notes: `Ferramentas: ${formData.tool.join(', ') || 'Não informada'} | Performance: ${formData.performance.join(', ') || 'Nenhuma'} | Obs: ${formData.notes.trim()}`,
       });
 
-      for (const file of files) {
-        const path = await storage.uploadOrderFile(result.order.id, file);
-        await supabase.from('order_files').insert({
-          order_id: result.order.id,
-          file_name: file.name,
-          file_path: path,
-          file_size: file.size,
-          mime_type: file.type,
-        });
-      }
-
-      for (const file of extraFiles) {
+      const allFiles = [...files, ...extraFiles];
+      for (const file of allFiles) {
         const path = await storage.uploadOrderFile(result.order.id, file);
         await supabase.from('order_files').insert({
           order_id: result.order.id,
@@ -143,24 +138,16 @@ export default function FranchiseNewOrder() {
         setFiles([]);
         setExtraFiles([]);
         setFormData({
-          plate: '',
-          chassi: '',
-          model: '',
-          year: '',
-          engine: '',
-          cv: '',
-          fuel: fuelOptions[0],
-          dtc: '',
-          performance: [],
-          tool: '',
-          notes: '',
+          plate: '', chassi: '', model: '', year: '', engine: '',
+          cv: '', fuel: fuelOptions[0], dtc: '', performance: [],
+          tool: [], notes: '',
         });
-        setSuccessMessage('Pedido enviado com sucesso. Preencha outro pedido abaixo.');
+        setSuccessMessage('Pedido enviado com sucesso!');
       } else {
         navigate('/orders');
       }
-    } catch (err: unknown) {
-      setError((err as Error).message || 'Erro ao enviar pedido.');
+    } catch (err: any) {
+      setError(err.message || 'Erro ao enviar pedido.');
     } finally {
       setLoading(false);
     }
@@ -168,8 +155,8 @@ export default function FranchiseNewOrder() {
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
-    padding: '12px 14px',
-    borderRadius: 10,
+    padding: '10px 12px',
+    borderRadius: 8,
     background: isDark ? '#111' : '#fff',
     border: `1px solid ${isDark ? '#333' : '#dcdcdc'}`,
     color: isDark ? '#eee' : '#111',
@@ -179,295 +166,118 @@ export default function FranchiseNewOrder() {
 
   const labelStyle: React.CSSProperties = {
     display: 'block',
-    marginBottom: 8,
-    fontSize: 12,
+    marginBottom: 6,
+    fontSize: 11,
     fontWeight: 700,
-    color: isDark ? '#bbb' : '#555',
-    letterSpacing: 0.5,
+    color: isDark ? '#888' : '#555',
+    textTransform: 'uppercase',
   };
 
-  const sectionStyle: React.CSSProperties = {
-    background: isDark ? '#121212' : '#fafafa',
-    border: `1px solid ${isDark ? '#222' : '#e5e5e5'}`,
-    borderRadius: 16,
-    padding: 20,
-  };
+  const badgeButtonStyle = (active: boolean): React.CSSProperties => ({
+    padding: '6px 10px',
+    borderRadius: 6,
+    border: '1px solid',
+    borderColor: active ? '#dc2626' : isDark ? '#2d2d2d' : '#e5e7eb',
+    background: active ? '#dc2626' : isDark ? '#1a1a1a' : '#fff',
+    color: active ? '#fff' : isDark ? '#aaa' : '#444',
+    cursor: 'pointer',
+    fontSize: 11,
+    textAlign: 'center',
+    transition: 'all 0.2s',
+  });
 
   return (
-    <div style={{ maxWidth: 1080, margin: '0 auto', padding: '24px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 24 }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: 28, color: isDark ? '#fff' : '#111' }}>Enviar Novos Arquivos</h1>
-          <p style={{ margin: '8px 0 0', color: isDark ? '#aaa' : '#666' }}>
-            Preencha os dados do veículo e faça o upload dos arquivos conforme solicitado.
-          </p>
-        </div>
-        <button
-          onClick={() => navigate('/orders')}
-          style={{
-            background: '#c53030',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 10,
-            padding: '12px 20px',
-            cursor: 'pointer',
-            fontWeight: 700,
-            boxShadow: '0 12px 24px rgba(197, 46, 46, 0.18)',
-          }}
-        >
-          Voltar para Meus Arquivos
+    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
+        <h1 style={{ margin: 0, fontSize: 24, color: isDark ? '#fff' : '#111' }}>Novo Arquivo</h1>
+        <button onClick={() => navigate('/orders')} style={{ background: '#c53030', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 16px', fontWeight: 600, cursor: 'pointer' }}>
+          Voltar
         </button>
       </div>
 
-      {successMessage && (
-        <div style={{ marginBottom: 16, padding: '14px 16px', background: '#163a0f', color: '#d1fae5', borderRadius: 12 }}>
-          {successMessage}
-        </div>
-      )}
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-        <div style={sectionStyle}>
-          <h2 style={{ marginTop: 0, marginBottom: 18, color: isDark ? '#fff' : '#111' }}>Informações do Veículo</h2>
-
-          <label style={labelStyle}>PLACA / FROTA</label>
-          <input
-            value={formData.plate}
-            onChange={e => updateField('plate', e.target.value.toUpperCase())}
-            placeholder="ABC1D23"
-            style={inputStyle}
-          />
-
-          <label style={labelStyle}>CHASSI</label>
-          <input
-            value={formData.chassi}
-            onChange={e => updateField('chassi', e.target.value)}
-            placeholder="XXXXXXXXXXXXXXX"
-            style={inputStyle}
-          />
-
-          <label style={labelStyle}>MODELO / MARCA</label>
-          <input
-            value={formData.model}
-            onChange={e => updateField('model', e.target.value)}
-            placeholder="Ex: Jeep Compass"
-            style={inputStyle}
-          />
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <div>
-              <label style={labelStyle}>ANO</label>
-              <select
-                value={formData.year}
-                onChange={e => updateField('year', e.target.value)}
-                style={inputStyle}
-              >
-                <option value="">Selecione</option>
-                {yearOptions.map(year => (
-                  <option key={year} value={year}>{year}</option>
-                ))}
-              </select>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: 20, alignItems: 'start' }}>
+        
+        {/* COLUNA ESQUERDA: VEÍCULO + UPLOAD */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <section style={{ background: isDark ? '#121212' : '#fff', padding: 20, borderRadius: 12, border: `1px solid ${isDark ? '#222' : '#e5e5e5'}` }}>
+            <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: 16 }}>Dados do Veículo</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div style={{ gridColumn: 'span 2' }}>
+                <label style={labelStyle}>Placa / Frota</label>
+                <input value={formData.plate} onChange={e => updateField('plate', e.target.value.toUpperCase())} placeholder="Ex: ABC1D23" style={inputStyle} />
+              </div>
+              <div style={{ gridColumn: 'span 2' }}>
+                <label style={labelStyle}>Modelo / Marca</label>
+                <input value={formData.model} onChange={e => updateField('model', e.target.value)} placeholder="Ex: Jeep Compass" style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Ano</label>
+                <select value={formData.year} onChange={e => updateField('year', e.target.value)} style={inputStyle}>
+                  <option value="">Selecione</option>
+                  {yearOptions.map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>Motor</label>
+                <input value={formData.engine} onChange={e => updateField('engine', e.target.value)} placeholder="2.0 Turbo" style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>CV</label>
+                <input value={formData.cv} onChange={e => updateField('cv', e.target.value)} placeholder="170" style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Combustível</label>
+                <select value={formData.fuel} onChange={e => updateField('fuel', e.target.value)} style={inputStyle}>
+                  {fuelOptions.map(f => <option key={f} value={f}>{f}</option>)}
+                </select>
+              </div>
             </div>
-            <div>
-              <label style={labelStyle}>MOTOR</label>
-              <input
-                value={formData.engine}
-                onChange={e => updateField('engine', e.target.value)}
-                placeholder="Ex: 2.0 Turbo"
-                style={inputStyle}
-              />
-            </div>
-          </div>
+          </section>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <div>
-              <label style={labelStyle}>CV</label>
-              <input
-                value={formData.cv}
-                onChange={e => updateField('cv', e.target.value)}
-                placeholder="Ex: 250"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>COMBUSTÍVEL</label>
-              <select
-                value={formData.fuel}
-                onChange={e => updateField('fuel', e.target.value)}
-                style={inputStyle}
-              >
-                {fuelOptions.map(option => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <label style={labelStyle}>DTC / AVARIAS</label>
-          <input
-            value={formData.dtc}
-            onChange={e => updateField('dtc', e.target.value)}
-            placeholder="Descreva DTCs ou avarias"
-            style={inputStyle}
-          />
+          <section style={{ background: isDark ? '#121212' : '#fff', padding: 20, borderRadius: 12, border: `1px solid ${isDark ? '#222' : '#e5e5e5'}` }}>
+            <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: 16 }}>Arquivos e Notas</h3>
+            <label style={labelStyle}>Arquivo de Mapa (ORI, BIN)</label>
+            <input type="file" multiple accept=".bin,.ori,.mod" onChange={e => setFiles(Array.from(e.target.files || []))} style={{ ...inputStyle, marginBottom: 12 }} />
+            
+            <label style={labelStyle}>DTC / Avarias / Notas</label>
+            <textarea value={formData.notes} onChange={e => updateField('notes', e.target.value)} rows={3} placeholder="Instruções adicionais..." style={{ ...inputStyle, resize: 'none' }} />
+          </section>
         </div>
 
-        <div style={sectionStyle}>
-          <h2 style={{ marginTop: 0, marginBottom: 18, color: isDark ? '#fff' : '#111' }}>Performance e Ferramentas</h2>
-
-          <label style={labelStyle}>PERFORMANCE - SELECIONE OS SERVIÇOS</label>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, marginBottom: 18 }}>
-            {performanceOptions.map(option => {
-              const active = formData.performance.includes(option);
-              return (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => {
-                    const next = active
-                      ? formData.performance.filter(item => item !== option)
-                      : [...formData.performance, option];
-                    updateField('performance', next);
-                  }}
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: 10,
-                    border: '1px solid',
-                    borderColor: active ? '#dc2626' : isDark ? '#2d2d2d' : '#d1d5db',
-                    background: active ? '#dc2626' : isDark ? '#141414' : '#fff',
-                    color: active ? '#fff' : isDark ? '#eee' : '#111',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    fontSize: 12,
-                  }}
-                >
-                  {option}
+        {/* COLUNA DIREITA: SELEÇÕES MÚLTIPLAS */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <section style={{ background: isDark ? '#121212' : '#fff', padding: 20, borderRadius: 12, border: `1px solid ${isDark ? '#222' : '#e5e5e5'}` }}>
+            <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: 16 }}>Performance (Selecione)</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+              {performanceOptions.map(opt => (
+                <button key={opt} type="button" onClick={() => updateField('performance', toggleSelection(formData.performance, opt))} style={badgeButtonStyle(formData.performance.includes(opt))}>
+                  {opt}
                 </button>
-              );
-            })}
+              ))}
+            </div>
+          </section>
+
+          <section style={{ background: isDark ? '#121212' : '#fff', padding: 20, borderRadius: 12, border: `1px solid ${isDark ? '#222' : '#e5e5e5'}` }}>
+            <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: 16 }}>Ferramentas Utilizadas</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+              {toolOptions.map(opt => (
+                <button key={opt} type="button" onClick={() => updateField('tool', toggleSelection(formData.tool, opt))} style={badgeButtonStyle(formData.tool.includes(opt))}>
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <div style={{ display: 'flex', gap: 12 }}>
+            <button onClick={() => submitOrder(false)} disabled={loading} style={{ flex: 2, background: '#dc2626', color: '#fff', border: 'none', borderRadius: 10, padding: '16px', fontWeight: 700, cursor: 'pointer' }}>
+              {loading ? 'ENVIANDO...' : 'FINALIZAR PEDIDO'}
+            </button>
+            <button onClick={() => submitOrder(true)} disabled={loading} style={{ flex: 1, background: isDark ? '#222' : '#eee', color: isDark ? '#fff' : '#111', border: 'none', borderRadius: 10, padding: '16px', fontWeight: 600, cursor: 'pointer' }}>
+              ENVIAR +1
+            </button>
           </div>
-
-          <label style={labelStyle}>FERRAMENTA UTILIZADA</label>
-          <select
-            value={formData.tool}
-            onChange={e => updateField('tool', e.target.value)}
-            style={inputStyle}
-          >
-            <option value="">Selecione a ferramenta</option>
-            {toolOptions.map(option => (
-              <option key={option} value={option}>{option}</option>
-            ))}
-          </select>
+          {error && <p style={{ color: '#ef4444', fontSize: 13, textAlign: 'center', margin: 0 }}>{error}</p>}
         </div>
-      </div>
-
-      <div style={{ ...sectionStyle, marginTop: 20 }}>
-        <h2 style={{ marginTop: 0, marginBottom: 18, color: isDark ? '#fff' : '#111' }}>Upload de Arquivos</h2>
-
-        <label style={labelStyle}>ARQUIVOS DE MAPA (ORI, MOD, BIN)</label>
-        <div style={{ marginBottom: 18 }}>
-          <input
-            type="file"
-            multiple
-            accept=".bin,.ori,.mod"
-            onChange={e => setFiles(Array.from(e.target.files || []))}
-            style={{ ...inputStyle, padding: '14px 12px' }}
-          />
-          {files.length > 0 && (
-            <div style={{ marginTop: 8, color: isDark ? '#d1fae5' : '#065f46', fontSize: 12 }}>
-              {files.length} arquivo(s) selecionado(s)
-            </div>
-          )}
-        </div>
-
-        <label style={labelStyle}>FOTO / PDF</label>
-        <div style={{ marginBottom: 18 }}>
-          <input
-            type="file"
-            multiple
-            accept="image/*,.pdf"
-            onChange={e => setExtraFiles(Array.from(e.target.files || []))}
-            style={{ ...inputStyle, padding: '14px 12px' }}
-          />
-          {extraFiles.length > 0 && (
-            <div style={{ marginTop: 8, color: isDark ? '#d1fae5' : '#065f46', fontSize: 12 }}>
-              {extraFiles.length} arquivo(s) selecionado(s)
-            </div>
-          )}
-        </div>
-
-        <label style={labelStyle}>OBSERVAÇÕES</label>
-        <textarea
-          value={formData.notes}
-          onChange={e => updateField('notes', e.target.value)}
-          rows={5}
-          placeholder="Insira observações adicionais..."
-          style={{ ...inputStyle, minHeight: 140, resize: 'vertical' }}
-        />
-      </div>
-
-      {error && (
-        <div style={{ marginTop: 20, padding: '14px 16px', background: '#fee2e2', color: '#991b1b', borderRadius: 12 }}>
-          {error}
-        </div>
-      )}
-
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 24 }}>
-        <button
-          type="button"
-          onClick={() => submitOrder(false)}
-          disabled={loading}
-          style={{
-            flex: 1,
-            minWidth: 180,
-            background: '#dc2626',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 12,
-            padding: '14px 18px',
-            cursor: 'pointer',
-            fontWeight: 700,
-          }}
-        >
-          {loading ? 'ENVIANDO...' : 'ENVIAR'}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => submitOrder(true)}
-          disabled={loading}
-          style={{
-            flex: 1,
-            minWidth: 180,
-            background: '#1f2937',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 12,
-            padding: '14px 18px',
-            cursor: 'pointer',
-            fontWeight: 700,
-          }}
-        >
-          {loading ? 'ENVIANDO...' : 'ENVIAR E ENVIAR NOVO'}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => navigate('/orders')}
-          style={{
-            flex: 1,
-            minWidth: 180,
-            background: isDark ? '#1f2937' : '#f3f4f6',
-            color: isDark ? '#fff' : '#111',
-            border: '1px solid',
-            borderColor: isDark ? '#374151' : '#d1d5db',
-            borderRadius: 12,
-            padding: '14px 18px',
-            cursor: 'pointer',
-            fontWeight: 700,
-          }}
-        >
-          CANCELAR
-        </button>
       </div>
     </div>
   );
