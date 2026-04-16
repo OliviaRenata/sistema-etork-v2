@@ -1,8 +1,6 @@
 [build]
-  # O comando agora entra na pasta correta antes de instalar e buildar
-  command = "cd portal-etork/portal-etork && npm install && npx vite build"
-  # O Netlify precisa saber que a pasta de saída (dist) também está lá dentro
-  publish = "portal-etork/portal-etork/dist"
+  command = "npm install && npx vite build"
+  publish = "dist"
 
 [build.environment]
   NODE_VERSION = "20"
