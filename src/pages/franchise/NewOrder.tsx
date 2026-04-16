@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, callFunction, storage } from '../../lib/supabase';
 import { useTheme } from '../../context/ThemeContext';
+// Importação do novo serviço
+import { fetchVehicleByPlate } from '../../lib/supabase';
 
 type FormData = {
   plate: string;
@@ -58,7 +60,8 @@ export default function FranchiseNewOrder() {
     readingMode: '', dtc: '', performance: [], tool: [], toolOther: '', notes: '',
   });
 
-  const [files, setFiles] = useState<File[]>([]);
+  const [mapFiles, setMapFiles] = useState<File[]>([]);
+  const [extraFiles, setExtraFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -66,11 +69,37 @@ export default function FranchiseNewOrder() {
     setFormData(prev => ({ ...prev, [key]: value }));
   };
 
+  // Função para buscar dados da placa ao sair do campo (onBlur)
+  const handlePlateBlur = async () => {
+    if (formData.plate.length >= 7) {
+      setLoading(true);
+      setError('');
+      try {
+        const data = await fetchVehicleByPlate(formData.plate);
+        if (data) {
+          setFormData(prev => ({
+            ...prev,
+            model: data.model || prev.model,
+            year: data.year || prev.year,
+            engine: data.engine || prev.engine,
+            fuel: data.fuel || prev.fuel,
+            cv: data.cv || prev.cv,
+            chassi: data.chassi || prev.chassi,
+          }));
+        }
+      } catch (err) {
+        console.error("Erro ao autocompletar:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
   const toggleSelection = (list: string[], item: string) => 
     list.includes(item) ? list.filter(i => i !== item) : [...list, item];
 
   const submitOrder = async (sendAnother = false) => {
-    if (!formData.plate.trim() || files.length === 0) {
+    if (!formData.plate.trim() || mapFiles.length === 0) {
       setError('Placa e Arquivo de Mapa são obrigatórios.');
       return;
     }
@@ -89,7 +118,8 @@ export default function FranchiseNewOrder() {
         notes: `KM: ${formData.km} | Câmbio: ${formData.transmission} | HW: ${formData.hw_number} | SW: ${formData.sw_number} | SW Up: ${formData.sw_upgrade} | System: ${formData.system} | Modo: ${formData.readingMode} | Prot: ${formData.protocol} | Ferramentas: ${toolsFinal} | Perf: ${formData.performance.join(', ')} | DTCs: ${formData.dtc} | Obs: ${formData.notes}`,
       });
 
-      for (const file of files) {
+      const allFiles = [...mapFiles, ...extraFiles];
+      for (const file of allFiles) {
         const path = await storage.uploadOrderFile(result.order.id, file);
         await supabase.from('order_files').insert({
           order_id: result.order.id, file_name: file.name, file_path: path,
@@ -103,6 +133,7 @@ export default function FranchiseNewOrder() {
     finally { setLoading(false); }
   };
 
+  // ESTILOS
   const cardStyle: React.CSSProperties = {
     background: isDark ? '#121212' : '#fff',
     padding: '20px', borderRadius: '12px',
@@ -124,70 +155,78 @@ export default function FranchiseNewOrder() {
   const badgeStyle = (active: boolean) => ({
     padding: '8px 4px', fontSize: '10px', borderRadius: '6px', cursor: 'pointer',
     border: '1px solid', transition: 'all 0.2s',
-    borderColor: active ? '#e6b800' : (isDark ? '#333' : '#e5e7eb'), // Trocado vermelho por amarelo
-    background: active ? '#e6b800' : (isDark ? '#0a0a0a' : '#fff'), // Trocado vermelho por amarelo
+    borderColor: active ? '#e6b800' : (isDark ? '#333' : '#e5e7eb'),
+    background: active ? '#e6b800' : (isDark ? '#0a0a0a' : '#fff'),
     color: active ? '#fff' : (isDark ? '#aaa' : '#444'),
     fontWeight: active ? 'bold' : 'normal',
   });
+
+  const uploadBoxStyle: React.CSSProperties = {
+    border: `2px dashed ${isDark ? '#333' : '#d1d5db'}`,
+    borderRadius: '8px', padding: '15px', textAlign: 'center', cursor: 'pointer',
+    background: isDark ? '#1a1a1a' : '#fcfcfc', color: '#888', fontSize: '12px'
+  };
 
   return (
     <div style={{ maxWidth: 1300, margin: '0 auto', padding: '30px' }}>
       <header style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '25px', alignItems: 'center' }}>
         <div>
-          <h1 style={{ fontSize: '26px', color: isDark ? '#fff' : '#111', margin: 0, fontWeight: 800 }}>CHECK-IN DE SERVIÇO</h1>
-          <p style={{ fontSize: '14px', color: '#888' }}>Envio técnico de arquivos para remap e soluções eletrônicas.</p>
+          <h1 style={{ fontSize: '26px', color: isDark ? '#fff' : '#111', margin: 0, fontWeight: 800 }}>ENVIAR ARQUIVOS</h1>
+          <p style={{ fontSize: '14px', color: '#888' }}>{loading ? 'Buscando informações...' : 'Preencha os dados técnicos para processamento do remap.'}</p>
         </div>
         <button onClick={() => navigate('/orders')} style={{ background: '#333', color: '#fff', border: 'none', padding: '12px 24px', borderRadius: '10px', cursor: 'pointer', fontWeight: 600 }}>Voltar ao Painel</button>
       </header>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.5fr', gap: '25px' }}>
         
-        {/* COLUNA ESQUERDA: IDENTIFICAÇÃO DO VEÍCULO E ECU */}
+        {/* COLUNA ESQUERDA */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <section style={cardStyle}>
             <h3 style={{ fontSize: '14px', marginBottom: '15px', color: '#e6b800', fontWeight: 900, borderLeft: '4px solid #e6b800', paddingLeft: '10px' }}>1. DADOS DO VEÍCULO</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <div style={{ gridColumn: 'span 2' }}>
-                <label style={labelStyle}>PLACA / FROTA</label>
-                <input style={inputStyle} value={formData.plate} onChange={e => updateField('plate', e.target.value.toUpperCase())} placeholder="ABC1D23" />
-              </div>
-              <div style={{ gridColumn: 'span 2' }}>
-                <label style={labelStyle}>MODELO / MARCA</label>
-                <input style={inputStyle} value={formData.model} onChange={e => updateField('model', e.target.value)} placeholder="Ex: Mercedes Axor 2544" />
+              <div>
+                <label style={labelStyle}>PLACA / FROTA *</label>
+                <input 
+                  style={inputStyle} 
+                  value={formData.plate} 
+                  onChange={e => updateField('plate', e.target.value.toUpperCase())} 
+                  onBlur={handlePlateBlur} // Gatilho da busca
+                  placeholder="Ex: BRA2E19" 
+                />
               </div>
               <div>
-                <label style={labelStyle}>ANO</label>
+                <label style={labelStyle}>CHASSI</label>
+                <input style={inputStyle} value={formData.chassi} onChange={e => updateField('chassi', e.target.value)} placeholder="Opcional" />
+              </div>
+              <div>
+                <label style={labelStyle}>MODELO *</label>
+                <input style={inputStyle} value={formData.model} onChange={e => updateField('model', e.target.value)} placeholder="Ex: VW Amarok" />
+              </div>
+              <div>
+                <label style={labelStyle}>ANO *</label>
                 <select style={inputStyle} value={formData.year} onChange={e => updateField('year', e.target.value)}>
-                  <option value="">Selecione</option>
+                  <option value="">Selecione uma opção</option>
                   {yearOptions.map(y => <option key={y} value={y}>{y}</option>)}
                 </select>
               </div>
               <div>
-                <label style={labelStyle}>CÂMBIO</label>
-                <select style={inputStyle} value={formData.transmission} onChange={e => updateField('transmission', e.target.value as any)}>
-                  <option value="">Selecione</option>
-                  <option value="Manual">Manual</option>
-                  <option value="Automático">Automático</option>
-                  <option value="DSG/Dualogic">DSG / Dualogic</option>
-                </select>
+                <label style={labelStyle}>MOTOR *</label>
+                <input style={inputStyle} value={formData.engine} onChange={e => updateField('engine', e.target.value)} placeholder="Ex: 2.0 TDI" />
               </div>
               <div>
-                <label style={labelStyle}>MOTORIZAÇÃO</label>
-                <input style={inputStyle} value={formData.engine} onChange={e => updateField('engine', e.target.value)} placeholder="Ex: 13.0 6cil" />
+                <label style={labelStyle}>CV *</label>
+                <input style={inputStyle} value={formData.cv} onChange={e => updateField('cv', e.target.value)} placeholder="Ex: 180" />
               </div>
               <div>
-                <label style={labelStyle}>COMBUSTÍVEL</label>
+                <label style={labelStyle}>COMBUSTÍVEL *</label>
                 <select style={inputStyle} value={formData.fuel} onChange={e => updateField('fuel', e.target.value)}>
+                  <option value="">Selecione uma opção</option>
                   {fuelOptions.map(f => <option key={f} value={f}>{f}</option>)}
                 </select>
               </div>
               <div>
-                <label style={labelStyle}>KM ATUAL</label>
-                <input style={inputStyle} value={formData.km} onChange={e => updateField('km', e.target.value)} placeholder="Ex: 150.000" />
-              </div>
-              <div>
-                <label style={labelStyle}>POTÊNCIA (CV)</label>
-                <input style={inputStyle} value={formData.cv} onChange={e => updateField('cv', e.target.value)} placeholder="Ex: 440" />
+                <label style={labelStyle}>DTC / AVARIAS</label>
+                <input style={inputStyle} value={formData.dtc} onChange={e => updateField('dtc', e.target.value)} placeholder="Códigos de erro" />
               </div>
             </div>
           </section>
@@ -197,45 +236,40 @@ export default function FranchiseNewOrder() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               <div>
                 <label style={labelStyle}>Nº HARDWARE (HW)</label>
-                <input style={inputStyle} value={formData.hw_number} onChange={e => updateField('hw_number', e.target.value)} placeholder="HW Number" />
+                <input style={inputStyle} value={formData.hw_number} onChange={e => updateField('hw_number', e.target.value)} placeholder="Ex: 0281017" />
               </div>
               <div>
                 <label style={labelStyle}>Nº SOFTWARE (SW)</label>
-                <input style={inputStyle} value={formData.sw_number} onChange={e => updateField('sw_number', e.target.value)} placeholder="SW Number" />
-              </div>
-              <div>
-                <label style={labelStyle}>SW UPGRADE</label>
-                <input style={inputStyle} value={formData.sw_upgrade} onChange={e => updateField('sw_upgrade', e.target.value)} placeholder="Upgrade ID" />
+                <input style={inputStyle} value={formData.sw_number} onChange={e => updateField('sw_number', e.target.value)} placeholder="Ex: 1037517" />
               </div>
               <div>
                 <label style={labelStyle}>SYSTEM/MÓDULO</label>
-                <input style={inputStyle} value={formData.system} onChange={e => updateField('system', e.target.value)} placeholder="Ex: EDC17CV41" />
+                <input style={inputStyle} value={formData.system} onChange={e => updateField('system', e.target.value)} placeholder="Ex: EDC17C46" />
+              </div>
+              <div>
+                <label style={labelStyle}>KM ATUAL</label>
+                <input style={inputStyle} value={formData.km} onChange={e => updateField('km', e.target.value)} placeholder="Ex: 85.000" />
               </div>
               <div style={{ gridColumn: 'span 2' }}>
                 <label style={labelStyle}>MÉTODO E PROTOCOLO</label>
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
                   {['OBD', 'BANCADA', 'BOOT', 'VR'].map(m => (
-                    <button key={m} onClick={() => updateField('readingMode', m as any)} style={{ ...badgeStyle(formData.readingMode === m), flex: 1 }}>{m}</button>
+                    <button key={m} type="button" onClick={() => updateField('readingMode', m as any)} style={{ ...badgeStyle(formData.readingMode === m), flex: 1 }}>{m}</button>
                   ))}
                 </div>
                 <input style={inputStyle} value={formData.protocol} onChange={e => updateField('protocol', e.target.value)} placeholder="Nº do Protocolo (Ex: 742)" />
               </div>
             </div>
           </section>
-
-          <section style={cardStyle}>
-            <label style={labelStyle}>ARQUIVO DE LEITURA (BIN/ORI/MPC)</label>
-            <input type="file" multiple onChange={e => setFiles(Array.from(e.target.files || []))} style={{ fontSize: '12px' }} />
-          </section>
         </div>
 
-        {/* COLUNA DIREITA: SERVIÇOS E FERRAMENTAS */}
+        {/* COLUNA DIREITA */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <section style={cardStyle}>
-            <h3 style={{ fontSize: '14px', marginBottom: '12px', color: '#e6b800', fontWeight: 900, borderLeft: '4px solid #e6b800', paddingLeft: '10px' }}>3. SERVIÇOS SOLICITADOS (PERFORMANCE)</h3>
+            <h3 style={{ fontSize: '14px', marginBottom: '12px', color: '#e6b800', fontWeight: 900, borderLeft: '4px solid #e6b800', paddingLeft: '10px' }}>3. PERFORMANCE</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
               {performanceOptions.map(opt => (
-                <button key={opt} onClick={() => updateField('performance', toggleSelection(formData.performance, opt))} style={badgeStyle(formData.performance.includes(opt))}>
+                <button key={opt} type="button" onClick={() => updateField('performance', toggleSelection(formData.performance, opt))} style={badgeStyle(formData.performance.includes(opt))}>
                   {opt}
                 </button>
               ))}
@@ -243,33 +277,37 @@ export default function FranchiseNewOrder() {
           </section>
 
           <section style={cardStyle}>
-            <h3 style={{ fontSize: '14px', marginBottom: '12px', color: '#e6b800', fontWeight: 900, borderLeft: '4px solid #e6b800', paddingLeft: '10px' }}>4. FERRAMENTA UTILIZADA</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginBottom: formData.tool.includes('Outra') ? '10px' : '0' }}>
+            <h3 style={{ fontSize: '14px', marginBottom: '12px', color: '#e6b800', fontWeight: 900, borderLeft: '4px solid #e6b800', paddingLeft: '10px' }}>4. FERRAMENTA UTILIZADA *</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
               {toolOptions.map(opt => (
-                <button key={opt} onClick={() => updateField('tool', toggleSelection(formData.tool, opt))} style={badgeStyle(formData.tool.includes(opt))}>
+                <button key={opt} type="button" onClick={() => updateField('tool', toggleSelection(formData.tool, opt))} style={badgeStyle(formData.tool.includes(opt))}>
                   {opt}
                 </button>
               ))}
             </div>
-            {formData.tool.includes('Outra') && (
-              <input style={inputStyle} placeholder="Qual ferramenta?" value={formData.toolOther} onChange={e => updateField('toolOther', e.target.value)} />
-            )}
           </section>
 
           <section style={cardStyle}>
-            <label style={labelStyle}>DTCs PARA OFF / OBSERVAÇÕES TÉCNICAS</label>
-            <textarea style={{ ...inputStyle, minHeight: '80px', resize: 'none' }} value={formData.notes} onChange={e => updateField('notes', e.target.value)} placeholder="Ex: P0420, P2002. Cliente quer priorizar economia no STG1." />
+            <label style={labelStyle}>ARQUIVOS DE MAPA (ID, ORI, MOD) *</label>
+            <div style={uploadBoxStyle} onClick={() => document.getElementById('map-upload')?.click()}>
+              {mapFiles.length > 0 ? `${mapFiles.length} arquivo(s)` : 'Clique para selecionar'}
+              <input id="map-upload" type="file" multiple hidden onChange={e => setMapFiles(Array.from(e.target.files || []))} />
+            </div>
+          </section>
+
+          <section style={cardStyle}>
+            <label style={labelStyle}>OBSERVAÇÕES TÉCNICAS</label>
+            <textarea style={{ ...inputStyle, minHeight: '80px', resize: 'none' }} value={formData.notes} onChange={e => updateField('notes', e.target.value)} />
           </section>
 
           <div style={{ display: 'flex', gap: '15px' }}>
-            <button onClick={() => submitOrder()} disabled={loading} style={{ flex: 2, background: '#e6b800', color: '#fff', border: 'none', borderRadius: '12px', padding: '18px', fontWeight: 'bold', cursor: 'pointer', fontSize: '16px', boxShadow: '0 10px 15px -3px rgba(230, 184, 0, 0.3)' }}>
-              {loading ? 'ENVIANDO...' : 'FINALIZAR E ENVIAR PEDIDO'}
+            <button onClick={() => submitOrder()} disabled={loading} style={{ flex: 2, background: '#ff0000', color: '#fff', border: 'none', borderRadius: '12px', padding: '18px', fontWeight: 'bold', cursor: 'pointer' }}>
+              {loading ? 'PROCESSANDO...' : 'ENVIAR'}
             </button>
-            <button onClick={() => submitOrder(true)} disabled={loading} style={{ flex: 1, background: isDark ? '#222' : '#eee', color: isDark ? '#fff' : '#111', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold' }}>+1 NOVO</button>
+            <button onClick={() => navigate('/orders')} style={{ flex: 1, background: '#333', color: '#fff', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold' }}>CANCELAR</button>
           </div>
-          {error && <div style={{ color: '#fff', background: '#dc2626', padding: '10px', borderRadius: '8px', fontSize: '12px', textAlign: 'center', marginTop: '10px' }}>{error}</div>}
+          {error && <div style={{ color: '#fff', background: '#dc2626', padding: '10px', borderRadius: '8px', textAlign: 'center', marginTop: '10px' }}>{error}</div>}
         </div>
-
       </div>
     </div>
   );
