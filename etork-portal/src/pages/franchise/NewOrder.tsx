@@ -41,9 +41,9 @@ const performanceOptions = [
 ];
 
 const toolOptions = [
-  'KTAG ORIGINAL', 'KESS V2 ORIGINAL', 'KESS3 ORIGINAL',
-  'NEW GENIUS', 'NEW TRANSDATA', 'KZ PROG',
-  'KESS PIRATA', 'KTAG PIRATA', 'DFOX', 'KT200', 'Outra'
+  'KTAG ORIGINAL', 'KTAG PIRATA', 'KESS V2 ORIGINAL', 'KESS PIRATA',
+  'KESS3 ORIGINAL', 'NEW GENIUS', 'NEW TRANSDATA', 'KZ PROG',
+  'DFOX', 'KT200', 'Outra'
 ];
 
 export default function FranchiseNewOrder() {
@@ -124,8 +124,8 @@ export default function FranchiseNewOrder() {
   const badgeStyle = (active: boolean) => ({
     padding: '8px 4px', fontSize: '10px', borderRadius: '6px', cursor: 'pointer',
     border: '1px solid', transition: 'all 0.2s',
-    borderColor: active ? '#dc2626' : (isDark ? '#333' : '#e5e7eb'),
-    background: active ? '#dc2626' : (isDark ? '#0a0a0a' : '#fff'),
+    borderColor: active ? '#e6b800' : (isDark ? '#333' : '#e5e7eb'), // Trocado vermelho por amarelo
+    background: active ? '#e6b800' : (isDark ? '#0a0a0a' : '#fff'), // Trocado vermelho por amarelo
     color: active ? '#fff' : (isDark ? '#aaa' : '#444'),
     fontWeight: active ? 'bold' : 'normal',
   });
@@ -145,7 +145,7 @@ export default function FranchiseNewOrder() {
         {/* COLUNA ESQUERDA: IDENTIFICAÇÃO DO VEÍCULO E ECU */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <section style={cardStyle}>
-            <h3 style={{ fontSize: '14px', marginBottom: '15px', color: '#dc2626', fontWeight: 900, borderLeft: '4px solid #dc2626', paddingLeft: '10px' }}>1. DADOS DO VEÍCULO</h3>
+            <h3 style={{ fontSize: '14px', marginBottom: '15px', color: '#e6b800', fontWeight: 900, borderLeft: '4px solid #e6b800', paddingLeft: '10px' }}>1. DADOS DO VEÍCULO</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div style={{ gridColumn: 'span 2' }}>
                 <label style={labelStyle}>PLACA / FROTA</label>
@@ -193,7 +193,7 @@ export default function FranchiseNewOrder() {
           </section>
 
           <section style={cardStyle}>
-            <h3 style={{ fontSize: '14px', marginBottom: '15px', color: '#dc2626', fontWeight: 900, borderLeft: '4px solid #dc2626', paddingLeft: '10px' }}>2. IDENTIFICAÇÃO DA ECU</h3>
+            <h3 style={{ fontSize: '14px', marginBottom: '15px', color: '#e6b800', fontWeight: 900, borderLeft: '4px solid #e6b800', paddingLeft: '10px' }}>2. IDENTIFICAÇÃO DA ECU</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               <div>
                 <label style={labelStyle}>Nº HARDWARE (HW)</label>
@@ -232,7 +232,7 @@ export default function FranchiseNewOrder() {
         {/* COLUNA DIREITA: SERVIÇOS E FERRAMENTAS */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <section style={cardStyle}>
-            <h3 style={{ fontSize: '14px', marginBottom: '12px', color: '#dc2626', fontWeight: 900, borderLeft: '4px solid #dc2626', paddingLeft: '10px' }}>3. SERVIÇOS SOLICITADOS (PERFORMANCE)</h3>
+            <h3 style={{ fontSize: '14px', marginBottom: '12px', color: '#e6b800', fontWeight: 900, borderLeft: '4px solid #e6b800', paddingLeft: '10px' }}>3. SERVIÇOS SOLICITADOS (PERFORMANCE)</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
               {performanceOptions.map(opt => (
                 <button key={opt} onClick={() => updateField('performance', toggleSelection(formData.performance, opt))} style={badgeStyle(formData.performance.includes(opt))}>
@@ -243,7 +243,7 @@ export default function FranchiseNewOrder() {
           </section>
 
           <section style={cardStyle}>
-            <h3 style={{ fontSize: '14px', marginBottom: '12px', color: '#dc2626', fontWeight: 900, borderLeft: '4px solid #dc2626', paddingLeft: '10px' }}>4. FERRAMENTA UTILIZADA</h3>
+            <h3 style={{ fontSize: '14px', marginBottom: '12px', color: '#e6b800', fontWeight: 900, borderLeft: '4px solid #e6b800', paddingLeft: '10px' }}>4. FERRAMENTA UTILIZADA</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginBottom: formData.tool.includes('Outra') ? '10px' : '0' }}>
               {toolOptions.map(opt => (
                 <button key={opt} onClick={() => updateField('tool', toggleSelection(formData.tool, opt))} style={badgeStyle(formData.tool.includes(opt))}>
@@ -262,7 +262,7 @@ export default function FranchiseNewOrder() {
           </section>
 
           <div style={{ display: 'flex', gap: '15px' }}>
-            <button onClick={() => submitOrder()} disabled={loading} style={{ flex: 2, background: '#dc2626', color: '#fff', border: 'none', borderRadius: '12px', padding: '18px', fontWeight: 'bold', cursor: 'pointer', fontSize: '16px', boxShadow: '0 10px 15px -3px rgba(220, 38, 38, 0.3)' }}>
+            <button onClick={() => submitOrder()} disabled={loading} style={{ flex: 2, background: '#e6b800', color: '#fff', border: 'none', borderRadius: '12px', padding: '18px', fontWeight: 'bold', cursor: 'pointer', fontSize: '16px', boxShadow: '0 10px 15px -3px rgba(230, 184, 0, 0.3)' }}>
               {loading ? 'ENVIANDO...' : 'FINALIZAR E ENVIAR PEDIDO'}
             </button>
             <button onClick={() => submitOrder(true)} disabled={loading} style={{ flex: 1, background: isDark ? '#222' : '#eee', color: isDark ? '#fff' : '#111', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold' }}>+1 NOVO</button>
