@@ -2,8 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, callFunction, storage } from '../../lib/supabase';
 import { useTheme } from '../../context/ThemeContext';
-// Importação do novo serviço
-import { fetchVehicleByPlate } from '../../lib/supabase';
 
 type FormData = {
   plate: string;
@@ -69,32 +67,6 @@ export default function FranchiseNewOrder() {
     setFormData(prev => ({ ...prev, [key]: value }));
   };
 
-  // Função para buscar dados da placa ao sair do campo (onBlur)
-  const handlePlateBlur = async () => {
-    if (formData.plate.length >= 7) {
-      setLoading(true);
-      setError('');
-      try {
-        const data = await fetchVehicleByPlate(formData.plate);
-        if (data) {
-          setFormData(prev => ({
-            ...prev,
-            model: data.model || prev.model,
-            year: data.year || prev.year,
-            engine: data.engine || prev.engine,
-            fuel: data.fuel || prev.fuel,
-            cv: data.cv || prev.cv,
-            chassi: data.chassi || prev.chassi,
-          }));
-        }
-      } catch (err) {
-        console.error("Erro ao autocompletar:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
-
   const toggleSelection = (list: string[], item: string) => 
     list.includes(item) ? list.filter(i => i !== item) : [...list, item];
 
@@ -133,7 +105,6 @@ export default function FranchiseNewOrder() {
     finally { setLoading(false); }
   };
 
-  // ESTILOS
   const cardStyle: React.CSSProperties = {
     background: isDark ? '#121212' : '#fff',
     padding: '20px', borderRadius: '12px',
@@ -172,27 +143,21 @@ export default function FranchiseNewOrder() {
       <header style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '25px', alignItems: 'center' }}>
         <div>
           <h1 style={{ fontSize: '26px', color: isDark ? '#fff' : '#111', margin: 0, fontWeight: 800 }}>ENVIAR ARQUIVOS</h1>
-          <p style={{ fontSize: '14px', color: '#888' }}>{loading ? 'Buscando informações...' : 'Preencha os dados técnicos para processamento do remap.'}</p>
+          <p style={{ fontSize: '14px', color: '#888' }}>Preencha os dados técnicos para processamento do remap.</p>
         </div>
         <button onClick={() => navigate('/orders')} style={{ background: '#333', color: '#fff', border: 'none', padding: '12px 24px', borderRadius: '10px', cursor: 'pointer', fontWeight: 600 }}>Voltar ao Painel</button>
       </header>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.5fr', gap: '25px' }}>
         
-        {/* COLUNA ESQUERDA */}
+        {/* COLUNA ESQUERDA: DADOS DO VEÍCULO */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <section style={cardStyle}>
             <h3 style={{ fontSize: '14px', marginBottom: '15px', color: '#e6b800', fontWeight: 900, borderLeft: '4px solid #e6b800', paddingLeft: '10px' }}>1. DADOS DO VEÍCULO</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div>
                 <label style={labelStyle}>PLACA / FROTA *</label>
-                <input 
-                  style={inputStyle} 
-                  value={formData.plate} 
-                  onChange={e => updateField('plate', e.target.value.toUpperCase())} 
-                  onBlur={handlePlateBlur} // Gatilho da busca
-                  placeholder="Ex: BRA2E19" 
-                />
+                <input style={inputStyle} value={formData.plate} onChange={e => updateField('plate', e.target.value.toUpperCase())} placeholder="Ex: BRA2E19" />
               </div>
               <div>
                 <label style={labelStyle}>CHASSI</label>
@@ -263,7 +228,7 @@ export default function FranchiseNewOrder() {
           </section>
         </div>
 
-        {/* COLUNA DIREITA */}
+        {/* COLUNA DIREITA: SERVIÇOS E UPLOADS */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <section style={cardStyle}>
             <h3 style={{ fontSize: '14px', marginBottom: '12px', color: '#e6b800', fontWeight: 900, borderLeft: '4px solid #e6b800', paddingLeft: '10px' }}>3. PERFORMANCE</h3>
@@ -285,29 +250,44 @@ export default function FranchiseNewOrder() {
                 </button>
               ))}
             </div>
+            {formData.tool.includes('Outra') && (
+              <input style={{ ...inputStyle, marginTop: '10px' }} placeholder="Qual ferramenta?" value={formData.toolOther} onChange={e => updateField('toolOther', e.target.value)} />
+            )}
           </section>
 
+          {/* ARQUIVOS DE MAPA */}
           <section style={cardStyle}>
             <label style={labelStyle}>ARQUIVOS DE MAPA (ID, ORI, MOD) *</label>
             <div style={uploadBoxStyle} onClick={() => document.getElementById('map-upload')?.click()}>
-              {mapFiles.length > 0 ? `${mapFiles.length} arquivo(s)` : 'Clique para selecionar'}
+              {mapFiles.length > 0 ? `${mapFiles.length} arquivo(s) selecionado(s)` : 'Arraste e solte os arquivos ou Clique aqui'}
               <input id="map-upload" type="file" multiple hidden onChange={e => setMapFiles(Array.from(e.target.files || []))} />
+            </div>
+          </section>
+
+          {/* FOTO / PDF */}
+          <section style={cardStyle}>
+            <label style={labelStyle}>FOTO / PDF</label>
+            <div style={uploadBoxStyle} onClick={() => document.getElementById('extra-upload')?.click()}>
+              {extraFiles.length > 0 ? `${extraFiles.length} arquivo(s) selecionado(s)` : 'Arraste e solte os arquivos ou Clique aqui'}
+              <input id="extra-upload" type="file" multiple hidden onChange={e => setExtraFiles(Array.from(e.target.files || []))} />
             </div>
           </section>
 
           <section style={cardStyle}>
             <label style={labelStyle}>OBSERVAÇÕES TÉCNICAS</label>
-            <textarea style={{ ...inputStyle, minHeight: '80px', resize: 'none' }} value={formData.notes} onChange={e => updateField('notes', e.target.value)} />
+            <textarea style={{ ...inputStyle, minHeight: '80px', resize: 'none' }} value={formData.notes} onChange={e => updateField('notes', e.target.value)} placeholder="Detalhes adicionais sobre o veículo ou pedido." />
           </section>
 
           <div style={{ display: 'flex', gap: '15px' }}>
-            <button onClick={() => submitOrder()} disabled={loading} style={{ flex: 2, background: '#ff0000', color: '#fff', border: 'none', borderRadius: '12px', padding: '18px', fontWeight: 'bold', cursor: 'pointer' }}>
-              {loading ? 'PROCESSANDO...' : 'ENVIAR'}
+            <button onClick={() => submitOrder()} disabled={loading} style={{ flex: 2, background: '#ff0000', color: '#fff', border: 'none', borderRadius: '12px', padding: '18px', fontWeight: 'bold', cursor: 'pointer', fontSize: '16px' }}>
+              {loading ? 'ENVIANDO...' : 'ENVIAR'}
             </button>
+            <button onClick={() => submitOrder(true)} disabled={loading} style={{ flex: 1, background: isDark ? '#222' : '#eee', color: isDark ? '#fff' : '#111', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold' }}>ENVIAR E NOVO</button>
             <button onClick={() => navigate('/orders')} style={{ flex: 1, background: '#333', color: '#fff', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold' }}>CANCELAR</button>
           </div>
-          {error && <div style={{ color: '#fff', background: '#dc2626', padding: '10px', borderRadius: '8px', textAlign: 'center', marginTop: '10px' }}>{error}</div>}
+          {error && <div style={{ color: '#fff', background: '#dc2626', padding: '10px', borderRadius: '8px', fontSize: '12px', textAlign: 'center', marginTop: '10px' }}>{error}</div>}
         </div>
+
       </div>
     </div>
   );
