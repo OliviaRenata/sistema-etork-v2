@@ -1,8 +1,7 @@
 [build]
-  base = "etork-portal"
-  command = "npm install && node node_modules/vite/bin/vite.js build"
+  command = "npm install && npm run build"
   publish = "dist"
-
+  
 [build.environment]
   NODE_VERSION = "20"
 
