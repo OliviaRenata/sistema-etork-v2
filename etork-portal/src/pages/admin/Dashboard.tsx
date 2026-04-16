@@ -1,8 +1,10 @@
 // src/pages/admin/Dashboard.tsx
 import { useState, useEffect, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
-import type { Order } from '../../types';
+import logoImg from '../../assets/logoetork.png';
+import type { Announcement, Order } from '../../types';
 import StatusBadge from '../../components/ui/StatusBadge';
 import { DashboardIcon, OrdersIcon, FranchiseesIcon, FinanceIcon, WarningIcon, ArrowRightIcon } from '../../components/ui/Icons';
 import { formatCurrency, formatDate } from '../../lib/utils';
@@ -17,12 +19,18 @@ interface Stats {
 }
 
 export default function AdminDashboard() {
+  const { profile } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
   const [recent, setRecent] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [announcement, setAnnouncement] = useState<Announcement | null>(null);
+  const [draftBody, setDraftBody] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [noticeMessage, setNoticeMessage] = useState('');
 
   useEffect(() => {
     loadData();
+    loadAnnouncement();
     const channel = supabase.channel('admin-dash')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => loadData())
       .subscribe();
@@ -56,11 +64,101 @@ export default function AdminDashboard() {
     setLoading(false);
   }
 
+  async function loadAnnouncement() {
+    const { data, error } = await supabase
+      .from('announcements')
+      .select('*')
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Erro carregando aviso geral', error);
+      return;
+    }
+
+    setAnnouncement(data || null);
+    setDraftBody(data?.body || 'NOVAS SOLUÇÕES DE REPROGRAMAÇÃO (FERRAMENTAS KESS3 TRANSDATA)\nNovas soluções ADBLUI ODD\nDAFF 530 EURO 6 (NO MODULO DO ARLA CM 1881)\n...');
+  }
+
+  async function saveAnnouncement() {
+    if (!profile) return;
+    if (!draftBody.trim()) {
+      setNoticeMessage('O aviso não pode ficar vazio.');
+      return;
+    }
+
+    setSaving(true);
+    setNoticeMessage('');
+
+    const payload = {
+      id: announcement?.id,
+      title: 'Aviso Geral',
+      body: draftBody.trim(),
+      active: true,
+      created_by: profile.id,
+    };
+
+    const { data, error } = await supabase
+      .from('announcements')
+      .upsert(payload, { onConflict: 'id' })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Erro salvando aviso geral', error);
+      setNoticeMessage('Erro ao salvar aviso.');
+    } else {
+      setAnnouncement(data);
+      setNoticeMessage('Aviso salvo com sucesso.');
+    }
+
+    setSaving(false);
+  }
+
   return (
     <div style={{ color: 'var(--text)' }}>
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ color: 'var(--text)', fontSize: 22, fontWeight: 700, margin: '0 0 4px' }}>Painel Administrativo</h1>
         <p style={{ color: 'var(--muted)', fontSize: 13, margin: 0 }}>Visão geral das operações Etork Brasil</p>
+      </div>
+
+      <div style={{ background: '#111', border: '1px solid #1f1f1f', borderRadius: 14, padding: 20, marginBottom: 24 }}>
+        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginBottom: 16 }}>
+          <img src={logoImg} alt="ETORK Brasil" style={{ width: 52, borderRadius: 12, flexShrink: 0, background: '#000' }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>Aviso Geral</div>
+            <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>Edite o texto abaixo para mostrar avisos gerais aos franqueados no login.</div>
+          </div>
+        </div>
+
+        <textarea
+          value={draftBody}
+          onChange={e => setDraftBody(e.target.value)}
+          rows={6}
+          style={{ width: '100%', minHeight: 160, background: '#0e0e0e', color: '#f5f5f5', border: '1px solid #2a2a2a', borderRadius: 12, padding: 14, resize: 'vertical', fontSize: 13, lineHeight: 1.6 }}
+        />
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 16, alignItems: 'center' }}>
+          <button
+            type="button"
+            onClick={saveAnnouncement}
+            disabled={saving}
+            style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 10, padding: '12px 18px', cursor: 'pointer', fontWeight: 700 }}
+          >
+            {saving ? 'SALVANDO...' : 'SALVAR AVISO'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setDraftBody(announcement?.body || '')}
+            style={{ background: '#1f2937', color: '#fff', border: 'none', borderRadius: 10, padding: '12px 18px', cursor: 'pointer', fontWeight: 700 }}
+          >Reverter</button>
+          {noticeMessage && (
+            <div style={{ color: noticeMessage.includes('Erro') ? '#f87171' : '#86efac', fontSize: 12, marginTop: 4 }}>
+              {noticeMessage}
+            </div>
+          )}
+        </div>
       </div>
 
       {stats && (

@@ -4,12 +4,17 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
-import type { Order, DashboardStats } from '../../types';
-import { ORDER_STATUS_LABEL, ORDER_STATUS_COLOR } from '../../types';
+import logoImg from '../../assets/logoetork.png';
+import type { Announcement, Order, DashboardStats } from '../../types';
 import StatusBadge from '../../components/ui/StatusBadge';
 import { PlusIcon, ArrowRightIcon, WaveIcon } from '../../components/ui/Icons';
 import { formatCurrency, formatDate } from '../../lib/utils';
 import { useTheme } from '../../context/ThemeContext';
+
+const DEFAULT_ANNOUNCEMENT_BODY = `NOVAS SOLUÇÕES DE REPROGRAMAÇÃO (FERRAMENTAS KESS3 TRANSDATA)
+Novas soluções ADBLUI ODD
+DAFF 530 EURO 6 (NO MODULO DO ARLA CM 1881)
+...`;
 
 export default function FranchiseDashboard() {
   const { franchisee, profile } = useAuth();
@@ -19,6 +24,7 @@ export default function FranchiseDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [announcement, setAnnouncement] = useState<Announcement | null>(null);
 
   // Cores baseadas no tema
   const colors = {
@@ -38,12 +44,14 @@ export default function FranchiseDashboard() {
     if (!franchisee) {
       setStats(null);
       setRecentOrders([]);
+      setAnnouncement(null);
       setLoading(false);
       return;
     }
 
     setLoading(true);
     loadData();
+    loadAnnouncement();
 
     // Realtime subscription for order updates
     const channel = supabase
@@ -93,6 +101,23 @@ export default function FranchiseDashboard() {
     }
   }
 
+  async function loadAnnouncement() {
+    const { data, error } = await supabase
+      .from('announcements')
+      .select('*')
+      .eq('active', true)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Erro carregando aviso geral', error);
+      return;
+    }
+
+    setAnnouncement(data || null);
+  }
+
   const greeting = () => {
     const h = new Date().getHours();
     if (h < 12) return 'Bom dia';
@@ -121,6 +146,18 @@ export default function FranchiseDashboard() {
         <p style={{ color: colors.textMuted, fontSize: 14, margin: 0 }}>
           {franchisee?.company_name} · Código: {franchisee?.code}
         </p>
+      </div>
+
+      <div style={{ marginBottom: 24, padding: '18px 22px', background: isDark ? '#111111' : '#fff7ed', border: `1px solid ${isDark ? '#222222' : '#f5c2c7'}`, borderRadius: 16, display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+        <img src={logoImg} alt="ETORK Brasil" style={{ width: 56, borderRadius: 12, objectFit: 'contain', background: '#000' }} />
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.1, marginBottom: 10, color: isDark ? '#fcd34d' : '#b45309' }}>
+            Avisos Gerais
+          </div>
+          <div style={{ whiteSpace: 'pre-wrap', fontSize: 14, lineHeight: 1.7, color: colors.text }}>
+            {announcement?.body || DEFAULT_ANNOUNCEMENT_BODY}
+          </div>
+        </div>
       </div>
 
       {/* Stats grid */}

@@ -1,84 +1,177 @@
-// src/pages/franchise/NewOrder.tsx
-
+// src/pages/franchise/Orders.tsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, callFunction, storage } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
-import type { Item, CartItem } from '../../types';
-import { formatCurrency } from '../../lib/utils';
 import { useTheme } from '../../context/ThemeContext';
+import { formatCurrency } from '../../lib/utils';
+import type { Order, OrderStatus } from '../../types';
+import { ORDER_STATUS_LABEL, ORDER_STATUS_COLOR } from '../../types';
 
-export default function FranchiseNewOrder() {
-  const { franchisee } = useAuth();
+type FormData = {
+  plate: string;
+  chassi: string;
+  model: string;
+  year: string;
+  engine: string;
+  cv: string;
+  fuel: string;
+  dtc: string;
+  performance: string[];
+  tool: string;
+  notes: string;
+};
+
+const fuelOptions = ['Flex', 'Diesel', 'Álcool / Gasolina'];
+const yearOptions = Array.from({ length: 30 }, (_, index) => `${new Date().getFullYear() - index}`);
+const performanceOptions = [
+  'DPF & EGR (OFF)',
+  'DPF (OFF)',
+  'EGR (OFF)',
+  'Sistema SCR OFF',
+  'Combo DPF, EGR, SCR OFF (Utilitários Geral)',
+  'Sonda/O2 (OFF)',
+  'MAF (OFF)',
+  'Sistema Eolis Renault Master Módulo Bosch',
+  'Potência (STG1)',
+  'Potência (STG2)',
+  'DPF & EGR (OFF) + Potência (STG1 ou STG2)',
+  'Combo Agricultura EGR + Potência STG1',
+  "Pop and Bang's",
+  'VMAX/Limitador de Velocidade (OFF)',
+  'Hard Cut (Veículos Diesel)',
+  "DTC's (OFF) sobre o DTC P0420 (Solução Cat OFF)",
+  'Remoção de Código de Falha por OBD Genérico (DTC)',
+  'Start Stop',
+  'TVA (OFF) - Borboleta de Admissão',
+  'Bomba d\'Água (OFF)',
+  'Heliçe Viscosa OFF (Somente Linha John Deere)',
+  'Redução de Torque por Sistema SCR (Caminhão)',
+  'Decode Módulo do Motor Mercedes (MR) ou Cabine (FR)',
+  'Correção de Checksum',
+  'Voltar para Parâmetros Originais de Fábrica',
+  'Comparar Arquivos Originais/Verificação',
+  'Pedidos Especiais (conforme campo de observação)',
+];
+const toolOptions = [
+  'KTAG (Original)',
+  'KTAG (Pirata)',
+  'KESS V2/KESS3',
+  'New Genius',
+  'New Transdata',
+  'KZ Prog',
+  'DFOX',
+  'KT200',
+  'Outra',
+];
+
+export default function FranchiseOrders() {
   const navigate = useNavigate();
-  const { theme: currentTheme } = useTheme();
-  const isDark = currentTheme === 'dark';
+  const { franchisee } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
-  const [items, setItems] = useState<Item[]>([]);
-  const [cart, setCart] = useState<CartItem[]>([]);
+  // Orders state
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(true);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  // New order form state
+  const [formData, setFormData] = useState<FormData>({
+    plate: '',
+    chassi: '',
+    model: '',
+    year: '',
+    engine: '',
+    cv: '',
+    fuel: fuelOptions[0],
+    dtc: '',
+    performance: [],
+    tool: '',
+    notes: '',
+  });
   const [files, setFiles] = useState<File[]>([]);
-  const [vehiclePlate, setVehiclePlate] = useState('');
-  const [vehicleInfo, setVehicleInfo] = useState<Record<string, string> | null>(null);
-  const [notes, setNotes] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [plateLoading, setPlateLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [search, setSearch] = useState('');
-  const [activeCategory, setActiveCategory] = useState('Todos');
+  const [extraFiles, setExtraFiles] = useState<File[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [submitSuccess, setSubmitSuccess] = useState('');
+  const [showNewOrderForm, setShowNewOrderForm] = useState(false);
+
+  // Colors based on theme
+  const colors = {
+    bgPrimary: isDark ? '#0a0a0a' : '#f5f5f5',
+    bgCard: isDark ? '#111' : '#ffffff',
+    bgCardHover: isDark ? '#1a1a1a' : '#fafafa',
+    borderCard: isDark ? '#1e1e1e' : '#e0e0e0',
+    textPrimary: isDark ? '#fff' : '#1a1a1a',
+    textSecondary: isDark ? '#888' : '#666',
+    textMuted: isDark ? '#555' : '#999',
+    statusAmber: isDark ? '#854d0e' : '#fef3c7',
+    statusBlue: isDark ? '#1e3a8a' : '#dbeafe',
+    statusPurple: isDark ? '#7c3aed' : '#e9d5ff',
+    statusGreen: isDark ? '#14532d' : '#dcfce7',
+    statusRed: isDark ? '#7f1d1d' : '#fee2e2',
+    badgeFile: isDark ? '#1a1500' : '#fff8e0',
+    badgeFileColor: isDark ? '#e6b800' : '#b8860b',
+  };
 
   useEffect(() => {
-    supabase.from('items').select('*').eq('active', true).order('category', { ascending: true })
-      .then(({ data }) => setItems(data || []));
+    loadOrders();
   }, []);
 
-  const categories = ['Todos', ...Array.from(new Set(items.map(i => i.category)))];
-
-  const filteredItems = items.filter(item =>
-    (activeCategory === 'Todos' || item.category === activeCategory) &&
-    (item.name.toLowerCase().includes(search.toLowerCase()) || item.sku.toLowerCase().includes(search.toLowerCase()))
-  );
-
-  function addToCart(item: Item) {
-    setCart(prev => {
-      const existing = prev.find(c => c.item.id === item.id);
-      if (existing) return prev.map(c => c.item.id === item.id ? { ...c, quantity: c.quantity + 1 } : c);
-      return [...prev, { item, quantity: 1 }];
-    });
-  }
-
-  function updateQty(itemId: string, qty: number) {
-    if (qty <= 0) setCart(prev => prev.filter(c => c.item.id !== itemId));
-    else setCart(prev => prev.map(c => c.item.id === itemId ? { ...c, quantity: qty } : c));
-  }
-
-  const cartTotal = cart.reduce((sum, c) => sum + c.item.unit_price * c.quantity, 0);
-  const requiresFile = cart.some(c => c.item.requires_file);
-
-  async function lookupPlate() {
-    if (!vehiclePlate || vehiclePlate.length < 7) return;
-    setPlateLoading(true);
+  async function loadOrders() {
+    setLoadingOrders(true);
     try {
-      const plate = vehiclePlate.replace(/[^A-Z0-9]/gi, '').toUpperCase();
-      await fetch(`https://brasilapi.com.br/api/cep/v1/${plate}`).catch(() => null);
-      setVehicleInfo({ plate, status: 'Consulta realizada', queried_at: new Date().toLocaleString('pt-BR') });
-    } catch {
-      setVehicleInfo(null);
+      const { data: ordersData, error: ordersError } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          order_items:order_items(
+            quantity,
+            item:items(name, unit_price)
+          ),
+          order_files(id, file_name, file_path)
+        `)
+        .eq('franchisee_id', franchisee?.id)
+        .order('created_at', { ascending: false });
+
+      if (ordersError) throw ordersError;
+      setOrders(ordersData || []);
+    } catch (err) {
+      console.error('Error loading orders:', err);
     } finally {
-      setPlateLoading(false);
+      setLoadingOrders(false);
     }
   }
 
-  async function handleSubmit() {
-    if (cart.length === 0) { setError('Adicione pelo menos um item ao pedido.'); return; }
-    if (requiresFile && files.length === 0) { setError('Um ou mais itens selecionados exigem upload de arquivo.'); return; }
+  async function handleSubmitOrder(sendAnother = false) {
+    if (!formData.plate.trim()) {
+      setSubmitError('Informe a placa/frota.');
+      return;
+    }
+    if (files.length === 0) {
+      setSubmitError('Envie pelo menos um arquivo de mapa (ORI, MOD, BIN).');
+      return;
+    }
 
-    setError('');
-    setLoading(true);
+    setSubmitError('');
+    setSubmitting(true);
+    setSubmitSuccess('');
+
     try {
       const result = await callFunction<{ order: { id: string } }>('create-order', {
-        notes,
-        vehicle_plate: vehiclePlate || undefined,
-        items: cart.map(c => ({ item_id: c.item.id, quantity: c.quantity })),
+        vehicle_plate: formData.plate.trim(),
+        chassi: formData.chassi.trim() || undefined,
+        model: formData.model.trim() || undefined,
+        year: formData.year || undefined,
+        engine: formData.engine.trim() || undefined,
+        cv: formData.cv.trim() || undefined,
+        fuel: formData.fuel,
+        dtc: formData.dtc.trim() || undefined,
+        notes: `Ferramenta: ${formData.tool || 'Não informada'} | Performance: ${formData.performance.join(', ') || 'Nenhuma'} | Obs: ${formData.notes.trim()}`,
       });
 
       for (const file of files) {
@@ -89,259 +182,653 @@ export default function FranchiseNewOrder() {
           file_path: path,
           file_size: file.size,
           mime_type: file.type,
-          uploaded_by: (await supabase.auth.getUser()).data.user!.id,
         });
       }
 
-      navigate('/orders');
+      for (const file of extraFiles) {
+        const path = await storage.uploadOrderFile(result.order.id, file);
+        await supabase.from('order_files').insert({
+          order_id: result.order.id,
+          file_name: file.name,
+          file_path: path,
+          file_size: file.size,
+          mime_type: file.type,
+        });
+      }
+
+      await loadOrders();
+
+      if (sendAnother) {
+        setFiles([]);
+        setExtraFiles([]);
+        setFormData({
+          plate: '',
+          chassi: '',
+          model: '',
+          year: '',
+          engine: '',
+          cv: '',
+          fuel: fuelOptions[0],
+          dtc: '',
+          performance: [],
+          tool: '',
+          notes: '',
+        });
+        setSubmitSuccess('Pedido enviado com sucesso! Preencha outro pedido abaixo.');
+      } else {
+        setShowNewOrderForm(false);
+        setSubmitSuccess('Pedido enviado com sucesso!');
+        setTimeout(() => setSubmitSuccess(''), 3000);
+      }
     } catch (err: unknown) {
-      setError((err as Error).message || 'Erro ao criar pedido.');
+      setSubmitError((err as Error).message || 'Erro ao enviar pedido.');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   }
 
-  // Cores baseadas no tema
-  const colors = {
-    bgCard: isDark ? '#111' : '#ffffff',
-    bgCardSelected: isDark ? '#1a1500' : '#fff8e0',
-    borderCard: isDark ? '#1e1e1e' : '#e0e0e0',
-    borderCardSelected: isDark ? '#3a3000' : '#e6b800',
-    textPrimary: isDark ? '#fff' : '#1a1a1a',
-    textSecondary: isDark ? '#666' : '#888',
-    textMuted: isDark ? '#555' : '#999',
-    bgInput: isDark ? '#0d0d0d' : '#f5f5f5',
-    borderInput: isDark ? '#2a2a2a' : '#ddd',
-    bgSection: isDark ? '#111' : '#ffffff',
-    borderSection: isDark ? '#1e1e1e' : '#e0e0e0',
-    bgVehicleInfo: isDark ? '#0d1a0d' : '#e8f5e9',
-    vehicleInfoColor: isDark ? '#4ade80' : '#2e7d32',
-    badgeFile: isDark ? '#1a1500' : '#fff8e0',
-    badgeFileColor: isDark ? '#e6b800' : '#b8860b',
-    bgError: isDark ? '#1a0a0a' : '#ffebee',
-    errorColor: isDark ? '#e74c3c' : '#c62828',
-    bgSuccess: isDark ? '#0a1a0a' : '#e8f5e9',
-    successColor: isDark ? '#4ade80' : '#2e7d32',
-    btnSecondaryBg: isDark ? 'transparent' : '#f5f5f5',
-    btnSecondaryBorder: isDark ? '#333' : '#ddd',
-    btnSecondaryColor: isDark ? '#ccc' : '#666',
-    qtyBtnBg: isDark ? '#1a1a1a' : '#e0e0e0',
-    qtyBtnBorder: isDark ? '#333' : '#ccc',
-    qtyBtnColor: isDark ? '#fff' : '#1a1a1a',
+  function updateField<K extends keyof FormData>(key: K, value: FormData[K]) {
+    setFormData(prev => ({ ...prev, [key]: value }));
+  }
+
+  function toggleSelectOrder(orderId: string) {
+    const newSelected = new Set(selectedOrders);
+    if (newSelected.has(orderId)) {
+      newSelected.delete(orderId);
+    } else {
+      newSelected.add(orderId);
+    }
+    setSelectedOrders(newSelected);
+  }
+
+  function toggleSelectAll() {
+    if (selectedOrders.size === orders.length) {
+      setSelectedOrders(new Set());
+    } else {
+      setSelectedOrders(new Set(orders.map(o => o.id)));
+    }
+  }
+
+  const sortedOrders = [...orders].sort((a, b) => {
+    const dateA = new Date(a.created_at).getTime();
+    const dateB = new Date(b.created_at).getTime();
+    return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+  });
+
+  const getStatusText = (status: OrderStatus) => {
+    return ORDER_STATUS_LABEL[status] || status;
+  };
+
+  const getStatusColor = (status: OrderStatus) => {
+    const colorMap = {
+      solicitado: colors.statusAmber,
+      em_producao: colors.statusBlue,
+      enviado: colors.statusPurple,
+      concluido: colors.statusGreen,
+      cancelado: colors.statusRed,
+    };
+    return colorMap[status] || colors.bgCard;
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '12px 14px',
+    borderRadius: 10,
+    background: isDark ? '#111' : '#fff',
+    border: `1px solid ${isDark ? '#333' : '#dcdcdc'}`,
+    color: isDark ? '#eee' : '#111',
+    fontSize: 13,
+    outline: 'none',
+  };
+
+  const labelStyle: React.CSSProperties = {
+    display: 'block',
+    marginBottom: 8,
+    fontSize: 12,
+    fontWeight: 700,
+    color: isDark ? '#bbb' : '#555',
+    letterSpacing: 0.5,
+  };
+
+  const sectionStyle: React.CSSProperties = {
+    background: isDark ? '#121212' : '#fafafa',
+    border: `1px solid ${isDark ? '#222' : '#e5e5e5'}`,
+    borderRadius: 16,
+    padding: 20,
   };
 
   return (
-    <div>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ color: colors.textPrimary, fontSize: 20, fontWeight: 700, margin: '0 0 4px' }}>Novo Pedido</h1>
-        <p style={{ color: colors.textSecondary, fontSize: 13, margin: 0 }}>Selecione os serviços desejados</p>
+    <div style={{ maxWidth: 1400, margin: '0 auto', padding: '24px' }}>
+      {/* Header with navigation */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: colors.textPrimary }}>Meus Arquivos</h1>
+          <p style={{ margin: '4px 0 0', color: colors.textSecondary, fontSize: 13 }}>
+            Gerencie seus pedidos e envie novos arquivos
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button
+            onClick={() => navigate('/support')}
+            style={{
+              padding: '10px 20px',
+              background: 'transparent',
+              border: `1px solid ${colors.borderCard}`,
+              borderRadius: 8,
+              color: colors.textSecondary,
+              cursor: 'pointer',
+              fontSize: 13,
+              fontWeight: 600,
+            }}
+          >
+            Suporte
+          </button>
+          <button
+            onClick={() => setShowNewOrderForm(!showNewOrderForm)}
+            style={{
+              padding: '10px 24px',
+              background: '#e6b800',
+              border: 'none',
+              borderRadius: 8,
+              color: '#000',
+              cursor: 'pointer',
+              fontSize: 13,
+              fontWeight: 700,
+            }}
+          >
+            {showNewOrderForm ? 'Cancelar Novo Pedido' : '+ Enviar Novos Arquivos'}
+          </button>
+        </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20, alignItems: 'start' }}>
-        {/* Left: catalog */}
-        <div>
-          {/* Vehicle plate */}
-          <div style={{ background: colors.bgSection, border: `1px solid ${colors.borderSection}`, borderRadius: 10, padding: 16, marginBottom: 16 }}>
-            <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: colors.textSecondary }}>PLACA DO VEÍCULO (opcional)</label>
-            <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-              <input
-                value={vehiclePlate}
-                onChange={e => setVehiclePlate(e.target.value.toUpperCase())}
-                placeholder="ex: ABC1D23"
-                maxLength={8}
-                style={{
-                  flex: 1, padding: '10px 12px', borderRadius: 8, fontSize: 13, outline: 'none',
-                  background: colors.bgInput, border: `1px solid ${colors.borderInput}`, color: colors.textPrimary
-                }}
-                onFocus={e => e.target.style.borderColor = '#e6b800'}
-                onBlur={e => e.target.style.borderColor = colors.borderInput}
-              />
-              <button 
-                onClick={lookupPlate} 
-                disabled={plateLoading || vehiclePlate.length < 7}
-                style={{
-                  padding: '10px 14px', background: colors.btnSecondaryBg,
-                  border: `1px solid ${colors.btnSecondaryBorder}`, borderRadius: 8,
-                  color: colors.btnSecondaryColor, cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                  ...(plateLoading || vehiclePlate.length < 7 ? { opacity: 0.5 } : {})
-                }}>
-                {plateLoading ? '...' : 'Consultar'}
-              </button>
-            </div>
-            {vehicleInfo && (
-              <div style={{ marginTop: 8, padding: '8px 12px', background: colors.bgVehicleInfo, borderRadius: 6, fontSize: 12, color: colors.vehicleInfoColor }}>
-                ✓ Placa {vehicleInfo.plate} consultada em {vehicleInfo.queried_at}
-              </div>
-            )}
-          </div>
-
-          {/* Search + categories */}
-          <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Buscar serviço..."
-              style={{
-                flex: 1, minWidth: 160, padding: '10px 12px', borderRadius: 8, fontSize: 13, outline: 'none',
-                background: colors.bgInput, border: `1px solid ${colors.borderInput}`, color: colors.textPrimary
-              }}
-              onFocus={e => e.target.style.borderColor = '#e6b800'}
-              onBlur={e => e.target.style.borderColor = colors.borderInput}
-            />
-            {categories.map(cat => (
-              <button key={cat} onClick={() => setActiveCategory(cat)}
-                style={{
-                  padding: '8px 14px', borderRadius: 20, fontSize: 11, fontWeight: 600,
-                  border: '1px solid',
-                  background: activeCategory === cat ? '#e6b800' : 'transparent',
-                  color: activeCategory === cat ? '#000' : colors.textSecondary,
-                  borderColor: activeCategory === cat ? '#e6b800' : colors.borderInput,
-                  cursor: 'pointer', letterSpacing: 0.5,
-                }}>
-                {cat}
-              </button>
-            ))}
-          </div>
-
-          {/* Items grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10 }}>
-            {filteredItems.map(item => {
-              const inCart = cart.find(c => c.item.id === item.id);
-              return (
-                <div key={item.id} style={{
-                  background: inCart ? colors.bgCardSelected : colors.bgCard,
-                  border: `1px solid ${inCart ? colors.borderCardSelected : colors.borderCard}`,
-                  borderRadius: 10, padding: 14,
-                  cursor: 'pointer', transition: 'all 0.15s',
-                }} onClick={() => addToCart(item)}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-                    <span style={{ fontSize: 10, color: colors.textMuted, letterSpacing: 1 }}>{item.sku}</span>
-                    {item.requires_file && (
-                      <span style={{ fontSize: 9, color: colors.badgeFileColor, background: colors.badgeFile, padding: '2px 6px', borderRadius: 4, border: `1px solid ${colors.borderCardSelected}` }}>
-                        FILE
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: colors.textPrimary, marginBottom: 4, lineHeight: 1.3 }}>{item.name}</div>
-                  <div style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 10, lineHeight: 1.4 }}>{item.description}</div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 15, fontWeight: 700, color: '#e6b800' }}>{formatCurrency(item.unit_price)}</span>
-                    <span style={{ fontSize: 18, color: inCart ? '#4ade80' : colors.textMuted }}>{inCart ? '✓' : '+'}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+      {/* Success/Error Messages */}
+      {submitSuccess && (
+        <div style={{ marginBottom: 16, padding: '14px 16px', background: '#163a0f', color: '#d1fae5', borderRadius: 12 }}>
+          {submitSuccess}
         </div>
+      )}
 
-        {/* Right: cart */}
-        <div style={{ 
-          background: colors.bgSection, 
-          border: `1px solid ${colors.borderSection}`, 
-          borderRadius: 10, 
-          padding: 16, 
-          position: 'sticky', 
-          top: 80 
-        }}>
-          <h2 style={{ color: colors.textPrimary, fontSize: 14, fontWeight: 600, marginBottom: 16 }}>Resumo do Pedido</h2>
+      {submitError && (
+        <div style={{ marginBottom: 16, padding: '14px 16px', background: '#7f1d1d', color: '#fecaca', borderRadius: 12 }}>
+          {submitError}
+        </div>
+      )}
 
-          {cart.length === 0 ? (
-            <p style={{ color: colors.textMuted, fontSize: 13, textAlign: 'center', padding: '16px 0' }}>
-              Selecione serviços ao lado
-            </p>
-          ) : (
-            <>
-              {cart.map(c => (
-                <div key={c.item.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 12, color: colors.textPrimary, fontWeight: 500 }}>{c.item.name}</div>
-                    <div style={{ fontSize: 11, color: colors.textSecondary }}>{formatCurrency(c.item.unit_price)} × {c.quantity}</div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <button 
-                      onClick={() => updateQty(c.item.id, c.quantity - 1)} 
-                      style={{
-                        width: 22, height: 22, borderRadius: 4, cursor: 'pointer', fontSize: 14,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
-                        background: colors.qtyBtnBg, border: `1px solid ${colors.qtyBtnBorder}`, color: colors.qtyBtnColor
-                      }}>
-                      -
-                    </button>
-                    <span style={{ color: colors.textPrimary, fontSize: 12, minWidth: 16, textAlign: 'center' }}>{c.quantity}</span>
-                    <button 
-                      onClick={() => updateQty(c.item.id, c.quantity + 1)} 
-                      style={{
-                        width: 22, height: 22, borderRadius: 4, cursor: 'pointer', fontSize: 14,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
-                        background: colors.qtyBtnBg, border: `1px solid ${colors.qtyBtnBorder}`, color: colors.qtyBtnColor
-                      }}>
-                      +
-                    </button>
-                  </div>
-                  <span style={{ fontSize: 12, color: '#e6b800', fontWeight: 600, minWidth: 60, textAlign: 'right' }}>
-                    {formatCurrency(c.item.unit_price * c.quantity)}
-                  </span>
+      {/* New Order Form */}
+      {showNewOrderForm && (
+        <div style={{ marginBottom: 32 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+            <div style={sectionStyle}>
+              <h2 style={{ marginTop: 0, marginBottom: 18, color: colors.textPrimary, fontSize: 16 }}>Informações do Veículo</h2>
+
+              <label style={labelStyle}>PLACA / FROTA *</label>
+              <input
+                value={formData.plate}
+                onChange={e => updateField('plate', e.target.value.toUpperCase())}
+                placeholder="ABC1D23"
+                style={inputStyle}
+              />
+
+              <label style={labelStyle}>CHASSI</label>
+              <input
+                value={formData.chassi}
+                onChange={e => updateField('chassi', e.target.value)}
+                placeholder="XXXXXXXXXXXXXXX"
+                style={inputStyle}
+              />
+
+              <label style={labelStyle}>MODELO / MARCA</label>
+              <input
+                value={formData.model}
+                onChange={e => updateField('model', e.target.value)}
+                placeholder="Ex: Jeep Compass"
+                style={inputStyle}
+              />
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div>
+                  <label style={labelStyle}>ANO</label>
+                  <select
+                    value={formData.year}
+                    onChange={e => updateField('year', e.target.value)}
+                    style={inputStyle}
+                  >
+                    <option value="">Selecione</option>
+                    {yearOptions.map(year => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
                 </div>
-              ))}
-
-              <div style={{ borderTop: `1px solid ${colors.borderSection}`, paddingTop: 12, marginTop: 8, marginBottom: 14 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: colors.textSecondary, fontSize: 13 }}>Total</span>
-                  <span style={{ color: '#e6b800', fontSize: 18, fontWeight: 700 }}>{formatCurrency(cartTotal)}</span>
+                <div>
+                  <label style={labelStyle}>MOTOR</label>
+                  <input
+                    value={formData.engine}
+                    onChange={e => updateField('engine', e.target.value)}
+                    placeholder="Ex: 2.0 Turbo"
+                    style={inputStyle}
+                  />
                 </div>
               </div>
-            </>
-          )}
 
-          {/* Notes */}
-          <textarea
-            value={notes}
-            onChange={e => setNotes(e.target.value)}
-            placeholder="Observações (opcional)..."
-            rows={3}
-            style={{
-              width: '100%', padding: '10px 12px', borderRadius: 8, fontSize: 13, outline: 'none',
-              resize: 'vertical', marginBottom: 12, boxSizing: 'border-box',
-              background: colors.bgInput, border: `1px solid ${colors.borderInput}`, color: colors.textPrimary
-            }}
-            onFocus={e => e.target.style.borderColor = '#e6b800'}
-            onBlur={e => e.target.style.borderColor = colors.borderInput}
-          />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div>
+                  <label style={labelStyle}>CV</label>
+                  <input
+                    value={formData.cv}
+                    onChange={e => updateField('cv', e.target.value)}
+                    placeholder="Ex: 250"
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={labelStyle}>COMBUSTÍVEL</label>
+                  <select
+                    value={formData.fuel}
+                    onChange={e => updateField('fuel', e.target.value)}
+                    style={inputStyle}
+                  >
+                    {fuelOptions.map(option => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
 
-          {/* File upload */}
-          {requiresFile && (
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: colors.textSecondary }}>
-                ARQUIVOS DO REMAP <span style={{ color: '#e74c3c' }}>*</span>
-              </label>
-              <input type="file" multiple
+              <label style={labelStyle}>DTC / AVARIAS</label>
+              <input
+                value={formData.dtc}
+                onChange={e => updateField('dtc', e.target.value)}
+                placeholder="Descreva DTCs ou avarias"
+                style={inputStyle}
+              />
+            </div>
+
+            <div style={sectionStyle}>
+              <h2 style={{ marginTop: 0, marginBottom: 18, color: colors.textPrimary, fontSize: 16 }}>Performance e Ferramentas</h2>
+
+              <label style={labelStyle}>PERFORMANCE - SELECIONE OS SERVIÇOS</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, marginBottom: 18, maxHeight: 300, overflowY: 'auto' }}>
+                {performanceOptions.map(option => {
+                  const active = formData.performance.includes(option);
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => {
+                        const next = active
+                          ? formData.performance.filter(item => item !== option)
+                          : [...formData.performance, option];
+                        updateField('performance', next);
+                      }}
+                      style={{
+                        padding: '10px 12px',
+                        borderRadius: 10,
+                        border: '1px solid',
+                        borderColor: active ? '#dc2626' : isDark ? '#2d2d2d' : '#d1d5db',
+                        background: active ? '#dc2626' : isDark ? '#141414' : '#fff',
+                        color: active ? '#fff' : isDark ? '#eee' : '#111',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        fontSize: 12,
+                      }}
+                    >
+                      {option}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <label style={labelStyle}>FERRAMENTA UTILIZADA</label>
+              <select
+                value={formData.tool}
+                onChange={e => updateField('tool', e.target.value)}
+                style={inputStyle}
+              >
+                <option value="">Selecione a ferramenta</option>
+                {toolOptions.map(option => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div style={{ ...sectionStyle, marginTop: 20 }}>
+            <h2 style={{ marginTop: 0, marginBottom: 18, color: colors.textPrimary, fontSize: 16 }}>Upload de Arquivos</h2>
+
+            <label style={labelStyle}>ARQUIVOS DE MAPA (ORI, MOD, BIN) *</label>
+            <div style={{ marginBottom: 18 }}>
+              <input
+                type="file"
+                multiple
+                accept=".bin,.ori,.mod"
                 onChange={e => setFiles(Array.from(e.target.files || []))}
-                style={{ marginTop: 6, color: colors.textSecondary, fontSize: 12 }}
-                accept=".bin,.ori,.mod,.zip,.rar,.pdf"
+                style={{ ...inputStyle, padding: '14px 12px' }}
               />
               {files.length > 0 && (
-                <div style={{ marginTop: 6, fontSize: 11, color: colors.successColor }}>
+                <div style={{ marginTop: 8, color: '#4ade80', fontSize: 12 }}>
                   {files.length} arquivo(s) selecionado(s)
                 </div>
               )}
             </div>
-          )}
 
-          {error && (
-            <div style={{ padding: '8px 12px', background: colors.bgError, borderRadius: 6, color: colors.errorColor, fontSize: 12, marginBottom: 12 }}>
-              {error}
+            <label style={labelStyle}>FOTO / PDF</label>
+            <div style={{ marginBottom: 18 }}>
+              <input
+                type="file"
+                multiple
+                accept="image/*,.pdf"
+                onChange={e => setExtraFiles(Array.from(e.target.files || []))}
+                style={{ ...inputStyle, padding: '14px 12px' }}
+              />
+              {extraFiles.length > 0 && (
+                <div style={{ marginTop: 8, color: '#4ade80', fontSize: 12 }}>
+                  {extraFiles.length} arquivo(s) selecionado(s)
+                </div>
+              )}
             </div>
-          )}
 
-          <button onClick={handleSubmit} disabled={loading || cart.length === 0}
+            <label style={labelStyle}>OBSERVAÇÕES</label>
+            <textarea
+              value={formData.notes}
+              onChange={e => updateField('notes', e.target.value)}
+              rows={4}
+              placeholder="Insira observações adicionais..."
+              style={{ ...inputStyle, minHeight: 100, resize: 'vertical' }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 20 }}>
+            <button
+              type="button"
+              onClick={() => handleSubmitOrder(false)}
+              disabled={submitting}
+              style={{
+                flex: 1,
+                minWidth: 180,
+                background: '#dc2626',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 12,
+                padding: '14px 18px',
+                cursor: submitting ? 'not-allowed' : 'pointer',
+                fontWeight: 700,
+                opacity: submitting ? 0.6 : 1,
+              }}
+            >
+              {submitting ? 'ENVIANDO...' : 'ENVIAR PEDIDO'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleSubmitOrder(true)}
+              disabled={submitting}
+              style={{
+                flex: 1,
+                minWidth: 180,
+                background: '#1f2937',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 12,
+                padding: '14px 18px',
+                cursor: submitting ? 'not-allowed' : 'pointer',
+                fontWeight: 700,
+                opacity: submitting ? 0.6 : 1,
+              }}
+            >
+              {submitting ? 'ENVIANDO...' : 'ENVIAR E FAZER OUTRO'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Orders Table - Meus Arquivos */}
+      <div style={{ background: colors.bgCard, border: `1px solid ${colors.borderCard}`, borderRadius: 12, overflow: 'hidden' }}>
+        {/* Table Header with sorting and selection */}
+        <div style={{ padding: '16px 20px', borderBottom: `1px solid ${colors.borderCard}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={selectedOrders.size === orders.length && orders.length > 0}
+                onChange={toggleSelectAll}
+                style={{ width: 18, height: 18, cursor: 'pointer' }}
+              />
+              <span style={{ fontSize: 13, color: colors.textSecondary }}>Selecionar todos</span>
+            </label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 13, color: colors.textSecondary }}>Ordenar por:</span>
+              <button
+                onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: colors.textPrimary,
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                }}
+              >
+                Processo
+                <span>{sortOrder === 'desc' ? '↓' : '↑'}</span>
+              </button>
+            </div>
+          </div>
+          {selectedOrders.size > 0 && (
+            <button
+              style={{
+                padding: '6px 12px',
+                background: '#dc2626',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 6,
+                fontSize: 12,
+                cursor: 'pointer',
+              }}
+            >
+              Baixar Selecionados ({selectedOrders.size})
+            </button>
+          )}
+        </div>
+
+        {/* Table Body */}
+        {loadingOrders ? (
+          <div style={{ padding: 60, textAlign: 'center', color: colors.textSecondary }}>
+            Carregando pedidos...
+          </div>
+        ) : sortedOrders.length === 0 ? (
+          <div style={{ padding: 60, textAlign: 'center', color: colors.textSecondary }}>
+            Nenhum pedido encontrado. Clique em "Enviar Novos Arquivos" para começar.
+          </div>
+        ) : (
+          sortedOrders.map((order) => (
+            <div
+              key={order.id}
+              style={{
+                borderBottom: `1px solid ${colors.borderCard}`,
+                transition: 'all 0.2s',
+              }}
+            >
+              {/* Order Row */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '40px 80px 1fr 120px 100px 80px',
+                  alignItems: 'center',
+                  padding: '14px 20px',
+                  cursor: 'pointer',
+                  background: expandedOrderId === order.id ? colors.bgCardHover : 'transparent',
+                }}
+                onClick={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
+              >
+                <div onClick={(e) => { e.stopPropagation(); toggleSelectOrder(order.id); }}>
+                  <input
+                    type="checkbox"
+                    checked={selectedOrders.has(order.id)}
+                    onChange={() => {}}
+                    style={{ width: 18, height: 18, cursor: 'pointer' }}
+                  />
+                </div>
+                <div>
+                  <span style={{ fontWeight: 600, color: colors.textPrimary, fontSize: 14 }}>
+                    {order.id.slice(0, 6).toUpperCase()}
+                  </span>
+                </div>
+                <div>
+                  <span style={{
+                    display: 'inline-block',
+                    padding: '4px 10px',
+                    borderRadius: 20,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    background: getStatusColor(order.status),
+                    color: isDark ? '#fff' : '#1a1a1a',
+                  }}>
+                    {getStatusText(order.status)}
+                  </span>
+                </div>
+                <div style={{ fontSize: 12, color: colors.textSecondary }}>
+                  {new Date(order.created_at).toLocaleString('pt-BR')}
+                </div>
+                <div>
+                  {order.order_files && order.order_files.length > 0 && (
+                    <span style={{
+                      fontSize: 11,
+                      color: colors.badgeFileColor,
+                      background: colors.badgeFile,
+                      padding: '4px 8px',
+                      borderRadius: 4,
+                    }}>
+                      📎 {order.order_files.length} arquivo(s)
+                    </span>
+                  )}
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); /* Open ticket */ }}
+                    style={{
+                      padding: '6px 12px',
+                      background: 'transparent',
+                      border: `1px solid ${colors.borderCard}`,
+                      borderRadius: 6,
+                      fontSize: 11,
+                      color: colors.textSecondary,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Ver Ticket
+                  </button>
+                </div>
+              </div>
+
+              {/* Expanded Details */}
+              {expandedOrderId === order.id && (
+                <div style={{ padding: '16px 20px 20px 100px', background: colors.bgCardHover, borderTop: `1px solid ${colors.borderCard}` }}>
+                  {/* Vehicle Info */}
+                  {order.vehicle_plate && (
+                    <div style={{ marginBottom: 16, display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+                      {order.vehicle_plate && (
+                        <div>
+                          <div style={{ fontSize: 11, color: colors.textMuted }}>PLACA</div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: colors.textPrimary }}>{order.vehicle_plate}</div>
+                        </div>
+                      )}
+                      {order.notes && (
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 11, color: colors.textMuted }}>OBSERVAÇÕES</div>
+                          <div style={{ fontSize: 12, color: colors.textSecondary }}>{order.notes}</div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Order Items */}
+                  {order.order_items && order.order_items.length > 0 && (
+                    <div style={{ marginBottom: 16 }}>
+                      <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 8 }}>SERVIÇOS SOLICITADOS</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                        {order.order_items.map((item, idx) => (
+                          <span key={idx} style={{
+                            padding: '4px 10px',
+                            background: isDark ? '#1a1a1a' : '#f0f0f0',
+                            borderRadius: 6,
+                            fontSize: 12,
+                            color: colors.textPrimary,
+                          }}>
+                            {item.item?.name || 'Item'} × {item.quantity}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Files */}
+                  {order.order_files && order.order_files.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 8 }}>ARQUIVOS ANEXADOS</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                        {order.order_files.map((file) => (
+                          <a
+                            key={file.id}
+                            href={file.file_path}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              padding: '6px 12px',
+                              background: isDark ? '#1a1a1a' : '#f5f5f5',
+                              borderRadius: 6,
+                              fontSize: 12,
+                              color: '#e6b800',
+                              textDecoration: 'none',
+                            }}
+                          >
+                            📄 {file.file_name}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))
+        )}
+
+        {/* Pagination */}
+        <div style={{ padding: '16px 20px', borderTop: `1px solid ${colors.borderCard}`, display: 'flex', justifyContent: 'center', gap: 16, alignItems: 'center' }}>
+          <button
+            disabled
             style={{
-              width: '100%', padding: '12px',
-              background: cart.length > 0 ? '#e6b800' : colors.bgInput,
-              color: cart.length > 0 ? '#000' : colors.textMuted,
-              border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700,
-              cursor: cart.length > 0 ? 'pointer' : 'not-allowed', letterSpacing: 0.5,
-            }}>
-            {loading ? 'ENVIANDO...' : 'ENVIAR PEDIDO'}
+              padding: '6px 12px',
+              background: 'transparent',
+              border: `1px solid ${colors.borderCard}`,
+              borderRadius: 6,
+              color: colors.textMuted,
+              cursor: 'not-allowed',
+            }}
+          >
+            Anterior
+          </button>
+          <span style={{ fontSize: 13, color: colors.textSecondary }}>
+            1 / {Math.ceil(orders.length / 10) || 1}
+          </span>
+          <button
+            disabled
+            style={{
+              padding: '6px 12px',
+              background: 'transparent',
+              border: `1px solid ${colors.borderCard}`,
+              borderRadius: 6,
+              color: colors.textMuted,
+              cursor: 'not-allowed',
+            }}
+          >
+            Próximo
           </button>
         </div>
       </div>

@@ -115,6 +115,16 @@ export interface Notification {
   created_at: string;
 }
 
+export interface Announcement {
+  id: string;
+  title: string;
+  body: string;
+  active: boolean;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface OrderStatusHistory {
   id: string;
   order_id: string;
