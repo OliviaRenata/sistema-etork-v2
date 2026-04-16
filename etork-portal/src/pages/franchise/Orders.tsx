@@ -18,7 +18,7 @@ type FormData = {
   fuel: string;
   dtc: string;
   performance: string[];
-  tool: string;
+  tool: string[];
   notes: string;
 };
 
@@ -54,20 +54,22 @@ const performanceOptions = [
   'Pedidos Especiais (conforme campo de observação)',
 ];
 const toolOptions = [
-  'KTAG (Original)',
-  'KTAG (Pirata)',
-  'KESS V2/KESS3',
-  'New Genius',
-  'New Transdata',
-  'KZ Prog',
+  'KTAG ORIGINAL',
+  'KESS V2 ORIGINAL',
+  'KESS3 ORIGINAL',
+  'NEW GENIUS',
+  'NEW TRANSDATA',
+  'KZ PROG',
+  'KESS PIRATA',
+  'KTAG PIRATA',
   'DFOX',
   'KT200',
-  'Outra',
+  'Outra (especificar)',
 ];
 
 export default function FranchiseOrders() {
   const navigate = useNavigate();
-  const { franchisee } = useAuth();
+  const { franchisee, loading } = useAuth();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
@@ -90,7 +92,7 @@ export default function FranchiseOrders() {
     fuel: fuelOptions[0],
     dtc: '',
     performance: [],
-    tool: '',
+    tool: [],
     notes: '',
   });
   const [files, setFiles] = useState<File[]>([]);
@@ -119,10 +121,17 @@ export default function FranchiseOrders() {
   };
 
   useEffect(() => {
-    loadOrders();
-  }, []);
+    if (franchisee?.id) {
+      loadOrders();
+    }
+  }, [franchisee?.id]);
 
   async function loadOrders() {
+    if (!franchisee?.id) {
+      setLoadingOrders(false);
+      return;
+    }
+
     setLoadingOrders(true);
     try {
       const { data: ordersData, error: ordersError } = await supabase
@@ -135,7 +144,7 @@ export default function FranchiseOrders() {
           ),
           order_files(id, file_name, file_path)
         `)
-        .eq('franchisee_id', franchisee?.id)
+        .eq('franchisee_id', franchisee.id)
         .order('created_at', { ascending: false });
 
       if (ordersError) throw ordersError;
@@ -171,7 +180,7 @@ export default function FranchiseOrders() {
         cv: formData.cv.trim() || undefined,
         fuel: formData.fuel,
         dtc: formData.dtc.trim() || undefined,
-        notes: `Ferramenta: ${formData.tool || 'Não informada'} | Performance: ${formData.performance.join(', ') || 'Nenhuma'} | Obs: ${formData.notes.trim()}`,
+        notes: `Ferramenta: ${formData.tool.join(', ') || 'Não informada'} | Performance: ${formData.performance.join(', ') || 'Nenhuma'} | Obs: ${formData.notes.trim()}`,
       });
 
       for (const file of files) {
@@ -211,7 +220,7 @@ export default function FranchiseOrders() {
           fuel: fuelOptions[0],
           dtc: '',
           performance: [],
-          tool: '',
+          tool: [],
           notes: '',
         });
         setSubmitSuccess('Pedido enviado com sucesso! Preencha outro pedido abaixo.');
@@ -299,63 +308,76 @@ export default function FranchiseOrders() {
 
   return (
     <div style={{ maxWidth: 1400, margin: '0 auto', padding: '24px' }}>
-      {/* Header with navigation */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: colors.textPrimary }}>Meus Arquivos</h1>
-          <p style={{ margin: '4px 0 0', color: colors.textSecondary, fontSize: 13 }}>
-            Gerencie seus pedidos e envie novos arquivos
-          </p>
+      {/* Show error if franchisee not loaded */}
+      {!franchisee && !loading ? (
+        <div style={{ textAlign: 'center', padding: 60, color: colors.statusRed }}>
+          <h2>Erro de Acesso</h2>
+          <p>Você não tem permissão para acessar esta página ou seu perfil de franqueado não foi encontrado.</p>
+          <p>Entre em contato com o suporte se acreditar que isso é um erro.</p>
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button
-            onClick={() => navigate('/support')}
-            style={{
-              padding: '10px 20px',
-              background: 'transparent',
-              border: `1px solid ${colors.borderCard}`,
-              borderRadius: 8,
-              color: colors.textSecondary,
-              cursor: 'pointer',
-              fontSize: 13,
-              fontWeight: 600,
-            }}
-          >
-            Suporte
-          </button>
-          <button
-            onClick={() => setShowNewOrderForm(!showNewOrderForm)}
-            style={{
-              padding: '10px 24px',
-              background: '#e6b800',
-              border: 'none',
-              borderRadius: 8,
-              color: '#000',
-              cursor: 'pointer',
-              fontSize: 13,
-              fontWeight: 700,
-            }}
-          >
-            {showNewOrderForm ? 'Cancelar Novo Pedido' : '+ Enviar Novos Arquivos'}
-          </button>
+      ) : loading ? (
+        <div style={{ textAlign: 'center', padding: 60, color: colors.textSecondary }}>
+          Carregando pedidos...
         </div>
-      </div>
+      ) : (
+        <>
+          {/* Header with navigation */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
+            <div>
+              <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: colors.textPrimary }}>Meus Arquivos</h1>
+              <p style={{ margin: '4px 0 0', color: colors.textSecondary, fontSize: 13 }}>
+                Gerencie seus pedidos e envie novos arquivos
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button
+                onClick={() => navigate('/support')}
+                style={{
+                  padding: '10px 20px',
+                  background: 'transparent',
+                  border: `1px solid ${colors.borderCard}`,
+                  borderRadius: 8,
+                  color: colors.textSecondary,
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  fontWeight: 600,
+                }}
+              >
+                Suporte
+              </button>
+              <button
+                onClick={() => setShowNewOrderForm(!showNewOrderForm)}
+                style={{
+                  padding: '10px 24px',
+                  background: '#e6b800',
+                  border: 'none',
+                  borderRadius: 8,
+                  color: '#000',
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  fontWeight: 700,
+                }}
+              >
+                {showNewOrderForm ? 'Cancelar Novo Pedido' : '+ Enviar Novos Arquivos'}
+              </button>
+            </div>
+          </div>
 
-      {/* Success/Error Messages */}
-      {submitSuccess && (
-        <div style={{ marginBottom: 16, padding: '14px 16px', background: '#163a0f', color: '#d1fae5', borderRadius: 12 }}>
-          {submitSuccess}
-        </div>
-      )}
+          {/* Success/Error Messages */}
+          {submitSuccess && (
+            <div style={{ marginBottom: 16, padding: '14px 16px', background: '#163a0f', color: '#d1fae5', borderRadius: 12 }}>
+              {submitSuccess}
+            </div>
+          )}
 
-      {submitError && (
-        <div style={{ marginBottom: 16, padding: '14px 16px', background: '#7f1d1d', color: '#fecaca', borderRadius: 12 }}>
-          {submitError}
-        </div>
-      )}
+          {submitError && (
+            <div style={{ marginBottom: 16, padding: '14px 16px', background: '#7f1d1d', color: '#fecaca', borderRadius: 12 }}>
+              {submitError}
+            </div>
+          )}
 
-      {/* New Order Form */}
-      {showNewOrderForm && (
+          {/* New Order Form */}
+          {showNewOrderForm && (
         <div style={{ marginBottom: 32 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
             <div style={sectionStyle}>
@@ -478,17 +500,37 @@ export default function FranchiseOrders() {
                 })}
               </div>
 
-              <label style={labelStyle}>FERRAMENTA UTILIZADA</label>
-              <select
-                value={formData.tool}
-                onChange={e => updateField('tool', e.target.value)}
-                style={inputStyle}
-              >
-                <option value="">Selecione a ferramenta</option>
-                {toolOptions.map(option => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
-              </select>
+              <label style={labelStyle}>FERRAMENTAS UTILIZADAS</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, marginBottom: 18, maxHeight: 300, overflowY: 'auto' }}>
+                {toolOptions.map(option => {
+                  const active = formData.tool.includes(option);
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => {
+                        const next = active
+                          ? formData.tool.filter(item => item !== option)
+                          : [...formData.tool, option];
+                        updateField('tool', next);
+                      }}
+                      style={{
+                        padding: '10px 12px',
+                        borderRadius: 10,
+                        border: '1px solid',
+                        borderColor: active ? '#dc2626' : isDark ? '#2d2d2d' : '#d1d5db',
+                        background: active ? '#dc2626' : isDark ? '#141414' : '#fff',
+                        color: active ? '#fff' : isDark ? '#eee' : '#111',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        fontSize: 12,
+                      }}
+                    >
+                      {option}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
@@ -832,6 +874,9 @@ export default function FranchiseOrders() {
           </button>
         </div>
       </div>
+        </>
+      )}
+
     </div>
   );
 }
