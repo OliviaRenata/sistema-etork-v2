@@ -91,29 +91,44 @@ export default function FranchiseFinancial() {
   };
 
   useEffect(() => {
-    if (!franchisee) {
+    // Verifica se franchisee existe antes de carregar
+    if (franchisee && franchisee.id) {
+      loadData();
+    } else {
       setRecords([]);
+      setLoading(false);
+    }
+  }, [franchisee]);
+
+  async function loadData() {
+    // Verificação dupla de segurança
+    if (!franchisee || !franchisee.id) {
+      console.log('Franqueado não encontrado, não é possível carregar dados financeiros');
       setLoading(false);
       return;
     }
 
-    loadData();
-  }, [franchisee]);
-
-  async function loadData() {
     setLoading(true);
     
-    const { data, error } = await supabase
-      .from('financial_records')
-      .select('*, order:orders(order_number)')
-      .eq('franchisee_id', franchisee.id)
-      .order('created_at', { ascending: false });
-    
-    if (error) {
-      console.error('Erro carregando financeiro do franqueado', error);
+    try {
+      const { data, error } = await supabase
+        .from('financial_records')
+        .select('*, order:orders(order_number)')
+        .eq('franchisee_id', franchisee.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Erro carregando financeiro do franqueado', error);
+        setRecords([]);
+      } else {
+        setRecords((data || []) as unknown as FinancialRecord[]);
+      }
+    } catch (err) {
+      console.error('Erro inesperado:', err);
+      setRecords([]);
+    } finally {
+      setLoading(false);
     }
-    setRecords((data || []) as unknown as FinancialRecord[]);
-    setLoading(false);
   }
 
   const filteredRecords = records.filter(r => {
@@ -157,7 +172,8 @@ export default function FranchiseFinancial() {
     }
   `;
 
-  if (!franchisee && !loading) {
+  // Verificação para mostrar mensagem quando não há franqueado
+  if (!franchisee || !franchisee.id) {
     return (
       <div style={{ background: colors.background, minHeight: '100vh', padding: 24 }}>
         <style>{spinKeyframes}</style>
