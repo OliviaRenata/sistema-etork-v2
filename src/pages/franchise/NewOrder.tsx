@@ -63,13 +63,13 @@ const IconSearch = () => (
 );
 
 const IconCheck = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
     <polyline points="20 6 9 17 4 12"/>
   </svg>
 );
 
 const IconUpload = () => (
-  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
     <polyline points="17 8 12 3 7 8"/>
     <line x1="12" y1="3" x2="12" y2="15"/>
@@ -77,14 +77,14 @@ const IconUpload = () => (
 );
 
 const IconFile = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
     <polyline points="13 2 13 9 20 9"/>
   </svg>
 );
 
 const IconAlertCircle = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <circle cx="12" cy="12" r="10"/>
     <line x1="12" y1="8" x2="12" y2="12"/>
     <line x1="12" y1="16" x2="12.01" y2="16"/>
@@ -92,14 +92,14 @@ const IconAlertCircle = () => (
 );
 
 const IconSend = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <line x1="22" y1="2" x2="11" y2="13"/>
     <polygon points="22 2 15 22 11 13 2 9 22 2"/>
   </svg>
 );
 
 const IconCar = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C1.5 11.3 1 12.1 1 13v3c0 .6.4 1 1 1h2"/>
     <circle cx="7" cy="17" r="2"/>
     <circle cx="17" cy="17" r="2"/>
@@ -107,7 +107,7 @@ const IconCar = () => (
 );
 
 const IconCpu = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <rect x="4" y="4" width="16" height="16" rx="2" ry="2"/>
     <rect x="9" y="9" width="6" height="6"/>
     <line x1="9" y1="1" x2="9" y2="4"/>
@@ -122,19 +122,19 @@ const IconCpu = () => (
 );
 
 const IconZap = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
   </svg>
 );
 
 const IconTool = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
   </svg>
 );
 
 const IconNote = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
     <polyline points="14 2 14 8 20 8"/>
     <line x1="16" y1="13" x2="8" y2="13"/>
@@ -144,7 +144,7 @@ const IconNote = () => (
 );
 
 const IconLoader = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 1s linear infinite' }}>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 1s linear infinite' }}>
     <circle cx="12" cy="12" r="10"/>
     <path d="M12 2a10 10 0 0 1 10 10"/>
   </svg>
@@ -239,18 +239,21 @@ export default function FranchiseNewOrder() {
     }
   };
 
-  // ─── Estilos Aprimorados ──────────────────────────────────────────────
+  // ─── Estilos Otimizados ──────────────────────────────────────────────
   const bg = isDark ? '#0d0d0d' : '#f3f4f6';
   const card: React.CSSProperties = {
     background: isDark ? '#141414' : '#fff',
     borderRadius: '12px',
     border: `1px solid ${isDark ? '#222' : '#e5e7eb'}`,
-    padding: '24px',
+    padding: '20px',
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
   };
 
   const input: React.CSSProperties = {
     width: '100%',
-    padding: '10px 12px',
+    padding: '8px 10px',
     borderRadius: '8px',
     background: isDark ? '#1c1c1c' : '#f9fafb',
     border: `1px solid ${isDark ? '#333' : '#d1d5db'}`,
@@ -258,26 +261,26 @@ export default function FranchiseNewOrder() {
     fontSize: '13px',
     outline: 'none',
     boxSizing: 'border-box',
-    transition: 'border-color 0.15s, box-shadow 0.15s',
+    transition: 'border-color 0.15s',
   };
 
   const label: React.CSSProperties = {
-    fontSize: '11px',
+    fontSize: '10px',
     fontWeight: 700,
     color: isDark ? '#999' : '#666',
-    marginBottom: '6px',
+    marginBottom: '4px',
     display: 'block',
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
   };
 
   const sectionTitle: React.CSSProperties = {
-    fontSize: '13px',
+    fontSize: '12px',
     fontWeight: 900,
     color: '#e6b800',
-    marginBottom: '20px',
+    marginBottom: '16px',
     borderLeft: '3px solid #e6b800',
-    paddingLeft: '12px',
+    paddingLeft: '10px',
     textTransform: 'uppercase',
     display: 'flex',
     alignItems: 'center',
@@ -285,15 +288,15 @@ export default function FranchiseNewOrder() {
   };
 
   const badge = (active: boolean): React.CSSProperties => ({
-    padding: '8px 6px',
-    fontSize: '11px',
+    padding: '6px 4px',
+    fontSize: '10px',
     borderRadius: '6px',
     cursor: 'pointer',
     border: `1px solid ${active ? '#e6b800' : isDark ? '#2a2a2a' : '#e5e7eb'}`,
     background: active ? '#e6b800' : isDark ? '#111' : '#fafafa',
     color: active ? '#000' : isDark ? '#ccc' : '#666',
     fontWeight: active ? 700 : 400,
-    transition: 'all 0.2s',
+    transition: 'all 0.15s',
     textAlign: 'center',
     whiteSpace: 'nowrap',
     overflow: 'hidden',
@@ -301,10 +304,9 @@ export default function FranchiseNewOrder() {
   });
 
   const formGroup: React.CSSProperties = {
-    marginBottom: '16px',
+    marginBottom: '12px',
   };
 
-  // Injeção da animação de spin
   const spinKeyframes = `
     @keyframes spin {
       from { transform: rotate(0deg); }
@@ -313,18 +315,18 @@ export default function FranchiseNewOrder() {
   `;
 
   return (
-    <div style={{ background: bg, minHeight: '100vh', padding: '32px 24px' }}>
+    <div style={{ background: bg, minHeight: '100vh', padding: '24px' }}>
       <style>{spinKeyframes}</style>
       <div style={{ maxWidth: 1400, margin: '0 auto' }}>
 
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
           <div>
-            <h1 style={{ fontSize: '28px', fontWeight: 800, color: isDark ? '#fff' : '#111', margin: 0, display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <h1 style={{ fontSize: '24px', fontWeight: 800, color: isDark ? '#fff' : '#111', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
               <IconCar />
               NOVO PEDIDO DE REMAP
             </h1>
-            <p style={{ fontSize: '14px', color: '#888', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <p style={{ fontSize: '13px', color: '#888', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
               {fetchingPlate ? <IconLoader /> : <IconSearch />}
               {fetchingPlate ? 'Buscando dados da placa...' : 'Preencha os detalhes técnicos abaixo'}
             </p>
@@ -335,15 +337,14 @@ export default function FranchiseNewOrder() {
               background: isDark ? '#2a2a2a' : '#f0f0f0', 
               color: isDark ? '#fff' : '#333', 
               border: 'none', 
-              padding: '10px 24px', 
+              padding: '8px 20px', 
               borderRadius: '8px', 
               cursor: 'pointer', 
               fontWeight: 600, 
-              fontSize: '14px',
-              transition: 'background 0.15s',
+              fontSize: '13px',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
+              gap: '6px',
             }}
           >
             <IconArrowLeft />
@@ -351,22 +352,23 @@ export default function FranchiseNewOrder() {
           </button>
         </div>
 
-        {/* Layout Grid Responsivo */}
+        {/* Layout em 2 colunas para evitar espaço vazio */}
         <div style={{ 
           display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))',
-          gap: '24px',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '20px',
           alignItems: 'start' 
         }}>
 
-          {/* ── COLUNA 1: VEÍCULO ── */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          {/* ── COLUNA ESQUERDA ── */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Card Veículo */}
             <div style={card}>
               <div style={sectionTitle}>
                 <IconCar />
                 1. Dados do Veículo
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div style={{ gridColumn: 'span 2', ...formGroup }}>
                   <label style={label}>Placa / Frota *</label>
                   <input 
@@ -422,12 +424,13 @@ export default function FranchiseNewOrder() {
               </div>
             </div>
 
+            {/* Card ECU */}
             <div style={card}>
               <div style={sectionTitle}>
                 <IconCpu />
                 2. ECU & Sistema
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div style={formGroup}>
                   <label style={label}>Nº HW</label>
                   <input style={input} value={formData.hw_number} onChange={e => updateField('hw_number', e.target.value)} placeholder="Hardware" />
@@ -442,7 +445,7 @@ export default function FranchiseNewOrder() {
                 </div>
                 <div style={{ gridColumn: 'span 2', ...formGroup }}>
                   <label style={label}>Modo de Leitura</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
                     {(['OBD', 'BANCADA', 'BOOT', 'VR'] as const).map(m => (
                       <button key={m} type="button" onClick={() => updateField('readingMode', m)} style={badge(formData.readingMode === m)}>{m}</button>
                     ))}
@@ -450,31 +453,14 @@ export default function FranchiseNewOrder() {
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* ── COLUNA 2: PERFORMANCE ── */}
-          <div style={card}>
-            <div style={sectionTitle}>
-              <IconZap />
-              3. Soluções Requeridas
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '8px' }}>
-              {performanceOptions.map(opt => (
-                <button key={opt} type="button" onClick={() => updateField('performance', toggleSelection(formData.performance, opt))} style={badge(formData.performance.includes(opt))}>
-                  {opt}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* ── COLUNA 3: FERRAMENTA & ENVIO ── */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* Card Ferramenta */}
             <div style={card}>
               <div style={sectionTitle}>
                 <IconTool />
-                4. Ferramenta *
+                3. Ferramenta *
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '8px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '6px' }}>
                 {toolOptions.map(opt => (
                   <button key={opt} type="button" onClick={() => updateField('tool', toggleSelection(formData.tool, opt))} style={badge(formData.tool.includes(opt))}>
                     {opt}
@@ -482,83 +468,98 @@ export default function FranchiseNewOrder() {
                 ))}
               </div>
               {formData.tool.includes('Outra') && (
-                <div style={{ marginTop: '16px' }}>
+                <div style={{ marginTop: '12px' }}>
                   <input style={input} value={formData.toolOther} onChange={e => updateField('toolOther', e.target.value)} placeholder="Qual ferramenta?" />
                 </div>
               )}
             </div>
+          </div>
 
+          {/* ── COLUNA DIREITA ── */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Card Performance */}
+            <div style={card}>
+              <div style={sectionTitle}>
+                <IconZap />
+                4. Soluções Requeridas
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '6px', maxHeight: '320px', overflowY: 'auto', paddingRight: '4px' }}>
+                {performanceOptions.map(opt => (
+                  <button key={opt} type="button" onClick={() => updateField('performance', toggleSelection(formData.performance, opt))} style={badge(formData.performance.includes(opt))}>
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Card Arquivo - Mais compacto */}
             <div style={card}>
               <div style={sectionTitle}>
                 <IconUpload />
-                5. Arquivo Original / Leitura *
+                5. Arquivo Original *
               </div>
               <div
                 onClick={() => document.getElementById('map-upload')?.click()}
                 style={{
                   border: `2px dashed ${isDark ? '#333' : '#d1d5db'}`,
                   borderRadius: '8px', 
-                  padding: '32px 20px',
+                  padding: '20px',
                   textAlign: 'center', 
                   cursor: 'pointer',
                   background: isDark ? '#111' : '#fafafa', 
-                  color: '#888', 
-                  fontSize: '14px',
                   transition: 'border-color 0.15s',
                 }}
               >
                 {mapFiles.length > 0 ? (
                   <div>
                     <IconCheck />
-                    <div style={{ marginTop: '8px', fontWeight: 600, color: '#e6b800' }}>
-                      {mapFiles.length} arquivo(s) selecionado(s)
+                    <div style={{ marginTop: '6px', fontWeight: 600, color: '#e6b800', fontSize: '12px' }}>
+                      {mapFiles.length} arquivo(s)
                     </div>
-                    <div style={{ fontSize: '11px', marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '4px', justifyContent: 'center' }}>
-                      {mapFiles.map(f => (
-                        <span key={f.name} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          <IconFile /> {f.name}
-                        </span>
-                      ))}
+                    <div style={{ fontSize: '10px', marginTop: '4px', color: '#888' }}>
+                      {mapFiles[0].name.length > 30 ? mapFiles[0].name.substring(0, 27) + '...' : mapFiles[0].name}
+                      {mapFiles.length > 1 && ` +${mapFiles.length - 1}`}
                     </div>
                   </div>
                 ) : (
                   <div>
                     <IconUpload />
-                    <div style={{ marginTop: '8px' }}>Clique para selecionar arquivos</div>
-                    <div style={{ fontSize: '11px', marginTop: '4px' }}>BIN, HEX, ZIP até 100MB</div>
+                    <div style={{ marginTop: '6px', fontSize: '12px' }}>Selecionar arquivo</div>
+                    <div style={{ fontSize: '10px', marginTop: '2px', color: '#888' }}>BIN, HEX, ZIP</div>
                   </div>
                 )}
                 <input id="map-upload" type="file" multiple hidden onChange={e => setMapFiles(Array.from(e.target.files || []))} />
               </div>
             </div>
 
+            {/* Card Notas */}
             <div style={card}>
               <div style={sectionTitle}>
                 <IconNote />
                 6. Notas e DTCs
               </div>
               <textarea
-                style={{ ...input, minHeight: '100px', resize: 'vertical' }}
+                style={{ ...input, minHeight: '80px', resize: 'vertical', fontSize: '12px' }}
                 value={formData.notes}
                 onChange={e => updateField('notes', e.target.value)}
                 placeholder="DTCs apagados ou observações importantes..."
               />
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {/* Botão de Envio */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {error && (
                 <div style={{ 
                   background: '#dc2626', 
                   color: '#fff', 
-                  padding: '14px', 
+                  padding: '10px', 
                   borderRadius: '8px', 
-                  fontSize: '13px', 
+                  fontSize: '12px', 
                   textAlign: 'center',
-                  fontWeight: 500,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '8px',
+                  gap: '6px',
                 }}>
                   <IconAlertCircle />
                   {error}
@@ -572,16 +573,14 @@ export default function FranchiseNewOrder() {
                   color: '#000', 
                   border: 'none', 
                   borderRadius: '10px', 
-                  padding: '18px',
+                  padding: '14px',
                   fontWeight: 900, 
-                  fontSize: '15px', 
+                  fontSize: '14px', 
                   cursor: loading ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.15s',
-                  opacity: loading ? 0.7 : 1,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '10px',
+                  gap: '8px',
                 }}
               >
                 {loading ? <IconLoader /> : <IconSend />}
