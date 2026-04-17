@@ -7,20 +7,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// CREDENCIAIS FIXAS
+const SUPABASE_URL = "https://vkxhjynnaekpeklmfebr.supabase.co";
+const SUPABASE_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZreGhqeW5uYWVrcGVrbG1mZWJyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjI1NTkzNywiZXhwIjoyMDkxODMxOTM3fQ.WWedj2Iogv7jHBYtgZS9bWpRP00-z_QxIKMRyp69cFc";
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    // REMOVA esta verificação:
-    // const authHeader = req.headers.get("Authorization");
-    // if (!authHeader) { return ... }
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
     const body = await req.json();
 
@@ -29,6 +26,9 @@ serve(async (req) => {
       .insert({ 
         vehicle_plate: body.vehicle_plate,
         model: body.model,
+        year: body.year,
+        engine: body.engine,
+        notes: body.notes,
         status: 'solicitado'
       })
       .select()
