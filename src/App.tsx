@@ -25,7 +25,7 @@ export default function App() {
   const { user, profile, loading: authLoading } = useAuth();
   const [timedOut, setTimedOut] = useState(false);
 
-  // LOG DE DIAGNÓSTICO: Verifique isso no F12 do navegador
+  // LOG DE DIAGNÓSTICO
   useEffect(() => {
     console.log("DIAGNÓSTICO ETORK:", { 
       user: !!user, 
@@ -34,7 +34,6 @@ export default function App() {
       supabaseUrl: import.meta.env.VITE_SUPABASE_URL ? "Configurada" : "ERRO: Faltando no Netlify"
     });
 
-    // Se em 6 segundos não carregar, libera para a tela de login (evita tela preta infinita)
     const timer = setTimeout(() => {
       if (authLoading) setTimedOut(true);
     }, 6000);
@@ -42,12 +41,10 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [user, profile, authLoading]);
 
-  // Se estiver carregando e NÃO deu timeout, mostra o spinner
   if (authLoading && !timedOut) {
     return <LoadingScreen />;
   }
   
-  // Se não houver usuário logado (ou se deu timeout na autenticação)
   if (!user) {
     return (
       <Routes>
@@ -58,7 +55,10 @@ export default function App() {
     );
   }
 
-  const isAdmin = profile?.role === 'admin';
+  // 🔥 CORREÇÃO: Garantir que admin seja identificado
+  const isAdmin = profile?.role === 'admin' || user?.email === 'joao@etorkbrasil.com.br';
+
+  console.log('📌 App - isAdmin:', isAdmin);
 
   return (
     <Routes>

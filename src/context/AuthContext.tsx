@@ -170,7 +170,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }
 
-  const isAdmin = profile?.role === 'admin' || franchisee?.company_name === 'ETORK SP';
+  // 🔥 CORREÇÃO AQUI - Admin pode ser identificado pelo email ou role
+  const isAdmin = profile?.role === 'admin' || user?.email === 'joao@etorkbrasil.com.br';
+
+  // Log para debug
+  console.log('🔐 AuthContext - isAdmin:', isAdmin);
+  console.log('🔐 AuthContext - profile role:', profile?.role);
+  console.log('🔐 AuthContext - user email:', user?.email);
 
   return (
     <AuthContext.Provider value={{
