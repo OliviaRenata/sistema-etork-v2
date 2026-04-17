@@ -116,7 +116,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signIn(email: string, password: string) {
-    // Limpar sessão anterior antes de logar
     localStorage.removeItem('supabase.auth.token');
     sessionStorage.clear();
     
@@ -146,11 +145,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const initAuth = async () => {
       setLoading(true);
       try {
-        // Limpar qualquer sessão inválida primeiro
         const { data: { session }, error } = await auth.getSession();
         
         if (error || !session) {
-          // Sessão inválida ou não existe
           localStorage.removeItem('supabase.auth.token');
           sessionStorage.clear();
           setUser(null);
@@ -174,7 +171,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initAuth();
 
     const { data: { subscription } } = auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+      // CORREÇÃO: Removido 'USER_DELETED' que não existe no tipo
+      if (event === 'SIGNED_OUT') {
         localStorage.removeItem('supabase.auth.token');
         sessionStorage.clear();
         setUser(null);
