@@ -24,19 +24,143 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [franchisee, setFranchisee] = useState<Franchisee | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Função para criar franqueado automaticamente
+  async function createFranchisee(userId: string, userEmail: string) {
+    try {
+      const companyCode = `FRAN${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      const companyName = `Empresa ${userEmail.split('@')[0]}`;
+
+      const { data: newFranchisee, error: insertError } = await supabase
+        .from('franchisees')
+        .insert({
+          user_id: userId,
+          company_name: companyName,
+          code: companyCode,
+          active: true,
+          balance: 0,
+          credit_limit: 1000,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('Erro ao criar franqueado:', insertError);
+        return null;
+      }
+
+      console.log('✅ Novo franqueado criado:', newFranchisee);
+      return newFranchisee;
+    } catch (error) {
+      console.error('Erro em createFranchisee:', error);
+      return null;
+    }
+  }
+
+  // Função para carregar ou criar franqueado
+  async function loadOrCreateFranchisee(userId: string, userEmail: string) {
+    try {
+      // Buscar franqueado existente
+      const { data: existingFranchisee, error: fetchError } = await supabase
+        .from('franchisees')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('Erro ao buscar franqueado:', fetchError);
+        return null;
+      }
+
+      // Se encontrou, retorna
+      if (existingFranchisee) {
+        console.log('✅ Franqueado encontrado:', existingFranchisee);
+        return existingFranchisee;
+      }
+
+      // Se não encontrou, criar novo
+      console.log('⚠️ Franqueado não encontrado, criando...');
+      return await createFranchisee(userId, userEmail);
+      
+    } catch (error) {
+      console.error('Erro em loadOrCreateFranchisee:', error);
+      return null;
+    }
+  }
+
+  async function loadProfile(userId: string, userEmail: string) {
+    try {
+      // 1. Carregar perfil
+      const { data: prof, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.error('Erro carregando perfil', profileError);
+      }
+
+      setProfile(prof ?? null);
+
+      // 2. Para usuários com role 'franchisee' OU que não têm role definida
+      const shouldHaveFranchisee = !prof || prof.role === 'franchisee' || prof.role === 'user';
+      
+      if (shouldHaveFranchisee) {
+        const franchiseeData = await loadOrCreateFranchisee(userId, userEmail);
+        setFranchisee(franchiseeData);
+        
+        // Se o perfil não existe ou não tem role, criar/atualizar
+        if (!prof || !prof.role) {
+          const { error: upsertError } = await supabase
+            .from('profiles')
+            .upsert({
+              id: userId,
+              role: 'franchisee',
+              updated_at: new Date().toISOString()
+            });
+          
+          if (upsertError) {
+            console.error('Erro ao criar perfil:', upsertError);
+          } else {
+            // Recarregar perfil
+            const { data: updatedProfile } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', userId)
+              .single();
+            setProfile(updatedProfile);
+          }
+        }
+      } else {
+        setFranchisee(null);
+      }
+      
+    } catch (error) {
+      console.error('Erro em loadProfile:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   useEffect(() => {
     auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) loadProfile(session.user.id);
-      else setLoading(false);
+      if (session?.user) {
+        loadProfile(session.user.id, session.user.email!);
+      } else {
+        setLoading(false);
+      }
     });
 
     const { data: { subscription } } = auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) loadProfile(session.user.id);
-      else {
+      if (session?.user) {
+        await loadProfile(session.user.id, session.user.email!);
+      } else {
         setProfile(null);
         setFranchisee(null);
         setLoading(false);
@@ -45,30 +169,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => subscription.unsubscribe();
   }, []);
-
-  async function loadProfile(userId: string) {
-    try {
-      const { data: prof, error } = await supabase
-        .from('profiles').select('*').eq('id', userId).maybeSingle();
-
-      if (error) {
-        console.error('Erro carregando perfil', error);
-      }
-      setProfile(prof ?? null);
-
-      if (prof?.role === 'franchisee') {
-        const { data: franc, error: francError } = await supabase
-          .from('franchisees').select('*').eq('user_id', userId).maybeSingle();
-
-        if (francError) {
-          console.error('Erro carregando franqueado', francError);
-        }
-        setFranchisee(franc ?? null);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function signIn(email: string, password: string) {
     const { error } = await auth.signIn(email, password);
@@ -79,10 +179,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await auth.signOut();
   }
 
+  // Verificar se é admin (baseado no profile OU se é o João)
+  const isAdmin = profile?.role === 'admin' || franchisee?.company_name === 'ETORK SP';
+
   return (
     <AuthContext.Provider value={{
       user, session, profile, franchisee,
-      isAdmin: profile?.role === 'admin',
+      isAdmin,
       loading, signIn, signOut,
     }}>
       {children}

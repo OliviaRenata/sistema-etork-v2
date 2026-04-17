@@ -26,6 +26,7 @@ const labelStyle: React.CSSProperties = {
 
 export default function RegisterPage() {
   const [email, setEmail] = useState<string>('');
+  const [companyName, setCompanyName] = useState<string>(''); // NOVO: nome da empresa
   const [password, setPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -41,36 +42,78 @@ export default function RegisterPage() {
       return;
     }
 
+    if (!companyName.trim()) {
+      setMessage({ type: 'error', text: 'Informe o nome da empresa.' });
+      return;
+    }
+
     setLoading(true);
     try {
+      // 1. Criar usuário no auth
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            company_name: companyName, // Envia o nome da empresa no metadata
+          }
+        }
       });
 
       if (error) throw error;
 
       if (data.user) {
+        // 2. Criar perfil na tabela profiles
         const { error: profileError } = await supabase
           .from('profiles')
-          .insert([{ id: data.user.id, role: 'franchisee', full_name: email }]);
+          .insert([{ 
+            id: data.user.id, 
+            role: 'franchisee', 
+            full_name: companyName 
+          }]);
 
         if (profileError) throw profileError;
 
+        // 3. Criar franqueado na tabela franchisees
+        const companyCode = `FRAN${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+        
+        const { error: franchiseeError } = await supabase
+          .from('franchisees')
+          .insert([{
+            user_id: data.user.id,
+            company_name: companyName,
+            code: companyCode,
+            active: true,
+            balance: 0,
+            credit_limit: 1000,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }]);
+
+        if (franchiseeError) throw franchiseeError;
+
         setMessage({
           type: 'success',
-          text: 'Cadastro realizado! Agora você pode entrar com seu e-mail e senha.',
+          text: `Cadastro realizado! Agora você pode entrar com seu e-mail e senha. Código: ${companyCode}`,
         });
         
+        // Limpar formulário
         setEmail('');
+        setCompanyName('');
         setPassword('');
         setConfirmPassword('');
+        
+        // Redirecionar para login após 3 segundos
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 3000);
       }
     } catch (err: unknown) {
       const error = err as { message?: string };
+      console.error('Erro no cadastro:', error);
       setMessage({ 
         type: 'error', 
-        text: error?.message || 'Erro ao registrar no Supabase.' 
+        text: error?.message || 'Erro ao realizar cadastro.' 
       });
     } finally {
       setLoading(false);
@@ -97,7 +140,21 @@ export default function RegisterPage() {
 
         <form onSubmit={handleRegister}>
           <div style={{ marginBottom: 16 }}>
-            <label style={labelStyle}>E-MAIL</label>
+            <label style={labelStyle}>NOME DA EMPRESA *</label>
+            <input
+              type="text"
+              value={companyName}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCompanyName(e.target.value)}
+              required
+              placeholder="Ex: ETORK RJ"
+              style={inputStyle}
+              onFocus={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = '#e6b800'}
+              onBlur={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = '#2a2a2a'}
+            />
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>E-MAIL *</label>
             <input
               type="email"
               value={email}
@@ -111,7 +168,7 @@ export default function RegisterPage() {
           </div>
 
           <div style={{ marginBottom: 16, position: 'relative' }}>
-            <label style={labelStyle}>SENHA</label>
+            <label style={labelStyle}>SENHA *</label>
             <input
               type={showPassword ? 'text' : 'password'}
               value={password}
@@ -157,7 +214,7 @@ export default function RegisterPage() {
           </div>
 
           <div style={{ marginBottom: 24, position: 'relative' }}>
-            <label style={labelStyle}>CONFIRMAR SENHA</label>
+            <label style={labelStyle}>CONFIRMAR SENHA *</label>
             <input
               type={showPassword ? 'text' : 'password'}
               value={confirmPassword}
@@ -168,47 +225,36 @@ export default function RegisterPage() {
               onFocus={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = '#e6b800'}
               onBlur={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = '#2a2a2a'}
             />
-            <button 
-              type="button" 
-              onClick={() => setShowPassword(!showPassword)} 
-              style={{ 
-                position: 'absolute', 
-                right: 12, 
-                top: '50%', 
-                transform: 'translateY(-50%)', 
-                background: 'none', 
-                border: 'none', 
-                color: '#888', 
-                cursor: 'pointer', 
-                fontSize: 14, 
-                padding: 0, 
-                lineHeight: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-              {showPassword ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                  <circle cx="12" cy="12" r="3"/>
-                  <line x1="2" y1="2" x2="22" y2="22"/>
-                </svg>
-              ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                  <circle cx="12" cy="12" r="3"/>
-                </svg>
-              )}
-            </button>
           </div>
 
           {message.text && (
-            <div style={{ padding: '10px 14px', marginBottom: 18, borderRadius: 10, fontSize: 13, lineHeight: 1.5, background: message.type === 'error' ? '#150a0a' : '#0a1510', border: `1px solid ${message.type === 'error' ? '#4f1c1c' : '#153a22'}`, color: message.type === 'error' ? '#f87171' : '#7dd3fc' }}>
+            <div style={{ 
+              padding: '10px 14px', 
+              marginBottom: 18, 
+              borderRadius: 10, 
+              fontSize: 13, 
+              lineHeight: 1.5, 
+              background: message.type === 'error' ? '#150a0a' : '#0a1510', 
+              border: `1px solid ${message.type === 'error' ? '#4f1c1c' : '#153a22'}`, 
+              color: message.type === 'error' ? '#f87171' : '#7dd3fc' 
+            }}>
               {message.text}
             </div>
           )}
 
-          <button type="submit" disabled={loading} style={{ width: '100%', padding: '14px', background: loading ? '#2a2500' : '#e6b800', color: '#000', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, letterSpacing: 1, cursor: loading ? 'not-allowed' : 'pointer', transition: 'background 0.15s' }}>
+          <button type="submit" disabled={loading} style={{ 
+            width: '100%', 
+            padding: '14px', 
+            background: loading ? '#2a2500' : '#e6b800', 
+            color: '#000', 
+            border: 'none', 
+            borderRadius: 10, 
+            fontSize: 14, 
+            fontWeight: 700, 
+            letterSpacing: 1, 
+            cursor: loading ? 'not-allowed' : 'pointer', 
+            transition: 'background 0.15s' 
+          }}>
             {loading ? 'REGISTRANDO...' : 'CADASTRAR AGORA'}
           </button>
         </form>
