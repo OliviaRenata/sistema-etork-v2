@@ -1,5 +1,4 @@
 // src/pages/admin/Dashboard.tsx
-
 import { useState, useEffect, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -58,6 +57,15 @@ const IconLoader = () => (
   </svg>
 );
 
+const IconMegaphone = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M3 11h18v2H3z"/>
+    <path d="M5 11v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>
+    <path d="M8 2v3"/>
+    <path d="M16 2v3"/>
+  </svg>
+);
+
 const IconEdit = () => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M17 3l4 4-7 7H10v-4l7-7z"/>
@@ -73,15 +81,6 @@ const IconBuilding = () => (
     <line x1="8" y1="6" x2="16" y2="6"/>
     <line x1="8" y1="10" x2="16" y2="10"/>
     <line x1="8" y1="14" x2="12" y2="14"/>
-  </svg>
-);
-
-const IconMegaphone = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M3 11h18v2H3z"/>
-    <path d="M5 11v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>
-    <path d="M8 2v3"/>
-    <path d="M16 2v3"/>
   </svg>
 );
 
@@ -400,7 +399,7 @@ export default function AdminDashboard() {
             </button>
             {noticeMessage && (
               <div style={{ 
-                color: noticeMessage.includes('Erro') ? '#f5c518' : '#f5c518', 
+                color: noticeMessage.includes('Erro') ? '#ef4444' : '#10b981', 
                 fontSize: 11,
                 display: 'flex',
                 alignItems: 'center',
@@ -413,10 +412,10 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Stats Cards - MENORES */}
+        {/* Stats Cards */}
         {stats && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 32 }}>
-            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #f5c518` }}>
+            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #8b5cf6` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <span style={{ fontSize: 10, color: colors.textMuted, fontWeight: 600 }}>FRANQUEADOS</span>
                 <IconUsers />
@@ -425,7 +424,7 @@ export default function AdminDashboard() {
               <div style={{ fontSize: 10, color: colors.textMuted, marginTop: 4 }}>{stats.active_franchisees} ativos / {stats.inactive_franchisees} inativos</div>
             </div>
             
-            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #f5c518` }}>
+            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #3b82f6` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <span style={{ fontSize: 10, color: colors.textMuted, fontWeight: 600 }}>TOTAL PEDIDOS</span>
                 <IconPackage />
@@ -433,15 +432,15 @@ export default function AdminDashboard() {
               <div style={{ fontSize: 20, fontWeight: 700, color: colors.text }}>{stats.total_orders}</div>
             </div>
             
-            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #f5c518` }}>
+            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #f59e0b` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <span style={{ fontSize: 10, color: colors.textMuted, fontWeight: 600 }}>AGUARDANDO</span>
                 <IconClock />
               </div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: stats.pending > 0 ? '#f5c518' : colors.text }}>{stats.pending}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: stats.pending > 0 ? '#f59e0b' : colors.text }}>{stats.pending}</div>
             </div>
             
-            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #f5c518` }}>
+            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #06b6d4` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <span style={{ fontSize: 10, color: colors.textMuted, fontWeight: 600 }}>EM PRODUCAO</span>
                 <IconPackage />
@@ -449,7 +448,7 @@ export default function AdminDashboard() {
               <div style={{ fontSize: 20, fontWeight: 700, color: colors.text }}>{stats.in_production}</div>
             </div>
             
-            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #f5c518` }}>
+            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #10b981` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <span style={{ fontSize: 10, color: colors.textMuted, fontWeight: 600 }}>CONCLUIDOS</span>
                 <IconCheckCircle />
