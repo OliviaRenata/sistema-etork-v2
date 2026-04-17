@@ -10,6 +10,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('⚠️ Variáveis de ambiente do Supabase não encontradas. Verifique o seu arquivo .env ou as configurações do Netlify.');
 }
 
+// Função auxiliar para obter o token do localStorage
+const getToken = () => localStorage.getItem('sb-access-token');
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
@@ -21,6 +24,11 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   realtime: {
     params: { eventsPerSecond: 10 },
   },
+  global: {
+    headers: {
+      ...(getToken() && { Authorization: `Bearer ${getToken()}` })
+    }
+  }
 });
 
 // EXPOR PARA O CONSOLE (Para você testar)
@@ -47,9 +55,9 @@ export async function callFunction<T>(
   body?: any,
   method: 'POST' | 'PATCH' | 'DELETE' = 'POST'
 ): Promise<T> {
-  const { data: { session } } = await supabase.auth.getSession();
+  const token = getToken();
   
-  if (!session) {
+  if (!token) {
     throw new Error('Usuário não autenticado. Por favor, faça login novamente.');
   }
 
@@ -57,7 +65,7 @@ export async function callFunction<T>(
     method,
     body,
     headers: {
-      Authorization: `Bearer ${session.access_token}`,
+      Authorization: `Bearer ${token}`,
     },
   });
 
