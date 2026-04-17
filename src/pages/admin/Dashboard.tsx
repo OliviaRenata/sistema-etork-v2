@@ -5,22 +5,15 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import logoImg from '../../assets/logoetork.png';
-import type { Announcement, Order, Franchisee } from '../../types';
+import type { Announcement } from '../../types';
 import StatusBadge from '../../components/ui/StatusBadge';
-import { DashboardIcon, OrdersIcon, FranchiseesIcon, FinanceIcon, WarningIcon, ArrowRightIcon } from '../../components/ui/Icons';
-import { formatCurrency, formatDate } from '../../lib/utils';
+import { ArrowRightIcon } from '../../components/ui/Icons';
+import { formatDate } from '../../lib/utils';
 import { useTheme } from '../../context/ThemeContext';
 
-// Ícones adicionais
-const IconTrendingUp = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <polyline points="23 6 13.5 15.5 8 10 1 18"/>
-    <polyline points="17 6 23 6 23 12"/>
-  </svg>
-);
-
+// Ícones
 const IconUsers = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
     <circle cx="9" cy="7" r="4"/>
     <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
@@ -29,51 +22,51 @@ const IconUsers = () => (
 );
 
 const IconPackage = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M16.5 9.4l-9-5.19M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
     <polyline points="3.29 7 12 12 20.71 7"/>
     <line x1="12" y1="22" x2="12" y2="12"/>
   </svg>
 );
 
+const IconClock = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="12" cy="12" r="10"/>
+    <polyline points="12 6 12 12 16 14"/>
+  </svg>
+);
+
+const IconCheckCircle = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+    <polyline points="22 4 12 14.01 9 11.01"/>
+  </svg>
+);
+
 const IconAlertTriangle = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
     <line x1="12" y1="9" x2="12" y2="13"/>
     <line x1="12" y1="17" x2="12.01" y2="17"/>
   </svg>
 );
 
-const IconCheckCircle = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-    <polyline points="22 4 12 14.01 9 11.01"/>
-  </svg>
-);
-
-const IconClock = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <circle cx="12" cy="12" r="10"/>
-    <polyline points="12 6 12 12 16 14"/>
-  </svg>
-);
-
 const IconLoader = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 1s linear infinite' }}>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 1s linear infinite' }}>
     <circle cx="12" cy="12" r="10"/>
     <path d="M12 2a10 10 0 0 1 10 10"/>
   </svg>
 );
 
 const IconEdit = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M17 3l4 4-7 7H10v-4l7-7z"/>
     <path d="M4 20h16"/>
   </svg>
 );
 
 const IconBuilding = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <rect x="4" y="2" width="16" height="20" rx="2" ry="2"/>
     <line x1="9" y1="22" x2="9" y2="18"/>
     <line x1="15" y1="22" x2="15" y2="18"/>
@@ -83,10 +76,12 @@ const IconBuilding = () => (
   </svg>
 );
 
-const IconDollar = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <line x1="12" y1="1" x2="12" y2="23"/>
-    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+const IconMegaphone = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M3 11h18v2H3z"/>
+    <path d="M5 11v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>
+    <path d="M8 2v3"/>
+    <path d="M16 2v3"/>
   </svg>
 );
 
@@ -95,7 +90,6 @@ interface FranchiseeStats {
   company_name: string;
   code: string;
   total_orders: number;
-  total_spent: number;
   pending_orders: number;
   last_order_date: string | null;
   active: boolean;
@@ -109,9 +103,6 @@ interface Stats {
   pending: number;
   in_production: number;
   completed: number;
-  revenue_month: number;
-  revenue_total: number;
-  avg_order_value: number;
 }
 
 export default function AdminDashboard() {
@@ -127,7 +118,6 @@ export default function AdminDashboard() {
   const [draftBody, setDraftBody] = useState('');
   const [saving, setSaving] = useState(false);
   const [noticeMessage, setNoticeMessage] = useState('');
-  const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'year' | 'all'>('month');
 
   const colors = {
     background: isDark ? '#0d0d0d' : '#f3f4f6',
@@ -159,7 +149,6 @@ export default function AdminDashboard() {
     loadData();
     loadAnnouncement();
     
-    // Canal de tempo real para orders
     const ordersChannel = supabase
       .channel('admin-dash-orders')
       .on('postgres_changes', 
@@ -168,7 +157,6 @@ export default function AdminDashboard() {
       )
       .subscribe();
     
-    // Canal de tempo real para franchisees
     const franchiseesChannel = supabase
       .channel('admin-dash-franchisees')
       .on('postgres_changes', 
@@ -181,13 +169,13 @@ export default function AdminDashboard() {
       supabase.removeChannel(ordersChannel);
       supabase.removeChannel(franchiseesChannel);
     };
-  }, [selectedPeriod]);
+  }, []);
 
   async function loadData() {
     setLoading(true);
     
     try {
-      // Buscar TODOS os franqueados (sem filtro)
+      // Buscar TODOS os franqueados
       const { data: franchisees, error: franchiseesError } = await supabase
         .from('franchisees')
         .select('*')
@@ -195,7 +183,7 @@ export default function AdminDashboard() {
       
       if (franchiseesError) throw franchiseesError;
       
-      // Buscar TODOS os pedidos (sem filtro de franchisee_id)
+      // Buscar TODOS os pedidos
       const { data: orders, error: ordersError } = await supabase
         .from('orders')
         .select(`
@@ -208,25 +196,8 @@ export default function AdminDashboard() {
       
       const franchiseesList = franchisees || [];
       const ordersList = orders || [];
-      const now = new Date();
-      const currentMonth = now.getMonth();
-      const currentYear = now.getFullYear();
       
-      // Filtrar por período para receita
-      let filteredOrders = ordersList;
-      if (selectedPeriod === 'month') {
-        filteredOrders = ordersList.filter(o => {
-          const date = new Date(o.created_at);
-          return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
-        });
-      } else if (selectedPeriod === 'year') {
-        filteredOrders = ordersList.filter(o => {
-          const date = new Date(o.created_at);
-          return date.getFullYear() === currentYear;
-        });
-      }
-      
-      // Estatísticas por franqueado (TODOS)
+      // Estatísticas por franqueado
       const franchiseeStatsData: FranchiseeStats[] = franchiseesList.map(f => {
         const franchiseeOrders = ordersList.filter(o => o.franchisee_id === f.id);
         const lastOrder = franchiseeOrders[0];
@@ -236,37 +207,25 @@ export default function AdminDashboard() {
           company_name: f.company_name,
           code: f.code,
           total_orders: franchiseeOrders.length,
-          total_spent: franchiseeOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0),
           pending_orders: franchiseeOrders.filter(o => ['solicitado', 'em_producao'].includes(o.status)).length,
           last_order_date: lastOrder ? lastOrder.created_at : null,
           active: f.active,
         };
-      }).sort((a, b) => b.total_spent - a.total_spent);
+      }).sort((a, b) => b.total_orders - a.total_orders);
       
       // Estatísticas gerais
       const activeFranchisees = franchiseesList.filter(f => f.active === true).length;
       const inactiveFranchisees = franchiseesList.filter(f => f.active === false).length;
-      
-      const monthOrders = ordersList.filter(o => {
-        const date = new Date(o.created_at);
-        return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
-      });
-      
       const completedOrders = ordersList.filter(o => o.status === 'concluido');
-      const totalRevenue = filteredOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
-      const avgOrderValue = filteredOrders.length > 0 ? totalRevenue / filteredOrders.length : 0;
       
       setStats({
         total_franchisees: franchiseesList.length,
         active_franchisees: activeFranchisees,
         inactive_franchisees: inactiveFranchisees,
-        total_orders: filteredOrders.length,
+        total_orders: ordersList.length,
         pending: ordersList.filter(o => o.status === 'solicitado').length,
         in_production: ordersList.filter(o => o.status === 'em_producao').length,
         completed: completedOrders.length,
-        revenue_month: monthOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0),
-        revenue_total: totalRevenue,
-        avg_order_value: avgOrderValue,
       });
       
       setFranchiseeStats(franchiseeStatsData);
@@ -360,46 +319,48 @@ export default function AdminDashboard() {
           background: colors.surface, 
           border: `1px solid ${colors.border}`, 
           borderRadius: 12, 
-          padding: 24, 
+          padding: 20, 
           marginBottom: 32 
         }}>
-          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginBottom: 20 }}>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginBottom: 16 }}>
             <div style={{
-              width: 48,
-              height: 48,
+              width: 40,
+              height: 40,
               background: isDark ? '#000000' : '#f3f4f6',
-              borderRadius: 10,
+              borderRadius: 8,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
             }}>
-              <img src={logoImg} alt="ETORK Brasil" style={{ width: 32, height: 32, objectFit: 'contain' }} />
+              <img src={logoImg} alt="ETORK Brasil" style={{ width: 28, height: 28, objectFit: 'contain' }} />
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: colors.text }}>Aviso Geral</div>
-              <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 4 }}>Edite o texto abaixo para mostrar avisos importantes a TODOS os franqueados</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: colors.text, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <IconMegaphone /> Aviso Geral
+              </div>
+              <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>Edite o texto abaixo para mostrar avisos importantes a TODOS os franqueados</div>
             </div>
           </div>
 
           <textarea
             value={draftBody}
             onChange={e => setDraftBody(e.target.value)}
-            rows={5}
+            rows={4}
             style={{ 
               width: '100%', 
               background: isDark ? '#0d0d0d' : '#f9fafb',
               color: colors.text, 
               border: `1px solid ${colors.border}`, 
-              borderRadius: 10, 
-              padding: 12, 
+              borderRadius: 8, 
+              padding: 10, 
               resize: 'vertical', 
-              fontSize: 13, 
-              lineHeight: 1.6,
+              fontSize: 12, 
+              lineHeight: 1.5,
               fontFamily: 'inherit'
             }}
           />
 
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 16, alignItems: 'center' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 12, alignItems: 'center' }}>
             <button
               type="button"
               onClick={saveAnnouncement}
@@ -408,11 +369,11 @@ export default function AdminDashboard() {
                 background: colors.accent, 
                 color: '#000', 
                 border: 'none', 
-                borderRadius: 8, 
-                padding: '10px 20px', 
+                borderRadius: 6, 
+                padding: '8px 16px', 
                 cursor: 'pointer', 
-                fontWeight: 700,
-                fontSize: 12,
+                fontWeight: 600,
+                fontSize: 11,
                 display: 'flex',
                 alignItems: 'center',
                 gap: 6
@@ -428,22 +389,22 @@ export default function AdminDashboard() {
                 background: colors.surfaceHover, 
                 color: colors.text, 
                 border: `1px solid ${colors.border}`, 
-                borderRadius: 8, 
-                padding: '10px 20px', 
+                borderRadius: 6, 
+                padding: '8px 16px', 
                 cursor: 'pointer', 
-                fontWeight: 600,
-                fontSize: 12
+                fontWeight: 500,
+                fontSize: 11
               }}
             >
               Reverter
             </button>
             {noticeMessage && (
               <div style={{ 
-                color: noticeMessage.includes('Erro') ? '#ef4444' : '#10b981', 
-                fontSize: 12,
+                color: noticeMessage.includes('Erro') ? '#f5c518' : '#f5c518', 
+                fontSize: 11,
                 display: 'flex',
                 alignItems: 'center',
-                gap: 6
+                gap: 5
               }}>
                 {noticeMessage.includes('Erro') ? <IconAlertTriangle /> : <IconCheckCircle />}
                 {noticeMessage}
@@ -452,132 +413,87 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Stats Cards */}
-        {stats ? (
-          <>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 20 }}>
-              <div style={{ 
-                display: 'inline-flex', 
-                background: colors.surface, 
-                border: `1px solid ${colors.border}`, 
-                borderRadius: 8, 
-                padding: 4 
-              }}>
-                {(['month', 'year', 'all'] as const).map(period => (
-                  <button
-                    key={period}
-                    onClick={() => setSelectedPeriod(period)}
-                    style={{
-                      padding: '6px 16px',
-                      fontSize: 12,
-                      fontWeight: 600,
-                      border: 'none',
-                      borderRadius: 6,
-                      cursor: 'pointer',
-                      background: selectedPeriod === period ? colors.accent : 'transparent',
-                      color: selectedPeriod === period ? '#000' : colors.textSecondary,
-                      transition: 'all 0.15s'
-                    }}
-                  >
-                    {period === 'month' ? 'Este Mes' : period === 'year' ? 'Este Ano' : 'Todo Periodo'}
-                  </button>
-                ))}
+        {/* Stats Cards - MENORES */}
+        {stats && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 32 }}>
+            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #f5c518` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <span style={{ fontSize: 10, color: colors.textMuted, fontWeight: 600 }}>FRANQUEADOS</span>
+                <IconUsers />
               </div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: colors.text }}>{stats.total_franchisees}</div>
+              <div style={{ fontSize: 10, color: colors.textMuted, marginTop: 4 }}>{stats.active_franchisees} ativos / {stats.inactive_franchisees} inativos</div>
             </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 32 }}>
-              <AdminStat 
-                label="Franqueados" 
-                value={stats.total_franchisees.toString()} 
-                subtitle={`${stats.active_franchisees} ativos / ${stats.inactive_franchisees} inativos`}
-                color="#8b5cf6" 
-                icon={<IconUsers />}
-                colors={colors}
-              />
-              <AdminStat 
-                label="Total de Pedidos" 
-                value={stats.total_orders.toString()} 
-                color="#3b82f6" 
-                icon={<IconPackage />}
-                colors={colors}
-              />
-              <AdminStat 
-                label="Aguardando" 
-                value={stats.pending.toString()} 
-                color="#f59e0b" 
-                icon={<IconClock />}
-                urgent={stats.pending > 0}
-                colors={colors}
-              />
-              <AdminStat 
-                label="Em Producao" 
-                value={stats.in_production.toString()} 
-                color="#06b6d4" 
-                icon={<IconPackage />}
-                colors={colors}
-              />
-              <AdminStat 
-                label="Ticket Medio" 
-                value={formatCurrency(stats.avg_order_value)} 
-                color="#10b981" 
-                icon={<IconTrendingUp />}
-                colors={colors}
-              />
-              <AdminStat 
-                label="Receita Total" 
-                value={formatCurrency(stats.revenue_total)} 
-                color={colors.accent} 
-                icon={<IconDollar />}
-                colors={colors}
-              />
+            
+            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #f5c518` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <span style={{ fontSize: 10, color: colors.textMuted, fontWeight: 600 }}>TOTAL PEDIDOS</span>
+                <IconPackage />
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: colors.text }}>{stats.total_orders}</div>
             </div>
-          </>
-        ) : (
-          <div style={{ textAlign: 'center', padding: 40, color: colors.textSecondary }}>
-            Carregando estatisticas...
+            
+            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #f5c518` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <span style={{ fontSize: 10, color: colors.textMuted, fontWeight: 600 }}>AGUARDANDO</span>
+                <IconClock />
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: stats.pending > 0 ? '#f5c518' : colors.text }}>{stats.pending}</div>
+            </div>
+            
+            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #f5c518` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <span style={{ fontSize: 10, color: colors.textMuted, fontWeight: 600 }}>EM PRODUCAO</span>
+                <IconPackage />
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: colors.text }}>{stats.in_production}</div>
+            </div>
+            
+            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #f5c518` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <span style={{ fontSize: 10, color: colors.textMuted, fontWeight: 600 }}>CONCLUIDOS</span>
+                <IconCheckCircle />
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: colors.text }}>{stats.completed}</div>
+            </div>
           </div>
         )}
 
         {/* Urgent Alert */}
         {stats && stats.pending > 0 && (
           <div style={{
-            padding: '16px 20px',
+            padding: '12px 16px',
             marginBottom: 32,
             background: isDark ? '#1a1200' : '#fef3c7',
             border: `1px solid ${isDark ? '#3a2a00' : '#fde68a'}`,
-            borderRadius: 10,
+            borderRadius: 8,
             display: 'flex',
             alignItems: 'center',
-            gap: 12,
+            gap: 10,
             flexWrap: 'wrap',
           }}>
-            <div style={{ color: '#f59e0b' }}><IconAlertTriangle /></div>
+            <IconAlertTriangle />
             <div style={{ flex: 1 }}>
-              <div style={{ color: '#f59e0b', fontSize: 13, fontWeight: 700 }}>
-                {stats.pending} pedido(s) aguardando processamento
-              </div>
-              <div style={{ color: isDark ? '#8a6500' : '#92400e', fontSize: 11, marginTop: 2 }}>
-                Clique para revisar e iniciar producao
-              </div>
+              <span style={{ color: '#f59e0b', fontSize: 12, fontWeight: 700 }}>{stats.pending} pedido(s) aguardando processamento</span>
             </div>
             <Link to="/admin/orders?status=solicitado" style={{
-              padding: '8px 16px',
+              padding: '6px 12px',
               background: colors.accent,
               color: '#000',
-              borderRadius: 8,
+              borderRadius: 6,
               fontSize: 11,
-              fontWeight: 700,
+              fontWeight: 600,
               textDecoration: 'none',
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 6,
+              gap: 5,
             }}>
-              Ver Pedidos <ArrowRightIcon width={14} height={14} />
+              Ver Pedidos <ArrowRightIcon width={12} height={12} />
             </Link>
           </div>
         )}
 
-        {/* Top Franqueados - TODOS */}
+        {/* Todos os Franqueados */}
         {franchiseeStats.length > 0 && (
           <div style={{
             background: colors.surface,
@@ -587,26 +503,25 @@ export default function AdminDashboard() {
             marginBottom: 32,
           }}>
             <div style={{
-              padding: '16px 20px',
+              padding: '12px 16px',
               borderBottom: `1px solid ${colors.border}`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
             }}>
-              <h2 style={{ color: colors.text, fontSize: 14, fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <IconBuilding />
-                Todos os Franqueados
+              <h2 style={{ color: colors.text, fontSize: 13, fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <IconBuilding /> Todos os Franqueados
               </h2>
-              <Link to="/admin/franchisees" style={{ color: colors.accent, fontSize: 12, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                Gerenciar <ArrowRightIcon width={12} height={12} />
+              <Link to="/admin/franchisees" style={{ color: colors.accent, fontSize: 11, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                Gerenciar <ArrowRightIcon width={10} height={10} />
               </Link>
             </div>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: `1px solid ${colors.border}`, background: colors.tableHeaderBg }}>
-                    {['POS', 'FRANQUEADO', 'CODIGO', 'PEDIDOS', 'VALOR TOTAL', 'PENDENTES', 'STATUS', 'ULTIMO PEDIDO'].map(header => (
-                      <th key={header} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: colors.textMuted, letterSpacing: 1 }}>
+                    {['POS', 'FRANQUEADO', 'CODIGO', 'PEDIDOS', 'PENDENTES', 'STATUS', 'ULTIMO PEDIDO'].map(header => (
+                      <th key={header} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 9, fontWeight: 700, color: colors.textMuted, letterSpacing: 1 }}>
                         {header}
                       </th>
                     ))}
@@ -615,48 +530,28 @@ export default function AdminDashboard() {
                 <tbody>
                   {franchiseeStats.map((f, index) => (
                     <tr key={f.id} style={{ borderBottom: `1px solid ${colors.border}` }}>
-                      <td style={{ padding: '12px 16px', fontSize: 12, fontWeight: 600, color: colors.textSecondary }}>
-                        #{index + 1}
-                      </td>
-                      <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600, color: colors.text }}>
+                      <td style={{ padding: '10px 12px', fontSize: 11, fontWeight: 600, color: colors.textSecondary }}>#{index + 1}</td>
+                      <td style={{ padding: '10px 12px', fontSize: 12, fontWeight: 600, color: colors.text }}>
                         {f.company_name}
-                        {!f.active && <span style={{ marginLeft: 8, fontSize: 10, color: '#ef4444' }}>(INATIVO)</span>}
-                       </td>
-                      <td style={{ padding: '12px 16px', fontSize: 12, color: colors.textSecondary }}>
-                        {f.code}
-                       </td>
-                      <td style={{ padding: '12px 16px', fontSize: 13, color: colors.text }}>
-                        {f.total_orders}
-                       </td>
-                      <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600, color: colors.accent }}>
-                        {formatCurrency(f.total_spent)}
-                       </td>
-                      <td style={{ padding: '12px 16px' }}>
+                        {!f.active && <span style={{ marginLeft: 6, fontSize: 9, color: '#ef4444' }}>(INATIVO)</span>}
+                      </td>
+                      <td style={{ padding: '10px 12px', fontSize: 11, color: colors.textSecondary }}>{f.code}</td>
+                      <td style={{ padding: '10px 12px', fontSize: 12, color: colors.text }}>{f.total_orders}</td>
+                      <td style={{ padding: '10px 12px' }}>
                         {f.pending_orders > 0 ? (
-                          <span style={{ color: '#f59e0b', fontSize: 12, fontWeight: 600 }}>
-                            {f.pending_orders}
-                          </span>
+                          <span style={{ color: '#f59e0b', fontSize: 11, fontWeight: 600 }}>{f.pending_orders}</span>
                         ) : (
-                          <span style={{ color: '#10b981', fontSize: 12 }}>✓</span>
+                          <IconCheckCircle />
                         )}
-                       </td>
-                      <td style={{ padding: '12px 16px' }}>
-                        <span style={{ 
-                          display: 'inline-block', 
-                          width: 8, 
-                          height: 8, 
-                          borderRadius: '50%', 
-                          background: f.active ? '#10b981' : '#ef4444',
-                          marginRight: 6
-                        }} />
-                        <span style={{ fontSize: 12, color: colors.textSecondary }}>
-                          {f.active ? 'Ativo' : 'Inativo'}
-                        </span>
-                       </td>
-                      <td style={{ padding: '12px 16px', fontSize: 12, color: colors.textSecondary }}>
+                      </td>
+                      <td style={{ padding: '10px 12px' }}>
+                        <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: f.active ? '#10b981' : '#ef4444', marginRight: 5 }} />
+                        <span style={{ fontSize: 11, color: colors.textSecondary }}>{f.active ? 'Ativo' : 'Inativo'}</span>
+                      </td>
+                      <td style={{ padding: '10px 12px', fontSize: 11, color: colors.textSecondary }}>
                         {f.last_order_date ? formatDate(f.last_order_date) : '—'}
-                       </td>
-                     </tr>
+                      </td>
+                    </tr>
                   ))}
                 </tbody>
               </table>
@@ -664,7 +559,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Recent Orders - TODOS */}
+        {/* Recent Orders */}
         <div style={{
           background: colors.surface,
           border: `1px solid ${colors.border}`,
@@ -672,41 +567,37 @@ export default function AdminDashboard() {
           overflow: 'hidden',
         }}>
           <div style={{
-            padding: '16px 20px',
+            padding: '12px 16px',
             borderBottom: `1px solid ${colors.border}`,
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
           }}>
-            <h2 style={{ color: colors.text, fontSize: 14, fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <IconPackage />
-              Ultimos Pedidos (Todos os Franqueados)
+            <h2 style={{ color: colors.text, fontSize: 13, fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <IconPackage /> Ultimos Pedidos
             </h2>
-            <Link to="/admin/orders" style={{ color: colors.accent, fontSize: 12, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-              Ver todos <ArrowRightIcon width={12} height={12} />
+            <Link to="/admin/orders" style={{ color: colors.accent, fontSize: 11, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              Ver todos <ArrowRightIcon width={10} height={10} />
             </Link>
           </div>
           
           {loading ? (
-            <div style={{ padding: 48, textAlign: 'center', color: colors.textMuted, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              <IconLoader />
-              Carregando...
+            <div style={{ padding: 40, textAlign: 'center', color: colors.textMuted, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              <IconLoader /> Carregando...
             </div>
           ) : recent.length === 0 ? (
-            <div style={{ padding: 48, textAlign: 'center', color: colors.textMuted }}>
-              Nenhum pedido encontrado
-            </div>
+            <div style={{ padding: 40, textAlign: 'center', color: colors.textMuted }}>Nenhum pedido encontrado</div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: `1px solid ${colors.border}`, background: colors.tableHeaderBg }}>
-                    {['PEDIDO', 'FRANQUEADO', 'DATA', 'VALOR', 'STATUS', ''].map(header => (
-                      <th key={header} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: colors.textMuted, letterSpacing: 1 }}>
+                    {['PEDIDO', 'FRANQUEADO', 'DATA', 'STATUS', ''].map(header => (
+                      <th key={header} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 9, fontWeight: 700, color: colors.textMuted, letterSpacing: 1 }}>
                         {header}
                       </th>
                     ))}
-                   </tr>
+                  </tr>
                 </thead>
                 <tbody>
                   {recent.map(order => (
@@ -717,27 +608,16 @@ export default function AdminDashboard() {
                       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                       onClick={() => window.location.href = `/admin/orders/${order.id}`}
                     >
-                      <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 700, color: colors.accent }}>
-                        {order.order_number}
-                       </td>
-                      <td style={{ padding: '12px 16px', fontSize: 12, color: colors.text }}>
-                        {(order.franchisee as unknown as { company_name: string })?.company_name || '—'}
-                       </td>
-                      <td style={{ padding: '12px 16px', fontSize: 12, color: colors.textSecondary }}>
-                        {formatDate(order.created_at)}
-                       </td>
-                      <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600, color: colors.text }}>
-                        {formatCurrency(order.total_amount)}
-                       </td>
-                      <td style={{ padding: '12px 16px' }}>
-                        <StatusBadge status={order.status} />
-                       </td>
-                      <td style={{ padding: '12px 16px' }}>
-                        <Link to={`/admin/orders/${order.id}`} style={{ color: colors.accent, fontSize: 12, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                          Detalhes <ArrowRightIcon width={12} height={12} />
+                      <td style={{ padding: '10px 12px', fontSize: 12, fontWeight: 600, color: colors.accent }}>{order.order_number}</td>
+                      <td style={{ padding: '10px 12px', fontSize: 11, color: colors.text }}>{(order.franchisee as unknown as { company_name: string })?.company_name || '—'}</td>
+                      <td style={{ padding: '10px 12px', fontSize: 11, color: colors.textSecondary }}>{formatDate(order.created_at)}</td>
+                      <td style={{ padding: '10px 12px' }}><StatusBadge status={order.status} /></td>
+                      <td style={{ padding: '10px 12px' }}>
+                        <Link to={`/admin/orders/${order.id}`} style={{ color: colors.accent, fontSize: 11, textDecoration: 'none' }}>
+                          Detalhes
                         </Link>
-                       </td>
-                     </tr>
+                      </td>
+                    </tr>
                   ))}
                 </tbody>
               </table>
@@ -745,48 +625,6 @@ export default function AdminDashboard() {
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-function AdminStat({ label, value, subtitle, color, icon, urgent = false, colors }: { 
-  label: string; 
-  value: string; 
-  subtitle?: string;
-  color: string; 
-  icon: ReactNode; 
-  urgent?: boolean;
-  colors: any;
-}) {
-  return (
-    <div style={{
-      background: colors.surface,
-      border: `1px solid ${urgent ? '#3a2a00' : colors.border}`,
-      borderRadius: 10,
-      padding: '16px 18px',
-      borderLeft: `3px solid ${color}`,
-      transition: 'transform 0.2s',
-    }}
-    onMouseEnter={(e) => {
-      e.currentTarget.style.transform = 'translateY(-2px)';
-    }}
-    onMouseLeave={(e) => {
-      e.currentTarget.style.transform = 'translateY(0)';
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <span style={{ fontSize: 10, color: colors.textMuted, fontWeight: 700, letterSpacing: 1 }}>
-          {label.toUpperCase()}
-        </span>
-        <span style={{ color }}>{icon}</span>
-      </div>
-      <div style={{ fontSize: 22, fontWeight: 800, color: urgent ? color : colors.text }}>
-        {value}
-      </div>
-      {subtitle && (
-        <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 6 }}>
-          {subtitle}
-        </div>
-      )}
     </div>
   );
 }
