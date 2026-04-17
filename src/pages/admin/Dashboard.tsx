@@ -105,7 +105,7 @@ interface Stats {
 }
 
 export default function AdminDashboard() {
-  const { profile } = useAuth();
+  const { isAdmin } = useAuth();
   const { theme: currentTheme } = useTheme();
   const isDark = currentTheme === 'dark';
   
@@ -132,13 +132,19 @@ export default function AdminDashboard() {
     tableRowHover: isDark ? '#1a1a1a' : '#f9fafb',
   };
 
-  // Verificação de acesso - APENAS ADMIN
-  if (profile?.role !== 'admin') {
+  // Verificação de acesso - USANDO isAdmin DO CONTEXTO
+  if (!isAdmin) {
     return (
       <div style={{ background: colors.background, minHeight: '100vh', padding: 24 }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', textAlign: 'center', padding: 60 }}>
           <h2 style={{ color: colors.text }}>Acesso negado</h2>
           <p style={{ color: colors.textSecondary }}>Voce nao tem permissao para acessar esta pagina.</p>
+          <button 
+            onClick={() => window.location.href = '/dashboard'}
+            style={{ marginTop: 16, padding: '8px 16px', background: colors.accent, border: 'none', borderRadius: 6, cursor: 'pointer', color: '#000' }}
+          >
+            Voltar para o Dashboard
+          </button>
         </div>
       </div>
     );
@@ -256,7 +262,6 @@ export default function AdminDashboard() {
   }
 
   async function saveAnnouncement() {
-    if (!profile) return;
     if (!draftBody.trim()) {
       setNoticeMessage('O aviso nao pode ficar vazio.');
       return;
@@ -270,7 +275,6 @@ export default function AdminDashboard() {
       title: 'Aviso Geral',
       body: draftBody.trim(),
       active: true,
-      created_by: profile.id,
     };
 
     const { data, error } = await supabase
