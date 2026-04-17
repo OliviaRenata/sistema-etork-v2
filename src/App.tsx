@@ -1,7 +1,7 @@
 // src/App.tsx
-
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
+import { useEffect, useState } from 'react';
 
 // Pages
 import LoginPage from './pages/LoginPage';
@@ -22,10 +22,32 @@ import AppLayout from './components/layout/AppLayout';
 import LoadingScreen from './components/ui/LoadingScreen';
 
 export default function App() {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
+  const [timedOut, setTimedOut] = useState(false);
 
-  if (loading) return <LoadingScreen />;
+  // LOG DE DIAGNÓSTICO: Verifique isso no F12 do navegador
+  useEffect(() => {
+    console.log("DIAGNÓSTICO ETORK:", { 
+      user: !!user, 
+      role: profile?.role, 
+      loading: authLoading,
+      supabaseUrl: import.meta.env.VITE_SUPABASE_URL ? "Configurada" : "ERRO: Faltando no Netlify"
+    });
+
+    // Se em 6 segundos não carregar, libera para a tela de login (evita tela preta infinita)
+    const timer = setTimeout(() => {
+      if (authLoading) setTimedOut(true);
+    }, 6000);
+
+    return () => clearTimeout(timer);
+  }, [user, profile, authLoading]);
+
+  // Se estiver carregando e NÃO deu timeout, mostra o spinner
+  if (authLoading && !timedOut) {
+    return <LoadingScreen />;
+  }
   
+  // Se não houver usuário logado (ou se deu timeout na autenticação)
   if (!user) {
     return (
       <Routes>
@@ -41,7 +63,6 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<AppLayout />}>
-        {/* Rotas comuns (funcionam para ambos) */}
         <Route path="downloads" element={<DownloadsPage />} />
         
         {isAdmin ? (
