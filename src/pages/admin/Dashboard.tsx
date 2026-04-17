@@ -1,4 +1,5 @@
 // src/pages/admin/Dashboard.tsx
+
 import { useState, useEffect, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -71,6 +72,24 @@ const IconEdit = () => (
   </svg>
 );
 
+const IconBuilding = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <rect x="4" y="2" width="16" height="20" rx="2" ry="2"/>
+    <line x1="9" y1="22" x2="9" y2="18"/>
+    <line x1="15" y1="22" x2="15" y2="18"/>
+    <line x1="8" y1="6" x2="16" y2="6"/>
+    <line x1="8" y1="10" x2="16" y2="10"/>
+    <line x1="8" y1="14" x2="12" y2="14"/>
+  </svg>
+);
+
+const IconDollar = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <line x1="12" y1="1" x2="12" y2="23"/>
+    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+  </svg>
+);
+
 interface FranchiseeStats {
   id: string;
   company_name: string;
@@ -79,11 +98,13 @@ interface FranchiseeStats {
   total_spent: number;
   pending_orders: number;
   last_order_date: string | null;
+  active: boolean;
 }
 
 interface Stats {
   total_franchisees: number;
   active_franchisees: number;
+  inactive_franchisees: number;
   total_orders: number;
   pending: number;
   in_production: number;
@@ -122,13 +143,13 @@ export default function AdminDashboard() {
     tableRowHover: isDark ? '#1a1a1a' : '#f9fafb',
   };
 
-  // Verificação de acesso
+  // Verificação de acesso - APENAS ADMIN
   if (profile?.role !== 'admin') {
     return (
       <div style={{ background: colors.background, minHeight: '100vh', padding: 24 }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', textAlign: 'center', padding: 60 }}>
           <h2 style={{ color: colors.text }}>Acesso negado</h2>
-          <p style={{ color: colors.textSecondary }}>Você não tem permissão para acessar esta página.</p>
+          <p style={{ color: colors.textSecondary }}>Voce nao tem permissao para acessar esta pagina.</p>
         </div>
       </div>
     );
@@ -166,14 +187,15 @@ export default function AdminDashboard() {
     setLoading(true);
     
     try {
-      // Buscar franqueados
+      // Buscar TODOS os franqueados (sem filtro)
       const { data: franchisees, error: franchiseesError } = await supabase
         .from('franchisees')
-        .select('id, company_name, code, balance, credit_limit, active');
+        .select('*')
+        .order('company_name');
       
       if (franchiseesError) throw franchiseesError;
       
-      // Buscar pedidos com join
+      // Buscar TODOS os pedidos (sem filtro de franchisee_id)
       const { data: orders, error: ordersError } = await supabase
         .from('orders')
         .select(`
@@ -190,7 +212,7 @@ export default function AdminDashboard() {
       const currentMonth = now.getMonth();
       const currentYear = now.getFullYear();
       
-      // Filtrar por período
+      // Filtrar por período para receita
       let filteredOrders = ordersList;
       if (selectedPeriod === 'month') {
         filteredOrders = ordersList.filter(o => {
@@ -204,7 +226,7 @@ export default function AdminDashboard() {
         });
       }
       
-      // Estatísticas por franqueado
+      // Estatísticas por franqueado (TODOS)
       const franchiseeStatsData: FranchiseeStats[] = franchiseesList.map(f => {
         const franchiseeOrders = ordersList.filter(o => o.franchisee_id === f.id);
         const lastOrder = franchiseeOrders[0];
@@ -217,23 +239,27 @@ export default function AdminDashboard() {
           total_spent: franchiseeOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0),
           pending_orders: franchiseeOrders.filter(o => ['solicitado', 'em_producao'].includes(o.status)).length,
           last_order_date: lastOrder ? lastOrder.created_at : null,
+          active: f.active,
         };
       }).sort((a, b) => b.total_spent - a.total_spent);
       
       // Estatísticas gerais
       const activeFranchisees = franchiseesList.filter(f => f.active === true).length;
+      const inactiveFranchisees = franchiseesList.filter(f => f.active === false).length;
+      
       const monthOrders = ordersList.filter(o => {
         const date = new Date(o.created_at);
         return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
       });
       
-      const completedOrders = ordersList.filter(o => o.status === 'entregue' || o.status === 'concluido');
+      const completedOrders = ordersList.filter(o => o.status === 'concluido');
       const totalRevenue = filteredOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
       const avgOrderValue = filteredOrders.length > 0 ? totalRevenue / filteredOrders.length : 0;
       
       setStats({
         total_franchisees: franchiseesList.length,
         active_franchisees: activeFranchisees,
+        inactive_franchisees: inactiveFranchisees,
         total_orders: filteredOrders.length,
         pending: ordersList.filter(o => o.status === 'solicitado').length,
         in_production: ordersList.filter(o => o.status === 'em_producao').length,
@@ -268,13 +294,13 @@ export default function AdminDashboard() {
     }
 
     setAnnouncement(data || null);
-    setDraftBody(data?.body || 'NOVAS SOLUÇÕES DE REPROGRAMAÇÃO (FERRAMENTAS KESS3 TRANSDATA)\nNovas soluções ADBLUI ODD\nDAFF 530 EURO 6 (NO MODULO DO ARLA CM 1881)\n...');
+    setDraftBody(data?.body || 'NOVAS SOLUCOES DE REPROGRAMACAO (FERRAMENTAS KESS3 TRANSDATA)\nNovas solucoes ADBLUI ODD\nDAFF 530 EURO 6 (NO MODULO DO ARLA CM 1881)\n...');
   }
 
   async function saveAnnouncement() {
     if (!profile) return;
     if (!draftBody.trim()) {
-      setNoticeMessage('O aviso não pode ficar vazio.');
+      setNoticeMessage('O aviso nao pode ficar vazio.');
       return;
     }
 
@@ -325,7 +351,7 @@ export default function AdminDashboard() {
             Painel Administrativo
           </h1>
           <p style={{ color: colors.textSecondary, fontSize: 14, margin: 0 }}>
-            Visão geral completa das operações Etork Brasil
+            Visao geral completa de TODOS os franqueados e operacoes Etork Brasil
           </p>
         </div>
 
@@ -351,7 +377,7 @@ export default function AdminDashboard() {
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: colors.text }}>Aviso Geral</div>
-              <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 4 }}>Edite o texto abaixo para mostrar avisos importantes aos franqueados</div>
+              <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 4 }}>Edite o texto abaixo para mostrar avisos importantes a TODOS os franqueados</div>
             </div>
           </div>
 
@@ -453,7 +479,7 @@ export default function AdminDashboard() {
                       transition: 'all 0.15s'
                     }}
                   >
-                    {period === 'month' ? 'Este Mês' : period === 'year' ? 'Este Ano' : 'Todo Período'}
+                    {period === 'month' ? 'Este Mes' : period === 'year' ? 'Este Ano' : 'Todo Periodo'}
                   </button>
                 ))}
               </div>
@@ -463,7 +489,7 @@ export default function AdminDashboard() {
               <AdminStat 
                 label="Franqueados" 
                 value={stats.total_franchisees.toString()} 
-                subtitle={`${stats.active_franchisees} ativos`}
+                subtitle={`${stats.active_franchisees} ativos / ${stats.inactive_franchisees} inativos`}
                 color="#8b5cf6" 
                 icon={<IconUsers />}
                 colors={colors}
@@ -484,14 +510,14 @@ export default function AdminDashboard() {
                 colors={colors}
               />
               <AdminStat 
-                label="Em Produção" 
+                label="Em Producao" 
                 value={stats.in_production.toString()} 
                 color="#06b6d4" 
                 icon={<IconPackage />}
                 colors={colors}
               />
               <AdminStat 
-                label="Ticket Médio" 
+                label="Ticket Medio" 
                 value={formatCurrency(stats.avg_order_value)} 
                 color="#10b981" 
                 icon={<IconTrendingUp />}
@@ -501,14 +527,14 @@ export default function AdminDashboard() {
                 label="Receita Total" 
                 value={formatCurrency(stats.revenue_total)} 
                 color={colors.accent} 
-                icon={<FinanceIcon width={18} height={18} />}
+                icon={<IconDollar />}
                 colors={colors}
               />
             </div>
           </>
         ) : (
           <div style={{ textAlign: 'center', padding: 40, color: colors.textSecondary }}>
-            Carregando estatísticas...
+            Carregando estatisticas...
           </div>
         )}
 
@@ -531,7 +557,7 @@ export default function AdminDashboard() {
                 {stats.pending} pedido(s) aguardando processamento
               </div>
               <div style={{ color: isDark ? '#8a6500' : '#92400e', fontSize: 11, marginTop: 2 }}>
-                Clique para revisar e iniciar produção
+                Clique para revisar e iniciar producao
               </div>
             </div>
             <Link to="/admin/orders?status=solicitado" style={{
@@ -551,7 +577,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Top Franqueados */}
+        {/* Top Franqueados - TODOS */}
         {franchiseeStats.length > 0 && (
           <div style={{
             background: colors.surface,
@@ -568,8 +594,8 @@ export default function AdminDashboard() {
               justifyContent: 'space-between',
             }}>
               <h2 style={{ color: colors.text, fontSize: 14, fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <IconUsers />
-                Ranking de Franqueados
+                <IconBuilding />
+                Todos os Franqueados
               </h2>
               <Link to="/admin/franchisees" style={{ color: colors.accent, fontSize: 12, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                 Gerenciar <ArrowRightIcon width={12} height={12} />
@@ -579,7 +605,7 @@ export default function AdminDashboard() {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: `1px solid ${colors.border}`, background: colors.tableHeaderBg }}>
-                    {['FRANQUEADO', 'CÓDIGO', 'PEDIDOS', 'VALOR TOTAL', 'PENDENTES', 'ÚLTIMO PEDIDO'].map(header => (
+                    {['POS', 'FRANQUEADO', 'CODIGO', 'PEDIDOS', 'VALOR TOTAL', 'PENDENTES', 'STATUS', 'ULTIMO PEDIDO'].map(header => (
                       <th key={header} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: colors.textMuted, letterSpacing: 1 }}>
                         {header}
                       </th>
@@ -587,20 +613,24 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {franchiseeStats.slice(0, 5).map((f, index) => (
+                  {franchiseeStats.map((f, index) => (
                     <tr key={f.id} style={{ borderBottom: `1px solid ${colors.border}` }}>
-                      <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600, color: colors.text }}>
-                        #{index + 1} {f.company_name}
+                      <td style={{ padding: '12px 16px', fontSize: 12, fontWeight: 600, color: colors.textSecondary }}>
+                        #{index + 1}
                       </td>
+                      <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600, color: colors.text }}>
+                        {f.company_name}
+                        {!f.active && <span style={{ marginLeft: 8, fontSize: 10, color: '#ef4444' }}>(INATIVO)</span>}
+                       </td>
                       <td style={{ padding: '12px 16px', fontSize: 12, color: colors.textSecondary }}>
                         {f.code}
-                      </td>
+                       </td>
                       <td style={{ padding: '12px 16px', fontSize: 13, color: colors.text }}>
                         {f.total_orders}
-                      </td>
+                       </td>
                       <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600, color: colors.accent }}>
                         {formatCurrency(f.total_spent)}
-                      </td>
+                       </td>
                       <td style={{ padding: '12px 16px' }}>
                         {f.pending_orders > 0 ? (
                           <span style={{ color: '#f59e0b', fontSize: 12, fontWeight: 600 }}>
@@ -609,11 +639,24 @@ export default function AdminDashboard() {
                         ) : (
                           <span style={{ color: '#10b981', fontSize: 12 }}>✓</span>
                         )}
-                      </td>
+                       </td>
+                      <td style={{ padding: '12px 16px' }}>
+                        <span style={{ 
+                          display: 'inline-block', 
+                          width: 8, 
+                          height: 8, 
+                          borderRadius: '50%', 
+                          background: f.active ? '#10b981' : '#ef4444',
+                          marginRight: 6
+                        }} />
+                        <span style={{ fontSize: 12, color: colors.textSecondary }}>
+                          {f.active ? 'Ativo' : 'Inativo'}
+                        </span>
+                       </td>
                       <td style={{ padding: '12px 16px', fontSize: 12, color: colors.textSecondary }}>
                         {f.last_order_date ? formatDate(f.last_order_date) : '—'}
-                      </td>
-                    </tr>
+                       </td>
+                     </tr>
                   ))}
                 </tbody>
               </table>
@@ -621,7 +664,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Recent Orders */}
+        {/* Recent Orders - TODOS */}
         <div style={{
           background: colors.surface,
           border: `1px solid ${colors.border}`,
@@ -637,7 +680,7 @@ export default function AdminDashboard() {
           }}>
             <h2 style={{ color: colors.text, fontSize: 14, fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
               <IconPackage />
-              Últimos Pedidos
+              Ultimos Pedidos (Todos os Franqueados)
             </h2>
             <Link to="/admin/orders" style={{ color: colors.accent, fontSize: 12, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
               Ver todos <ArrowRightIcon width={12} height={12} />
@@ -663,7 +706,7 @@ export default function AdminDashboard() {
                         {header}
                       </th>
                     ))}
-                  </tr>
+                   </tr>
                 </thead>
                 <tbody>
                   {recent.map(order => (
@@ -676,25 +719,25 @@ export default function AdminDashboard() {
                     >
                       <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 700, color: colors.accent }}>
                         {order.order_number}
-                      </td>
+                       </td>
                       <td style={{ padding: '12px 16px', fontSize: 12, color: colors.text }}>
                         {(order.franchisee as unknown as { company_name: string })?.company_name || '—'}
-                      </td>
+                       </td>
                       <td style={{ padding: '12px 16px', fontSize: 12, color: colors.textSecondary }}>
                         {formatDate(order.created_at)}
-                      </td>
+                       </td>
                       <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600, color: colors.text }}>
                         {formatCurrency(order.total_amount)}
-                      </td>
+                       </td>
                       <td style={{ padding: '12px 16px' }}>
                         <StatusBadge status={order.status} />
-                      </td>
+                       </td>
                       <td style={{ padding: '12px 16px' }}>
                         <Link to={`/admin/orders/${order.id}`} style={{ color: colors.accent, fontSize: 12, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                           Detalhes <ArrowRightIcon width={12} height={12} />
                         </Link>
-                      </td>
-                    </tr>
+                       </td>
+                     </tr>
                   ))}
                 </tbody>
               </table>
@@ -705,7 +748,7 @@ export default function AdminDashboard() {
     </div>
   );
 }
-// FORCE REBUILD - 2024-04-17
+
 function AdminStat({ label, value, subtitle, color, icon, urgent = false, colors }: { 
   label: string; 
   value: string; 
