@@ -16,31 +16,54 @@ serve(async (req: Request) => {
   }
 
   try {
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
+    // Pega o token do header
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { 
+      return new Response(JSON.stringify({ error: "Unauthorized - No token" }), { 
         status: 401, 
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
       });
     }
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authErr } = await supabase.auth.getUser(token);
     
-    if (authErr || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { 
+    // Criar cliente do Supabase com a service role key
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Verificar o token manualmente
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      console.error("Auth error:", authError);
+      return new Response(JSON.stringify({ error: "Unauthorized - Invalid token", details: authError?.message }), { 
         status: 401, 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      });
+    }
+
+    console.log("Usuário autenticado:", user.email);
+
+    // Pegar o franqueado
+    const { data: franchisee, error: franchiseeError } = await supabase
+      .from("franchisees")
+      .select("id")
+      .eq("user_id", user.id)
+      .single();
+
+    if (franchiseeError || !franchisee) {
+      return new Response(JSON.stringify({ error: "Franqueado não encontrado" }), { 
+        status: 403, 
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
       });
     }
 
     const body = await req.json();
 
-    const { data: order, error: orderErr } = await supabase
+    // Criar o pedido
+    const { data: order, error: orderError } = await supabase
       .from("orders")
       .insert({
+        franchisee_id: franchisee.id,
         vehicle_plate: body.vehicle_plate,
         model: body.model,
         year: body.year,
@@ -52,8 +75,9 @@ serve(async (req: Request) => {
       .select()
       .single();
 
-    if (orderErr) {
-      return new Response(JSON.stringify({ error: orderErr.message }), { 
+    if (orderError) {
+      console.error("Order error:", orderError);
+      return new Response(JSON.stringify({ error: orderError.message }), { 
         status: 500, 
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
       });
@@ -65,7 +89,8 @@ serve(async (req: Request) => {
     });
 
   } catch (err) {
-    return new Response(JSON.stringify({ error: "Erro interno" }), {
+    console.error("Unexpected error:", err);
+    return new Response(JSON.stringify({ error: "Erro interno do servidor" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
