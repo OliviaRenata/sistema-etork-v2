@@ -74,37 +74,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function loadProfile(userId: string, userEmail: string) {
     try {
-      const { data: prof, error: profileError } = await supabase
+      // Buscar perfil existente
+      let { data: prof, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
 
+      // Se não existe perfil, criar
+      if (!prof) {
+        const isAdminEmail = userEmail === 'joao@etorkbrasil.com.br';
+        const { data: newProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: userId,
+            role: isAdminEmail ? 'admin' : 'franchisee',
+            full_name: isAdminEmail ? 'Administrador' : userEmail.split('@')[0],
+            email: userEmail,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (!insertError && newProfile) {
+          prof = newProfile;
+        }
+      }
+
       setProfile(prof ?? null);
 
-      const shouldHaveFranchisee = !prof || prof.role === 'franchisee' || prof.role === 'user';
-      
-      if (shouldHaveFranchisee) {
+      // Se for admin, não precisa de franqueado
+      if (prof?.role === 'admin') {
+        setFranchisee(null);
+      } else {
+        // Se for franqueado, carregar ou criar franqueado
         const franchiseeData = await loadOrCreateFranchisee(userId, userEmail);
         setFranchisee(franchiseeData);
-        
-        if (!prof || !prof.role) {
-          await supabase.from('profiles').upsert({
-            id: userId,
-            role: 'franchisee',
-            updated_at: new Date().toISOString()
-          });
-          
-          const { data: updatedProfile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .single();
-          setProfile(updatedProfile);
-        }
-      } else {
-        setFranchisee(null);
       }
+      
     } catch (error) {
       console.error('Erro em loadProfile:', error);
     } finally {
@@ -113,11 +121,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    // AJUSTE: Tratamento de erro na inicialização da sessão
     auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
-        console.error("Erro ao recuperar sessão (Token inválido):", error.message);
-        // Se o token estiver corrompido, limpa tudo para permitir novo login
+        console.error("Erro ao recuperar sessao:", error.message);
         auth.signOut();
         setLoading(false);
         return;
@@ -135,11 +141,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     const { data: { subscription } } = auth.onAuthStateChange(async (event, session) => {
-      // Se houver erro de sinalização ou token inválido, deslogar
-      if (event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
-         // Pequena proteção extra
-      }
-
       setSession(session);
       setUser(session?.user ?? null);
       
@@ -170,13 +171,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }
 
-  // 🔥 CORREÇÃO AQUI - Admin pode ser identificado pelo email ou role
+  // Admin identificado por role ou email especifico
   const isAdmin = profile?.role === 'admin' || user?.email === 'joao@etorkbrasil.com.br';
 
-  // Log para debug
-  console.log('🔐 AuthContext - isAdmin:', isAdmin);
-  console.log('🔐 AuthContext - profile role:', profile?.role);
-  console.log('🔐 AuthContext - user email:', user?.email);
+  // Logs para debug
+  console.log('AuthContext - isAdmin:', isAdmin);
+  console.log('AuthContext - profile role:', profile?.role);
+  console.log('AuthContext - user email:', user?.email);
 
   return (
     <AuthContext.Provider value={{

@@ -25,13 +25,11 @@ export default function App() {
   const { user, profile, loading: authLoading } = useAuth();
   const [timedOut, setTimedOut] = useState(false);
 
-  // LOG DE DIAGNÓSTICO
   useEffect(() => {
-    console.log("DIAGNÓSTICO ETORK:", { 
-      user: !!user, 
+    console.log("DIAGNÓSTICO:", { 
+      user: user?.email, 
       role: profile?.role, 
-      loading: authLoading,
-      supabaseUrl: import.meta.env.VITE_SUPABASE_URL ? "Configurada" : "ERRO: Faltando no Netlify"
+      loading: authLoading 
     });
 
     const timer = setTimeout(() => {
@@ -41,10 +39,12 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [user, profile, authLoading]);
 
+  // Tela de loading
   if (authLoading && !timedOut) {
     return <LoadingScreen />;
   }
   
+  // Se NÃO está logado, mostra apenas rotas públicas
   if (!user) {
     return (
       <Routes>
@@ -55,19 +55,25 @@ export default function App() {
     );
   }
 
-  // 🔥 CORREÇÃO: Garantir que admin seja identificado
+  // Se está logado, define se é admin ou franqueado
   const isAdmin = profile?.role === 'admin' || user?.email === 'joao@etorkbrasil.com.br';
-
-  console.log('📌 App - isAdmin:', isAdmin);
+  console.log('📌 Usuário logado:', user.email, 'isAdmin:', isAdmin);
 
   return (
     <Routes>
       <Route path="/" element={<AppLayout />}>
+        {/* Rotas COMUNS - ambos acessam */}
         <Route path="downloads" element={<DownloadsPage />} />
         
-        {isAdmin ? (
+        {/* Rotas do FRANQUEADO - admin também pode acessar */}
+        <Route path="dashboard" element={<FranchiseDashboard />} />
+        <Route path="orders" element={<FranchiseOrders />} />
+        <Route path="orders/new" element={<FranchiseNewOrder />} />
+        <Route path="financial" element={<FranchiseFinancial />} />
+        
+        {/* Rotas do ADMIN - apenas admin acessa */}
+        {isAdmin && (
           <>
-            <Route index element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="admin/dashboard" element={<AdminDashboard />} />
             <Route path="admin/orders" element={<AdminOrders />} />
             <Route path="admin/orders/:id" element={<AdminOrders />} />
@@ -75,15 +81,12 @@ export default function App() {
             <Route path="admin/financial" element={<AdminFinancial />} />
             <Route path="admin/downloads" element={<AdminDownloads />} />
           </>
-        ) : (
-          <>
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="dashboard" element={<FranchiseDashboard />} />
-            <Route path="orders" element={<FranchiseOrders />} />
-            <Route path="orders/new" element={<FranchiseNewOrder />} />
-            <Route path="financial" element={<FranchiseFinancial />} />
-          </>
         )}
+        
+        {/* Rota padrão após login - redireciona conforme o tipo */}
+        <Route index element={
+          isAdmin ? <Navigate to="/admin/dashboard" replace /> : <Navigate to="/dashboard" replace />
+        } />
         
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
