@@ -116,9 +116,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signIn(email: string, password: string) {
-    localStorage.removeItem('supabase.auth.token');
-    sessionStorage.clear();
-    
     const { error } = await auth.signIn(email, password);
     if (error) throw error;
   }
@@ -129,66 +126,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await auth.signOut();
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
-    } finally {
-      localStorage.removeItem('supabase.auth.token');
-      sessionStorage.clear();
-      setSession(null);
-      setUser(null);
-      setProfile(null);
-      setFranchisee(null);
-      setLoading(false);
-      window.location.href = '/login';
     }
+    localStorage.removeItem('supabase.auth.token');
+    sessionStorage.clear();
+    setSession(null);
+    setUser(null);
+    setProfile(null);
+    setFranchisee(null);
+    setLoading(false);
+    window.location.href = '/login';
   }
 
   useEffect(() => {
+    // NÃO restaurar sessão automaticamente - sempre começar deslogado
     const initAuth = async () => {
       setLoading(true);
-      try {
-        const { data: { session }, error } = await auth.getSession();
-        
-        if (error || !session) {
-          localStorage.removeItem('supabase.auth.token');
-          sessionStorage.clear();
-          setUser(null);
-          setSession(null);
-          setLoading(false);
-          return;
-        }
-
-        setSession(session);
-        setUser(session.user);
-        await loadProfile(session.user.id, session.user.email!);
-        
-      } catch (error) {
-        console.error('Erro na inicializacao:', error);
-        localStorage.removeItem('supabase.auth.token');
-        sessionStorage.clear();
-        setLoading(false);
-      }
+      
+      // Limpar qualquer sessão existente
+      localStorage.removeItem('supabase.auth.token');
+      sessionStorage.clear();
+      
+      setUser(null);
+      setSession(null);
+      setProfile(null);
+      setFranchisee(null);
+      setLoading(false);
     };
 
     initAuth();
 
+    // Apenas ouvir mudanças de autenticação, mas não restaurar sessão
     const { data: { subscription } } = auth.onAuthStateChange(async (event, session) => {
-      // CORREÇÃO: Removido 'USER_DELETED' que não existe no tipo
-      if (event === 'SIGNED_OUT') {
-        localStorage.removeItem('supabase.auth.token');
-        sessionStorage.clear();
+      if (event === 'SIGNED_IN' && session?.user) {
+        setSession(session);
+        setUser(session.user);
+        await loadProfile(session.user.id, session.user.email!);
+      } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setSession(null);
-        setProfile(null);
-        setFranchisee(null);
-        setLoading(false);
-        return;
-      }
-
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        await loadProfile(session.user.id, session.user.email!);
-      } else {
         setProfile(null);
         setFranchisee(null);
         setLoading(false);
@@ -202,6 +177,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   console.log('AuthContext - isAdmin:', isAdmin);
   console.log('AuthContext - user email:', user?.email);
+  console.log('AuthContext - loading:', loading);
 
   return (
     <AuthContext.Provider value={{
