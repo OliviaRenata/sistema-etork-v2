@@ -1,44 +1,10 @@
 // src/pages/admin/Financial.tsx
-
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import type { FinancialRecord, Franchisee } from '../../types';
-import { formatCurrency, formatDateShort } from '../../lib/utils';
+import { formatDateShort } from '../../lib/utils';
 import { useTheme } from '../../context/ThemeContext';
 
-// Ícones
-const IconTrendingUp = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <polyline points="23 6 13.5 15.5 8 10 1 18"/>
-    <polyline points="17 6 23 6 23 12"/>
-  </svg>
-);
-
-const IconUsers = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-    <circle cx="9" cy="7" r="4"/>
-    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-  </svg>
-);
-
-const IconPackage = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M16.5 9.4l-9-5.19M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-    <polyline points="3.29 7 12 12 20.71 7"/>
-    <line x1="12" y1="22" x2="12" y2="12"/>
-  </svg>
-);
-
-const IconAlertCircle = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <circle cx="12" cy="12" r="10"/>
-    <line x1="12" y1="8" x2="12" y2="12"/>
-    <line x1="12" y1="16" x2="12.01" y2="16"/>
-  </svg>
-);
-
+// ─── Ícones ──────────────────────────────────────────────────────────────────
 const IconFilter = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <polygon points="22 3 2 3 10 13 10 21 14 18 14 13 22 3"/>
@@ -54,586 +20,561 @@ const IconDownload = () => (
 );
 
 const IconLoader = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 1s linear infinite' }}>
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+    style={{ animation: 'spin 1s linear infinite' }}>
     <circle cx="12" cy="12" r="10"/>
     <path d="M12 2a10 10 0 0 1 10 10"/>
   </svg>
 );
 
-interface FranchiseeFinancial {
+const IconClipboard = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+    <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+  </svg>
+);
+
+const IconSearch = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="11" cy="11" r="8"/>
+    <path d="m21 21-4.3-4.3"/>
+  </svg>
+);
+
+const IconRefresh = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
+    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/>
+    <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/>
+  </svg>
+);
+
+const IconX = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+  </svg>
+);
+
+const IconChevronUp = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <polyline points="18 15 12 9 6 15"/>
+  </svg>
+);
+
+const IconChevronDown = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <polyline points="6 9 12 15 18 9"/>
+  </svg>
+);
+
+// ─── Tipos ───────────────────────────────────────────────────────────────────
+interface OrderSummary {
   id: string;
-  company_name: string;
-  code: string;
-  balance: number;
-  credit_limit: number;
-  total_orders: number;
-  total_spent: number;
-  pending_amount: number;
+  order_number: string;
+  franchisee_name: string;
+  franchisee_code: string;
+  vehicle_plate: string;
+  model: string;
+  status: string;
+  created_at: string;
+  notes: string;
 }
 
+type SortField = 'order_number' | 'franchisee_name' | 'vehicle_plate' | 'created_at' | 'status';
+type SortDir = 'asc' | 'desc';
+
+// ─── Constantes ──────────────────────────────────────────────────────────────
+const STATUS_LABELS: Record<string, string> = {
+  solicitado: 'Solicitado',
+  em_producao: 'Em Produção',
+  enviado: 'Enviado',
+  concluido: 'Concluído',
+  cancelado: 'Cancelado',
+};
+
+const STATUS_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
+  solicitado:  { bg: '#fef3c7', text: '#92400e', dot: '#f59e0b' },
+  em_producao: { bg: '#dbeafe', text: '#1e40af', dot: '#3b82f6' },
+  enviado:     { bg: '#e9d5ff', text: '#6b21a8', dot: '#8b5cf6' },
+  concluido:   { bg: '#dcfce7', text: '#14532d', dot: '#10b981' },
+  cancelado:   { bg: '#fee2e2', text: '#7f1d1d', dot: '#ef4444' },
+};
+
+const STATUS_COLORS_DARK: Record<string, { bg: string; text: string; dot: string }> = {
+  solicitado:  { bg: '#422006', text: '#fcd34d', dot: '#f59e0b' },
+  em_producao: { bg: '#1e3a5f', text: '#93c5fd', dot: '#3b82f6' },
+  enviado:     { bg: '#3b0764', text: '#d8b4fe', dot: '#8b5cf6' },
+  concluido:   { bg: '#052e16', text: '#86efac', dot: '#10b981' },
+  cancelado:   { bg: '#450a0a', text: '#fca5a5', dot: '#ef4444' },
+};
+
+// ─── Componente Principal ────────────────────────────────────────────────────
 export default function AdminFinancial() {
   const { theme: currentTheme } = useTheme();
   const isDark = currentTheme === 'dark';
-  
-  const [records, setRecords] = useState<any[]>([]);
-  const [franchisees, setFranchisees] = useState<Franchisee[]>([]);
-  const [franchiseeFinancials, setFranchiseeFinancials] = useState<FranchiseeFinancial[]>([]);
+
+  const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [filterFranchisee, setFilterFranchisee] = useState('');
-  const [filterType, setFilterType] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [franchisees, setFranchisees] = useState<{ id: string; company_name: string; code: string }[]>([]);
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [showFilters, setShowFilters] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortField, setSortField] = useState<SortField>('created_at');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const colors = {
-    background: isDark ? '#0d0d0d' : '#f3f4f6',
-    surface: isDark ? '#141414' : '#ffffff',
-    surfaceHover: isDark ? '#1c1c1c' : '#fafafa',
-    text: isDark ? '#e5e5e5' : '#1a1a1a',
-    textSecondary: isDark ? '#888888' : '#6b7280',
-    textMuted: isDark ? '#666666' : '#9ca3af',
-    border: isDark ? '#222222' : '#e5e7eb',
-    accent: '#e6b800',
-    debitBg: isDark ? '#1a0a0a' : '#fef2f2',
-    debitColor: '#ef4444',
-    creditBg: isDark ? '#0a1a0a' : '#f0fdf4',
-    creditColor: '#10b981',
-    tableHeaderBg: isDark ? '#0d0d0d' : '#f9fafb',
-    tableRowHover: isDark ? '#1a1a1a' : '#f9fafb',
+  // ── Cores ─────────────────────────────────────────────────────────────────
+  const c = {
+    bg:            isDark ? '#0d0d0d' : '#f3f4f6',
+    surface:       isDark ? '#141414' : '#ffffff',
+    surfaceAlt:    isDark ? '#0f0f0f' : '#f9fafb',
+    surfaceHover:  isDark ? '#1c1c1c' : '#f0f9ff',
+    text:          isDark ? '#e5e5e5' : '#1a1a1a',
+    textSec:       isDark ? '#888' : '#6b7280',
+    textMuted:     isDark ? '#555' : '#9ca3af',
+    border:        isDark ? '#222' : '#e5e7eb',
+    borderFocus:   isDark ? '#444' : '#d1d5db',
+    accent:        '#e6b800',
+    accentBg:      isDark ? '#1a1500' : '#fffbeb',
   };
 
-  useEffect(() => {
-    loadData();
+  const statusStyle = (status: string) => {
+    const map = isDark ? STATUS_COLORS_DARK : STATUS_COLORS;
+    return map[status] ?? { bg: c.surface, text: c.text, dot: c.textMuted };
+  };
 
-    const channel = supabase
-      .channel('admin-financial')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'financial_records' }, 
-        () => loadData()
-      )
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'franchisees' },
-        () => loadData()
-      )
-      .subscribe();
+  // ── Dados ─────────────────────────────────────────────────────────────────
+  useEffect(() => { loadData(); }, []);
 
-    return () => { supabase.removeChannel(channel); };
-  }, []);
-
-  async function loadData() {
-    setLoading(true);
-    
+  async function loadData(silent = false) {
+    silent ? setRefreshing(true) : setLoading(true);
     try {
-      const [recRes, francRes] = await Promise.all([
-        supabase.from('financial_records')
-          .select('*, franchisee:franchisees(company_name, code), order:orders(order_number)')
-          .order('created_at', { ascending: false })
-          .limit(500),
-        supabase.from('franchisees').select('id, company_name, code, balance, credit_limit').order('company_name'),
+      const [{ data: fData, error: fErr }, { data: oData, error: oErr }] = await Promise.all([
+        supabase.from('franchisees').select('id, company_name, code').order('company_name'),
+        supabase.from('orders').select(`
+          id, order_number, vehicle_plate, model, status, created_at, notes,
+          franchisee:franchisees(company_name, code)
+        `).order('created_at', { ascending: false }),
       ]);
 
-      if (recRes.error) console.error('Erro ao buscar registros financeiros', recRes.error);
-      if (francRes.error) console.error('Erro ao buscar franqueados', francRes.error);
-      
-      const allRecords = recRes.data || [];
-      const allFranchisees = francRes.data || [];
-      
-      setRecords(allRecords);
-      setFranchisees(allFranchisees as Franchisee[]);
-      
-      const stats = allFranchisees.map(f => {
-        const franchiseeRecords = allRecords.filter(r => r.franchisee_id === f.id);
-        const debitRecords = franchiseeRecords.filter(r => r.type === 'debit');
-        const pendingRecords = debitRecords.filter(r => r.payment_status === 'pendente');
-        
-        return {
-          id: f.id,
-          company_name: f.company_name,
-          code: f.code,
-          balance: f.balance,
-          credit_limit: f.credit_limit,
-          total_orders: franchiseeRecords.filter(r => r.type === 'debit').length,
-          total_spent: debitRecords.reduce((sum, r) => sum + (r.amount || 0), 0),
-          pending_amount: pendingRecords.reduce((sum, r) => sum + (r.amount || 0), 0),
-        };
-      }).sort((a, b) => b.total_spent - a.total_spent);
-      
-      setFranchiseeFinancials(stats);
-      
-    } catch (error) {
-      console.error('Erro carregando financeiro', error);
+      if (fErr) throw fErr;
+      if (oErr) throw oErr;
+
+      setFranchisees(fData || []);
+      setOrders((oData || []).map(o => ({
+        id: o.id,
+        order_number: o.order_number ?? '—',
+        franchisee_name: (o.franchisee as any)?.company_name ?? '—',
+        franchisee_code: (o.franchisee as any)?.code ?? '—',
+        vehicle_plate: o.vehicle_plate ?? '—',
+        model: o.model ?? '—',
+        status: o.status,
+        created_at: o.created_at,
+        notes: o.notes ?? '',
+      })));
+    } catch (err) {
+      console.error('Erro ao carregar dados:', err);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }
 
-  const filteredRecords = records.filter(r => {
-    if (filterFranchisee && r.franchisee_id !== filterFranchisee) return false;
-    if (filterType && r.type !== filterType) return false;
-    if (filterStatus && r.payment_status !== filterStatus) return false;
-    if (dateRange.start && new Date(r.created_at) < new Date(dateRange.start)) return false;
-    if (dateRange.end && new Date(r.created_at) > new Date(dateRange.end)) return false;
-    return true;
-  });
+  // ── Filtro + Ordenação ────────────────────────────────────────────────────
+  const hasFilters = !!(filterFranchisee || filterStatus || dateRange.start || dateRange.end || searchTerm);
 
-  const totalRevenue = records.filter(r => r.type === 'debit').reduce((s, r) => s + (r.amount || 0), 0);
-  const totalPending = records.filter(r => r.type === 'debit' && r.payment_status === 'pendente').reduce((s, r) => s + (r.amount || 0), 0);
-  const totalPaid = records.filter(r => r.type === 'debit' && r.payment_status === 'pago').reduce((s, r) => s + (r.amount || 0), 0);
-  const totalCredits = records.filter(r => r.type === 'credit' || r.type === 'payment').reduce((s, r) => s + (r.amount || 0), 0);
+  const filteredOrders = orders
+    .filter(o => {
+      if (filterFranchisee && o.franchisee_name !== filterFranchisee) return false;
+      if (filterStatus && o.status !== filterStatus) return false;
+      if (dateRange.start && new Date(o.created_at) < new Date(dateRange.start)) return false;
+      if (dateRange.end && new Date(o.created_at) > new Date(dateRange.end + 'T23:59:59')) return false;
+      if (searchTerm) {
+        const s = searchTerm.toLowerCase();
+        if (
+          !o.order_number.toLowerCase().includes(s) &&
+          !o.vehicle_plate.toLowerCase().includes(s) &&
+          !o.franchisee_name.toLowerCase().includes(s) &&
+          !o.model.toLowerCase().includes(s)
+        ) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      let va = a[sortField] as string;
+      let vb = b[sortField] as string;
+      if (sortField === 'created_at') {
+        return sortDir === 'desc'
+          ? new Date(vb).getTime() - new Date(va).getTime()
+          : new Date(va).getTime() - new Date(vb).getTime();
+      }
+      return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+    });
 
-  const filteredTotal = filteredRecords.reduce((sum, r) => sum + (r.amount || 0), 0);
+  function toggleSort(field: SortField) {
+    if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortField(field); setSortDir('asc'); }
+  }
 
+  // ── Estatísticas ──────────────────────────────────────────────────────────
+  const stats = {
+    total:       orders.length,
+    solicitado:  orders.filter(o => o.status === 'solicitado').length,
+    em_producao: orders.filter(o => o.status === 'em_producao').length,
+    enviado:     orders.filter(o => o.status === 'enviado').length,
+    concluido:   orders.filter(o => o.status === 'concluido').length,
+    cancelado:   orders.filter(o => o.status === 'cancelado').length,
+  };
+
+  // ── Export ────────────────────────────────────────────────────────────────
   function exportCSV() {
-    const header = 'Data,Franqueado,Descrição,Pedido,Tipo,Valor,Status\n';
-    const rows = filteredRecords.map(r => [
-      formatDateShort(r.created_at),
-      r.franchisee?.company_name || '',
-      r.description,
-      r.order?.order_number || '',
-      r.type,
-      r.amount.toFixed(2),
-      r.payment_status,
-    ].join(',')).join('\n');
-
-    const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+    const header = 'Pedido,Franqueado,Codigo,Placa,Modelo,Status,Data,Observacoes\n';
+    const rows = filteredOrders.map(o =>
+      [o.order_number, `"${o.franchisee_name}"`, o.franchisee_code, o.vehicle_plate,
+       `"${o.model}"`, STATUS_LABELS[o.status] ?? o.status,
+       formatDateShort(o.created_at), `"${o.notes.replace(/"/g, '""')}"`].join(',')
+    ).join('\n');
+    const blob = new Blob(['\uFEFF' + header + rows], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `financeiro-etork-${new Date().toISOString().slice(0,10)}.csv`;
+    a.download = `pedidos-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }
 
+  // ── Estilos reutilizáveis ─────────────────────────────────────────────────
+  const inputSt: React.CSSProperties = {
+    padding: '8px 12px', borderRadius: 8,
+    border: `1px solid ${c.border}`, background: c.bg,
+    color: c.text, fontSize: 12, outline: 'none', width: '100%',
+  };
+
+  const thSt = (field?: SortField): React.CSSProperties => ({
+    padding: '10px 14px', textAlign: 'left', fontSize: 10,
+    fontWeight: 700, color: c.textMuted, letterSpacing: 0.8,
+    cursor: field ? 'pointer' : 'default',
+    userSelect: 'none',
+    whiteSpace: 'nowrap',
+    background: c.surfaceAlt,
+  });
+
+  const SortIcon = ({ field }: { field: SortField }) =>
+    sortField === field
+      ? (sortDir === 'asc' ? <IconChevronUp /> : <IconChevronDown />)
+      : <span style={{ opacity: 0.3 }}><IconChevronDown /></span>;
+
   const spinKeyframes = `
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
   `;
 
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div style={{ background: colors.background, minHeight: '100vh' }}>
+    <div style={{ background: c.bg, minHeight: '100vh' }}>
       <style>{spinKeyframes}</style>
-      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '24px' }}>
-        
-        <div style={{ marginBottom: 28 }}>
-          <h1 style={{ color: colors.text, fontSize: 24, fontWeight: 700, margin: '0 0 6px' }}>
-            Financeiro - Administrativo
-          </h1>
-          <p style={{ color: colors.textSecondary, fontSize: 14, margin: 0 }}>
-            Gestão financeira completa de todos os franqueados
-          </p>
+      <div style={{ maxWidth: 1400, margin: '0 auto', padding: 24, animation: 'fadeIn 0.3s ease' }}>
+
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28, flexWrap: 'wrap', gap: 16 }}>
+          <div>
+            <h1 style={{ color: c.text, fontSize: 24, fontWeight: 800, margin: '0 0 4px' }}>
+              Extrato de Pedidos
+            </h1>
+            <p style={{ color: c.textSec, fontSize: 13, margin: 0 }}>
+              Todos os pedidos realizados pelos franqueados
+            </p>
+          </div>
+          <button
+            onClick={() => loadData(true)}
+            disabled={refreshing}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '8px 16px', background: c.surface,
+              border: `1px solid ${c.border}`, borderRadius: 8,
+              color: c.textSec, cursor: 'pointer', fontSize: 12, fontWeight: 600,
+              opacity: refreshing ? 0.6 : 1,
+            }}
+          >
+            <IconRefresh /> {refreshing ? 'Atualizando...' : 'Atualizar'}
+          </button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 28 }}>
-          <AdminStat 
-            label="Receita Total" 
-            value={formatCurrency(totalRevenue)} 
-            subtitle={`${records.length} movimentações`}
-            color="#10b981" 
-            icon={<IconTrendingUp />}
-            colors={colors}
-          />
-          <AdminStat 
-            label="A Receber" 
-            value={formatCurrency(totalPending)} 
-            subtitle={`${records.filter(r => r.payment_status === 'pendente').length} pendentes`}
-            color="#f59e0b" 
-            icon={<IconAlertCircle />}
-            colors={colors}
-          />
-          <AdminStat 
-            label="Receita Paga" 
-            value={formatCurrency(totalPaid)} 
-            color="#3b82f6" 
-            icon={<IconPackage />}
-            colors={colors}
-          />
-          <AdminStat 
-            label="Créditos Totais" 
-            value={formatCurrency(totalCredits)} 
-            color="#8b5cf6" 
-            icon={<IconUsers />}
-            colors={colors}
-          />
-          <AdminStat 
-            label="Franqueados" 
-            value={franchisees.length.toString()} 
-            subtitle={`${franchisees.filter(f => f.balance > 0).length} com saldo`}
-            color={colors.accent} 
-            icon={<IconUsers />}
-            colors={colors}
-          />
+        {/* Stats */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12, marginBottom: 24 }}>
+          {[
+            { label: 'TOTAL', value: stats.total, color: c.accent, borderColor: c.accent },
+            { label: 'SOLICITADOS', value: stats.solicitado, color: '#f59e0b', borderColor: '#f59e0b' },
+            { label: 'EM PRODUÇÃO', value: stats.em_producao, color: '#3b82f6', borderColor: '#3b82f6' },
+            { label: 'ENVIADOS', value: stats.enviado, color: '#8b5cf6', borderColor: '#8b5cf6' },
+            { label: 'CONCLUÍDOS', value: stats.concluido, color: '#10b981', borderColor: '#10b981' },
+            { label: 'CANCELADOS', value: stats.cancelado, color: '#ef4444', borderColor: '#ef4444' },
+          ].map(({ label, value, color, borderColor }) => (
+            <div key={label} style={{
+              background: c.surface, border: `1px solid ${c.border}`,
+              borderTop: `3px solid ${borderColor}`, borderRadius: 10,
+              padding: '14px 16px', textAlign: 'center',
+            }}>
+              <div style={{ fontSize: 10, color, fontWeight: 700, letterSpacing: 0.5, marginBottom: 6 }}>{label}</div>
+              <div style={{ fontSize: 26, fontWeight: 800, color }}>{value}</div>
+            </div>
+          ))}
         </div>
 
-        <div style={{ 
-          background: colors.surface, 
-          border: `1px solid ${colors.border}`, 
-          borderRadius: 12, 
-          padding: '16px 20px',
-          marginBottom: 24
+        {/* Barra de ferramentas */}
+        <div style={{
+          background: c.surface, border: `1px solid ${c.border}`,
+          borderRadius: 12, padding: '14px 18px', marginBottom: 20,
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showFilters ? 16 : 0 }}>
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                background: 'transparent',
-                border: 'none',
-                color: colors.accent,
-                cursor: 'pointer',
-                fontSize: 12,
-                fontWeight: 600,
-              }}
-            >
-              <IconFilter />
-              {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
-            </button>
-            
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+            {/* Esquerda */}
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', flex: 1 }}>
+              {/* Busca */}
+              <div style={{ position: 'relative', flex: 1, maxWidth: 300 }}>
+                <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: c.textMuted }}>
+                  <IconSearch />
+                </span>
+                <input
+                  type="text"
+                  placeholder="Buscar pedido, placa, franqueado..."
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  style={{ ...inputSt, paddingLeft: 32 }}
+                />
+                {searchTerm && (
+                  <button onClick={() => setSearchTerm('')}
+                    style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: c.textMuted }}>
+                    <IconX />
+                  </button>
+                )}
+              </div>
+
+              {/* Toggle filtros */}
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '8px 14px', borderRadius: 8,
+                  border: `1px solid ${showFilters ? c.accent : c.border}`,
+                  background: showFilters ? c.accentBg : 'transparent',
+                  color: showFilters ? c.accent : c.textSec,
+                  cursor: 'pointer', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap',
+                }}
+              >
+                <IconFilter />
+                Filtros
+                {hasFilters && (
+                  <span style={{
+                    background: c.accent, color: '#000', borderRadius: '50%',
+                    width: 16, height: 16, fontSize: 10, fontWeight: 800,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {[filterFranchisee, filterStatus, dateRange.start, dateRange.end].filter(Boolean).length}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Direita */}
             <button
               onClick={exportCSV}
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                background: colors.surfaceHover,
-                border: `1px solid ${colors.border}`,
-                borderRadius: 8,
-                padding: '8px 16px',
-                color: colors.text,
-                cursor: 'pointer',
-                fontSize: 12,
-                fontWeight: 600,
+                display: 'flex', alignItems: 'center', gap: 8,
+                background: isDark ? '#1a1a00' : '#fffbeb',
+                border: `1px solid ${c.accent}`,
+                borderRadius: 8, padding: '8px 16px',
+                color: c.accent, cursor: 'pointer', fontSize: 12, fontWeight: 700,
               }}
             >
-              <IconDownload />
-              Exportar CSV
+              <IconDownload /> Exportar CSV
             </button>
           </div>
 
+          {/* Painel de filtros expandido */}
           {showFilters && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
-              <select
-                value={filterFranchisee}
-                onChange={e => setFilterFranchisee(e.target.value)}
-                style={{
-                  padding: '8px 12px',
-                  background: colors.background,
-                  border: `1px solid ${colors.border}`,
-                  borderRadius: 8,
-                  color: colors.text,
-                  fontSize: 12,
-                }}
-              >
+            <div style={{
+              marginTop: 14, paddingTop: 14, borderTop: `1px solid ${c.border}`,
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10,
+            }}>
+              <select value={filterFranchisee} onChange={e => setFilterFranchisee(e.target.value)} style={inputSt}>
                 <option value="">Todos os franqueados</option>
-                {franchisees.map(f => (
-                  <option key={f.id} value={f.id}>{f.company_name}</option>
-                ))}
+                {franchisees.map(f => <option key={f.id} value={f.company_name}>{f.company_name}</option>)}
               </select>
 
-              <select
-                value={filterType}
-                onChange={e => setFilterType(e.target.value)}
-                style={{
-                  padding: '8px 12px',
-                  background: colors.background,
-                  border: `1px solid ${colors.border}`,
-                  borderRadius: 8,
-                  color: colors.text,
-                  fontSize: 12,
-                }}
-              >
-                <option value="">Todos os tipos</option>
-                <option value="debit">Débito</option>
-                <option value="credit">Crédito</option>
-                <option value="payment">Pagamento</option>
-                <option value="adjustment">Ajuste</option>
-              </select>
-
-              <select
-                value={filterStatus}
-                onChange={e => setFilterStatus(e.target.value)}
-                style={{
-                  padding: '8px 12px',
-                  background: colors.background,
-                  border: `1px solid ${colors.border}`,
-                  borderRadius: 8,
-                  color: colors.text,
-                  fontSize: 12,
-                }}
-              >
+              <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={inputSt}>
                 <option value="">Todos os status</option>
-                <option value="pendente">Pendente</option>
-                <option value="pago">Pago</option>
-                <option value="cancelado">Cancelado</option>
+                {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
 
-              <input
-                type="date"
-                value={dateRange.start}
-                onChange={e => setDateRange({ ...dateRange, start: e.target.value })}
-                style={{
-                  padding: '8px 12px',
-                  background: colors.background,
-                  border: `1px solid ${colors.border}`,
-                  borderRadius: 8,
-                  color: colors.text,
-                  fontSize: 12,
-                }}
-              />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 10, color: c.textMuted, fontWeight: 700 }}>DATA INICIAL</label>
+                <input type="date" value={dateRange.start} onChange={e => setDateRange(p => ({ ...p, start: e.target.value }))} style={inputSt} />
+              </div>
 
-              <input
-                type="date"
-                value={dateRange.end}
-                onChange={e => setDateRange({ ...dateRange, end: e.target.value })}
-                style={{
-                  padding: '8px 12px',
-                  background: colors.background,
-                  border: `1px solid ${colors.border}`,
-                  borderRadius: 8,
-                  color: colors.text,
-                  fontSize: 12,
-                }}
-              />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 10, color: c.textMuted, fontWeight: 700 }}>DATA FINAL</label>
+                <input type="date" value={dateRange.end} onChange={e => setDateRange(p => ({ ...p, end: e.target.value }))} style={inputSt} />
+              </div>
 
-              {(filterFranchisee || filterType || filterStatus || dateRange.start || dateRange.end) && (
+              {hasFilters && (
                 <button
-                  onClick={() => {
-                    setFilterFranchisee('');
-                    setFilterType('');
-                    setFilterStatus('');
-                    setDateRange({ start: '', end: '' });
-                  }}
+                  onClick={() => { setFilterFranchisee(''); setFilterStatus(''); setDateRange({ start: '', end: '' }); setSearchTerm(''); }}
                   style={{
-                    padding: '8px 16px',
-                    background: '#ef4444',
-                    border: 'none',
-                    borderRadius: 8,
-                    color: '#fff',
-                    cursor: 'pointer',
-                    fontSize: 12,
-                    fontWeight: 600,
+                    padding: '8px 14px', background: '#ef4444', border: 'none',
+                    borderRadius: 8, color: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 700,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                   }}
                 >
-                  Limpar Filtros
+                  <IconX /> Limpar tudo
                 </button>
               )}
             </div>
           )}
         </div>
 
-        {franchiseeFinancials.length > 0 && (
-          <div style={{
-            background: colors.surface,
-            border: `1px solid ${colors.border}`,
-            borderRadius: 12,
-            overflow: 'hidden',
-            marginBottom: 24,
-          }}>
-            <div style={{
-              padding: '16px 20px',
-              borderBottom: `1px solid ${colors.border}`,
-              background: colors.tableHeaderBg,
-            }}>
-              <h2 style={{ color: colors.text, fontSize: 14, fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <IconUsers />
-                Resumo Financeiro por Franqueado
-              </h2>
-            </div>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom: `1px solid ${colors.border}` }}>
-                    {['FRANQUEADO', 'CÓDIGO', 'PEDIDOS', 'TOTAL GASTO', 'A RECEBER', 'SALDO'].map(header => (
-                      <th key={header} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: colors.textMuted, letterSpacing: 1 }}>
-                        {header}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {franchiseeFinancials.slice(0, 10).map(f => (
-                    <tr key={f.id} style={{ borderBottom: `1px solid ${colors.border}` }}>
-                      <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600, color: colors.text }}>
-                        {f.company_name}
-                      </td>
-                      <td style={{ padding: '12px 16px', fontSize: 12, color: colors.textSecondary }}>
-                        {f.code}
-                      </td>
-                      <td style={{ padding: '12px 16px', fontSize: 13, color: colors.text }}>
-                        {f.total_orders}
-                      </td>
-                      <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600, color: colors.text }}>
-                        {formatCurrency(f.total_spent)}
-                      </td>
-                      <td style={{ padding: '12px 16px', fontSize: 13, color: f.pending_amount > 0 ? '#f59e0b' : '#10b981', fontWeight: 600 }}>
-                        {formatCurrency(f.pending_amount)}
-                      </td>
-                      <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 700, color: colors.accent }}>
-                        {formatCurrency(f.balance + f.credit_limit)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+        {/* Tabela */}
+        <div style={{ background: c.surface, border: `1px solid ${c.border}`, borderRadius: 12, overflow: 'hidden' }}>
 
-        <div style={{
-          background: colors.surface,
-          border: `1px solid ${colors.border}`,
-          borderRadius: 12,
-          overflow: 'hidden',
-        }}>
+          {/* Cabeçalho da tabela */}
           <div style={{
-            padding: '16px 20px',
-            borderBottom: `1px solid ${colors.border}`,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
+            padding: '14px 18px', borderBottom: `1px solid ${c.border}`,
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8,
           }}>
-            <h2 style={{ color: colors.text, fontSize: 14, fontWeight: 600, margin: 0 }}>
-              Todas as Transações
+            <h2 style={{ color: c.text, fontSize: 14, fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <IconClipboard /> Lista de Pedidos
             </h2>
-            <span style={{ fontSize: 12, color: colors.textMuted }}>
-              {filteredRecords.length} registros
-            </span>
-          </div>
-          
-          {loading ? (
-            <div style={{ padding: 48, textAlign: 'center', color: colors.textMuted, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              <IconLoader />
-              Carregando...
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {hasFilters && (
+                <span style={{
+                  fontSize: 11, color: c.accent, background: c.accentBg,
+                  padding: '3px 8px', borderRadius: 20, fontWeight: 600,
+                }}>
+                  Filtros ativos
+                </span>
+              )}
+              <span style={{ fontSize: 12, color: c.textMuted }}>
+                {filteredOrders.length} / {orders.length} pedidos
+              </span>
             </div>
-          ) : filteredRecords.length === 0 ? (
-            <div style={{ padding: 48, textAlign: 'center', color: colors.textMuted }}>
-              Nenhuma movimentação encontrada.
+          </div>
+
+          {loading ? (
+            <div style={{ padding: 64, textAlign: 'center', color: c.textMuted, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, fontSize: 13 }}>
+              <IconLoader /> Carregando pedidos...
+            </div>
+          ) : filteredOrders.length === 0 ? (
+            <div style={{ padding: 64, textAlign: 'center', color: c.textMuted, fontSize: 13 }}>
+              Nenhum pedido encontrado{hasFilters ? ' com os filtros aplicados.' : '.'}
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ borderBottom: `1px solid ${colors.border}`, background: colors.tableHeaderBg }}>
-                    {['DATA', 'FRANQUEADO', 'DESCRIÇÃO', 'PEDIDO', 'TIPO', 'VALOR', 'STATUS', ''].map(header => (
-                      <th key={header} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: colors.textMuted, letterSpacing: 1 }}>
-                        {header}
-                      </th>
-                    ))}
+                  <tr style={{ borderBottom: `1px solid ${c.border}` }}>
+                    <th style={thSt('order_number')} onClick={() => toggleSort('order_number')}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>PEDIDO <SortIcon field="order_number" /></span>
+                    </th>
+                    <th style={thSt('franchisee_name')} onClick={() => toggleSort('franchisee_name')}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>FRANQUEADO <SortIcon field="franchisee_name" /></span>
+                    </th>
+                    <th style={thSt('vehicle_plate')} onClick={() => toggleSort('vehicle_plate')}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>PLACA <SortIcon field="vehicle_plate" /></span>
+                    </th>
+                    <th style={thSt()}>MODELO</th>
+                    <th style={thSt('created_at')} onClick={() => toggleSort('created_at')}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>DATA <SortIcon field="created_at" /></span>
+                    </th>
+                    <th style={thSt('status')} onClick={() => toggleSort('status')}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>STATUS <SortIcon field="status" /></span>
+                    </th>
+                    <th style={thSt()}>OBSERVAÇÕES</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredRecords.map(r => (
-                    <tr key={r.id} style={{ borderBottom: `1px solid ${colors.border}`, transition: 'background 0.15s' }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = colors.tableRowHover; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
-                      <td style={{ padding: '10px 14px', fontSize: 11, color: colors.textSecondary }}>
-                        {formatDateShort(r.created_at)}
-                      </td>
-                      <td style={{ padding: '10px 14px', fontSize: 12, color: colors.text }}>
-                        {r.franchisee?.company_name || '—'}
-                      </td>
-                      <td style={{ padding: '10px 14px', fontSize: 12, color: colors.textSecondary }}>
-                        {r.description}
-                      </td>
-                      <td style={{ padding: '10px 14px', fontSize: 12, color: colors.accent }}>
-                        {r.order?.order_number || '—'}
-                      </td>
-                      <td style={{ padding: '10px 14px' }}>
-                        <span style={{
-                          fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4,
-                          background: r.type === 'debit' ? colors.debitBg : colors.creditBg,
-                          color: r.type === 'debit' ? colors.debitColor : colors.creditColor,
-                        }}>
-                          {r.type === 'debit' ? 'DÉBITO' : r.type === 'credit' ? 'CRÉDITO' : r.type === 'payment' ? 'PAGAMENTO' : 'AJUSTE'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '10px 14px', fontSize: 13, fontWeight: 700, color: r.type === 'debit' ? colors.debitColor : colors.creditColor }}>
-                        {r.type === 'debit' ? '- ' : '+ '}{formatCurrency(r.amount)}
-                      </td>
-                      <td style={{ padding: '10px 14px' }}>
-                        <span style={{
-                          fontSize: 10,
-                          padding: '2px 6px',
-                          borderRadius: 4,
-                          background: r.payment_status === 'pago' ? '#10b98120' : r.payment_status === 'pendente' ? '#f59e0b20' : '#ef444420',
-                          color: r.payment_status === 'pago' ? '#10b981' : r.payment_status === 'pendente' ? '#f59e0b' : '#ef4444',
-                        }}>
-                          {r.payment_status === 'pago' ? 'PAGO' : r.payment_status === 'pendente' ? 'PENDENTE' : 'CANCELADO'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '10px 14px' }}>
-                        <button
-                          onClick={() => {}}
+                  {filteredOrders.map((order, idx) => {
+                    const st = statusStyle(order.status);
+                    const isExpanded = expandedId === order.id;
+                    const isLast = idx === filteredOrders.length - 1;
+
+                    return (
+                      <>
+                        <tr
+                          key={order.id}
+                          onClick={() => setExpandedId(isExpanded ? null : order.id)}
                           style={{
-                            background: 'transparent',
-                            border: 'none',
-                            color: colors.accent,
-                            cursor: 'pointer',
-                            fontSize: 11,
+                            borderBottom: isLast && !isExpanded ? 'none' : `1px solid ${c.border}`,
+                            cursor: 'pointer', transition: 'background 0.12s',
+                            background: isExpanded ? c.surfaceHover : 'transparent',
                           }}
+                          onMouseEnter={e => { if (!isExpanded) e.currentTarget.style.background = c.surfaceAlt; }}
+                          onMouseLeave={e => { if (!isExpanded) e.currentTarget.style.background = 'transparent'; }}
                         >
-                          Detalhes
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                          <td style={{ padding: '11px 14px', fontSize: 13, fontWeight: 700, color: c.accent, whiteSpace: 'nowrap' }}>
+                            {order.order_number}
+                          </td>
+                          <td style={{ padding: '11px 14px' }}>
+                            <div style={{ fontSize: 13, color: c.text, fontWeight: 600 }}>{order.franchisee_name}</div>
+                            <div style={{ fontSize: 10, color: c.textMuted, marginTop: 2 }}>{order.franchisee_code}</div>
+                          </td>
+                          <td style={{ padding: '11px 14px', fontSize: 12, color: c.textSec, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+                            {order.vehicle_plate}
+                          </td>
+                          <td style={{ padding: '11px 14px', fontSize: 12, color: c.textSec, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {order.model}
+                          </td>
+                          <td style={{ padding: '11px 14px', fontSize: 12, color: c.textSec, whiteSpace: 'nowrap' }}>
+                            {formatDateShort(order.created_at)}
+                          </td>
+                          <td style={{ padding: '11px 14px' }}>
+                            <span style={{
+                              display: 'inline-flex', alignItems: 'center', gap: 5,
+                              padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                              background: st.bg, color: st.text,
+                            }}>
+                              <span style={{ width: 6, height: 6, borderRadius: '50%', background: st.dot, flexShrink: 0 }} />
+                              {STATUS_LABELS[order.status] ?? order.status}
+                            </span>
+                          </td>
+                          <td style={{ padding: '11px 14px', fontSize: 11, color: c.textSec, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {order.notes || '—'}
+                          </td>
+                        </tr>
+
+                        {/* Linha expandida com notas completas */}
+                        {isExpanded && (
+                          <tr key={`${order.id}-expanded`} style={{ borderBottom: isLast ? 'none' : `1px solid ${c.border}` }}>
+                            <td colSpan={7} style={{ padding: '12px 20px 16px 20px', background: c.surfaceHover }}>
+                              <div style={{ fontSize: 11, color: c.textMuted, fontWeight: 700, marginBottom: 6 }}>OBSERVAÇÕES COMPLETAS</div>
+                              <div style={{ fontSize: 12, color: c.text, lineHeight: 1.6, whiteSpace: 'pre-wrap', maxWidth: 900 }}>
+                                {order.notes || 'Sem observações registradas.'}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </>
+                    );
+                  })}
                 </tbody>
-                <tfoot>
-                  <tr style={{ borderTop: `2px solid ${colors.border}`, background: colors.tableHeaderBg }}>
-                    <td colSpan={5} style={{ padding: '10px 14px', fontSize: 12, fontWeight: 600, color: colors.text }}>
-                      Total:
-                    </td>
-                    <td style={{ padding: '10px 14px', fontSize: 13, fontWeight: 700, color: colors.accent }}>
-                      {formatCurrency(filteredTotal)}
-                    </td>
-                    <td colSpan={2} />
-                  </tr>
-                </tfoot>
               </table>
+            </div>
+          )}
+
+          {/* Rodapé */}
+          {!loading && filteredOrders.length > 0 && (
+            <div style={{
+              padding: '12px 18px', borderTop: `1px solid ${c.border}`,
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              fontSize: 11, color: c.textMuted,
+            }}>
+              <span>Clique em uma linha para ver as observações completas</span>
+              <span>{filteredOrders.length} resultado(s)</span>
             </div>
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-function AdminStat({ label, value, subtitle, color, icon, colors }: { 
-  label: string; 
-  value: string; 
-  subtitle?: string;
-  color: string; 
-  icon: React.ReactNode;
-  colors: any;
-}) {
-  return (
-    <div style={{
-      background: colors.surface,
-      border: `1px solid ${colors.border}`,
-      borderRadius: 10,
-      padding: '16px 18px',
-      borderLeft: `3px solid ${color}`,
-      transition: 'transform 0.2s',
-    }}
-    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <span style={{ fontSize: 10, color: colors.textMuted, fontWeight: 700, letterSpacing: 1 }}>
-          {label.toUpperCase()}
-        </span>
-        <span style={{ color }}>{icon}</span>
-      </div>
-      <div style={{ fontSize: 22, fontWeight: 800, color: colors.text }}>
-        {value}
-      </div>
-      {subtitle && (
-        <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 6 }}>
-          {subtitle}
-        </div>
-      )}
     </div>
   );
 }
