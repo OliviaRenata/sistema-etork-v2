@@ -7,20 +7,24 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// CREDENCIAIS FIXAS
-const SUPABASE_URL = "https://vkxhjynnaekpeklmfebr.supabase.co";
-const SUPABASE_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZreGhqeW5uYWVrcGVrbG1mZWJyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjI1NTkzNywiZXhwIjoyMDkxODMxOTM3fQ.WWedj2Iogv7jHBYtgZS9bWpRP00-z_QxIKMRyp69cFc";
+// Utiliza variáveis de ambiente nativas do Supabase para maior segurança
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? "";
+const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? "";
 
 serve(async (req) => {
+  // Trata requisições OPTIONS (CORS Preflight)
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
+    // Inicializa o cliente com a Service Role Key para ignorar restrições de RLS
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
+    // Captura os dados enviados pelo front-end (NewOrder.tsx)
     const body = await req.json();
 
+    // Inserção na tabela 'orders'
     const { data: newOrder, error: orderErr } = await supabase
       .from("orders")
       .insert({ 
@@ -28,26 +32,41 @@ serve(async (req) => {
         model: body.model,
         year: body.year,
         engine: body.engine,
+        cv: body.cv,
+        fuel: body.fuel,
+        km: body.km,
+        transmission: body.transmission,
+        hw_number: body.hw_number,
+        sw_number: body.sw_number,
+        system: body.system,
+        reading_mode: body.readingMode,
+        performance: body.performance || [],
+        tool: body.tool || [],
         notes: body.notes,
-        status: 'solicitado'
+        status: 'solicitado',
+        // Garanta que o franchisee_id seja enviado se o campo for obrigatório
+        franchisee_id: body.franchisee_id 
       })
       .select()
       .single();
 
     if (orderErr) {
+      console.error("Erro na inserção do banco:", orderErr);
       return new Response(JSON.stringify({ error: orderErr.message }), { 
-        status: 500, 
+        status: 400, 
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
       });
     }
 
+    // Retorno de sucesso
     return new Response(JSON.stringify({ success: true, order: newOrder }), {
       status: 201,
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
 
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    console.error("Erro crítico na função:", err.message);
+    return new Response(JSON.stringify({ error: "Erro interno no servidor" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });

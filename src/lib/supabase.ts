@@ -9,18 +9,11 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('⚠️ Variáveis de ambiente do Supabase não encontradas.');
 }
 
-// Função para obter o token
-const getToken = () => {
-  return localStorage.getItem('sb-access-token');
-};
-
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    storageKey: 'sb-access-token',
-    storage: localStorage,
-    detectSessionInUrl: true
+    detectSessionInUrl: true,
   },
   realtime: {
     params: { eventsPerSecond: 10 },
@@ -41,35 +34,30 @@ export const auth = {
     supabase.auth.onAuthStateChange(cb),
 };
 
-// Edge Function Caller CORRIGIDO
+// Função para obter o token da sessão ativa
+const getToken = async (): Promise<string | null> => {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token ?? null;
+};
+
+// Edge Function Caller
 export async function callFunction<T>(
   name: string,
   body?: any,
   method: 'POST' | 'PATCH' | 'DELETE' = 'POST'
 ): Promise<T> {
-  // Buscar o token diretamente do localStorage
-  const token = getToken();
-  
-  if (!token) {
-    // Tentar buscar da sessão
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      throw new Error('Usuário não autenticado. Faça login novamente.');
-    }
-    localStorage.setItem('sb-access-token', session.access_token);
-  }
+  const token = await getToken();
 
-  const finalToken = getToken();
-  
-  console.log('Chamando função:', name);
-  console.log('Token existe?', !!finalToken);
+  if (!token) {
+    throw new Error('Usuário não autenticado. Faça login novamente.');
+  }
 
   const { data, error } = await supabase.functions.invoke<T>(name, {
     method,
     body,
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${finalToken}`,
+      'Authorization': `Bearer ${token}`,
     },
   });
 
@@ -77,32 +65,30 @@ export async function callFunction<T>(
     console.error(`Erro na função ${name}:`, error);
     throw error;
   }
-  
+
   return data as T;
 }
 
 export const storage = {
   uploadOrderFile: async (orderId: string, file: File) => {
-    const token = getToken();
     const path = `${orderId}/${Date.now()}-${file.name}`;
-    
+
     const { data, error } = await supabase.storage
       .from('order-files')
-      .upload(path, file, { 
+      .upload(path, file, {
         upsert: false,
         contentType: file.type,
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
-    
+
     if (error) throw error;
-    return data?.path || ''; 
+    return data?.path || '';
   },
 
   getSignedUrl: async (path: string, expiresIn = 3600) => {
     const { data, error } = await supabase.storage
       .from('order-files')
       .createSignedUrl(path, expiresIn);
-    
+
     if (error) throw error;
     return data.signedUrl;
   },
