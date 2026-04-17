@@ -7,6 +7,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const VALID_TRANSITIONS = {
+  solicitado: ["em_producao", "cancelado"],
+  em_producao: ["enviado", "cancelado"],
+  enviado: ["concluido"],
+  concluido: [],
+  cancelado: [],
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -29,31 +37,68 @@ serve(async (req) => {
       return json({ error: "Não autorizado", details: "Sessão inválida" }, 401);
     }
 
-    // --- REMOVEMOS A TRAVA DE ADMIN AQUI ---
-    // Agora qualquer usuário autenticado pode prosseguir para criar o pedido
-
-    const body = await req.json();
-    
-    // Lógica simplificada para criação de pedido
-    // Aqui você insere a lógica de INSERT na tabela orders
-    // Exemplo:
-    const { data: newOrder, error: orderErr } = await supabase
-      .from("orders")
-      .insert([{ 
-        ...body, 
-        created_by: user.id,
-        status: 'solicitado' 
-      }])
-      .select()
+    // Verificar se é admin
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("user_id", user.id)
       .single();
 
-    if (orderErr) throw orderErr;
+    if (!profile || profile.role !== "admin") {
+      return json({ error: "Acesso negado. Apenas administradores podem alterar status." }, 403);
+    }
 
-    return json({ message: "Pedido enviado com sucesso!", order: newOrder });
+    const { order_id, new_status, notes } = await req.json();
+
+    if (!order_id || !new_status) {
+      return json({ error: "order_id e new_status são obrigatórios" }, 400);
+    }
+
+    // Buscar pedido atual
+    const { data: order, error: orderErr } = await supabase
+      .from("orders")
+      .select("id, status, order_number, franchisee_id")
+      .eq("id", order_id)
+      .single();
+
+    if (orderErr || !order) {
+      return json({ error: "Pedido não encontrado" }, 404);
+    }
+
+    // Validar transição
+    const allowed = VALID_TRANSITIONS[order.status] || [];
+    if (!allowed.includes(new_status)) {
+      return json({
+        error: `Transição inválida: ${order.status} → ${new_status}. Permitido: ${allowed.join(", ") || "nenhuma"}`,
+      }, 400);
+    }
+
+    // Atualizar status
+    const { error: updateErr } = await supabase
+      .from("orders")
+      .update({ status: new_status, updated_by: user.id })
+      .eq("id", order_id);
+
+    if (updateErr) throw updateErr;
+
+    // Registrar histórico
+    await supabase.from("order_status_history").insert({
+      order_id,
+      from_status: order.status,
+      to_status: new_status,
+      changed_by: user.id,
+      notes: notes || null,
+    });
+
+    return json({ 
+      message: `Status atualizado: ${order.status} → ${new_status}`, 
+      order_id, 
+      new_status 
+    });
 
   } catch (err) {
     console.error("Erro:", err);
-    return json({ error: "Erro ao processar pedido", details: err.message }, 500);
+    return json({ error: "Erro ao processar requisição", details: err.message }, 500);
   }
 });
 
