@@ -39,6 +39,7 @@ export const auth = {
 };
 
 // 3. Edge Function Caller (Ajustado para evitar 401 Unauthorized)
+// 3. Edge Function Caller (Ajustado para garantir autenticação)
 export async function callFunction<T>(
   name: string,
   body?: any,
@@ -46,7 +47,6 @@ export async function callFunction<T>(
 ): Promise<T> {
   const { data: { session } } = await supabase.auth.getSession();
   
-  // Se der erro aqui, é porque você precisa fazer LOGIN no sistema primeiro
   if (!session) {
     throw new Error('Usuário não autenticado. Por favor, faça login novamente.');
   }
@@ -54,11 +54,18 @@ export async function callFunction<T>(
   const { data, error } = await supabase.functions.invoke<T>(name, {
     method,
     body,
-    // O SDK já envia o cabeçalho Authorization automaticamente. 
-    // NÃO force o cabeçalho manual aqui para não quebrar o algoritmo JWT.
+    // Passamos o token explicitamente no header para evitar que o SDK 
+    // tente usar chaves que causem o erro de algoritmo (ES256).
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+    },
   });
 
-  if (error) throw error;
+  if (error) {
+    console.error(`Erro na função ${name}:`, error);
+    throw error;
+  }
+  
   return data as T;
 }
 
