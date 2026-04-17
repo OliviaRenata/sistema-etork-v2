@@ -20,6 +20,11 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
+// EXPOR PARA O CONSOLE (Para você testar com o comando que te mandei antes)
+if (typeof window !== 'undefined') {
+  (window as any).supabase = supabase;
+}
+
 // 2. Auth Helpers
 export const auth = {
   signIn: (email: string, password: string) =>
@@ -33,21 +38,24 @@ export const auth = {
     supabase.auth.onAuthStateChange(cb),
 };
 
-// 3. Edge Function Caller (CORRIGIDO)
+// 3. Edge Function Caller (Ajustado para evitar 401 Unauthorized)
 export async function callFunction<T>(
   name: string,
   body?: any,
   method: 'POST' | 'PATCH' | 'DELETE' = 'POST'
 ): Promise<T> {
-  // Verificamos a sessão apenas para garantir que o usuário está logado
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session) throw new Error('Não autenticado');
+  
+  // Se der erro aqui, é porque você precisa fazer LOGIN no sistema primeiro
+  if (!session) {
+    throw new Error('Usuário não autenticado. Por favor, faça login novamente.');
+  }
 
-  // Removido o header Authorization manual para evitar o erro ES256
-  // O SDK do Supabase anexa automaticamente a Anon Key correta
   const { data, error } = await supabase.functions.invoke<T>(name, {
     method,
     body,
+    // O SDK já envia o cabeçalho Authorization automaticamente. 
+    // NÃO force o cabeçalho manual aqui para não quebrar o algoritmo JWT.
   });
 
   if (error) throw error;
@@ -62,7 +70,7 @@ export const storage = {
       .from('order-files')
       .upload(path, file as any, { 
         upsert: false,
-        contentType: file.type // Garante que o tipo do arquivo seja enviado corretamente
+        contentType: file.type 
       });
     
     if (error) throw error;
@@ -71,8 +79,7 @@ export const storage = {
 
   getSignedUrl: async (path: string, expiresIn = 3600) => {
     const { data, error } = await supabase.storage
-      .from('order-files')
-      .createSignedUrl(path, expiresIn);
+      .from('order-files').createSignedUrl(path, expiresIn);
     
     if (error) throw error;
     return data.signedUrl;
