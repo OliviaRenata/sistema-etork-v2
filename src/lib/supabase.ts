@@ -14,13 +14,16 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
+    storageKey: 'sb-access-token',
+    storage: localStorage,
+    detectSessionInUrl: true
   },
   realtime: {
     params: { eventsPerSecond: 10 },
   },
 });
 
-// EXPOR PARA O CONSOLE (Para você testar com o comando que te mandei antes)
+// EXPOR PARA O CONSOLE (Para você testar)
 if (typeof window !== 'undefined') {
   (window as any).supabase = supabase;
 }
@@ -38,8 +41,7 @@ export const auth = {
     supabase.auth.onAuthStateChange(cb),
 };
 
-// 3. Edge Function Caller (Ajustado para evitar 401 Unauthorized)
-// 3. Edge Function Caller (Ajustado para garantir autenticação)
+// 3. Edge Function Caller
 export async function callFunction<T>(
   name: string,
   body?: any,
@@ -54,8 +56,6 @@ export async function callFunction<T>(
   const { data, error } = await supabase.functions.invoke<T>(name, {
     method,
     body,
-    // Passamos o token explicitamente no header para evitar que o SDK 
-    // tente usar chaves que causem o erro de algoritmo (ES256).
     headers: {
       Authorization: `Bearer ${session.access_token}`,
     },
@@ -75,7 +75,7 @@ export const storage = {
     const path = `${orderId}/${Date.now()}-${file.name}`;
     const { data, error } = await supabase.storage
       .from('order-files')
-      .upload(path, file as any, { 
+      .upload(path, file, { 
         upsert: false,
         contentType: file.type 
       });
@@ -86,14 +86,17 @@ export const storage = {
 
   getSignedUrl: async (path: string, expiresIn = 3600) => {
     const { data, error } = await supabase.storage
-      .from('order-files').createSignedUrl(path, expiresIn);
+      .from('order-files')
+      .createSignedUrl(path, expiresIn);
     
     if (error) throw error;
     return data.signedUrl;
   },
 
   deleteFile: async (path: string) => {
-    const { error } = await supabase.storage.from('order-files').remove([path]);
+    const { error } = await supabase.storage
+      .from('order-files')
+      .remove([path]);
     if (error) throw error;
   },
 };
