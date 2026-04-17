@@ -24,7 +24,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [franchisee, setFranchisee] = useState<Franchisee | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Função para criar franqueado automaticamente
   async function createFranchisee(userId: string, userEmail: string) {
     try {
       const companyCode = `FRAN${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
@@ -74,14 +73,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function loadProfile(userId: string, userEmail: string) {
     try {
-      // Buscar perfil existente
       let { data: prof, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
 
-      // Se não existe perfil, criar
       if (!prof) {
         const isAdminEmail = userEmail === 'joao@etorkbrasil.com.br';
         const { data: newProfile, error: insertError } = await supabase
@@ -104,11 +101,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setProfile(prof ?? null);
 
-      // Se for admin, não precisa de franqueado
       if (prof?.role === 'admin') {
         setFranchisee(null);
       } else {
-        // Se for franqueado, carregar ou criar franqueado
         const franchiseeData = await loadOrCreateFranchisee(userId, userEmail);
         setFranchisee(franchiseeData);
       }
@@ -121,42 +116,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    auth.getSession().then(({ data: { session }, error }) => {
-      if (error) {
-        console.error("Erro ao recuperar sessao:", error.message);
-        auth.signOut();
-        setLoading(false);
-        return;
-      }
-
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        loadProfile(session.user.id, session.user.email!);
-      } else {
-        setLoading(false);
-      }
-    }).catch(() => {
-        setLoading(false);
-    });
-
-    const { data: { subscription } } = auth.onAuthStateChange(async (event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    // CORREÇÃO: Forçar logout ao iniciar para não manter sessão
+    const clearSessionAndStart = async () => {
+      // Limpar qualquer sessão existente
+      await auth.signOut();
+      localStorage.removeItem('supabase.auth.token');
+      sessionStorage.clear();
       
-      if (session?.user) {
-        await loadProfile(session.user.id, session.user.email!);
-      } else {
-        setProfile(null);
-        setFranchisee(null);
-        setLoading(false);
-      }
-    });
+      setSession(null);
+      setUser(null);
+      setProfile(null);
+      setFranchisee(null);
+      setLoading(false);
+    };
+    
+    clearSessionAndStart();
 
-    return () => subscription.unsubscribe();
+    // Não manter listener de auth state change para evitar login automático
+    // const { data: { subscription } } = auth.onAuthStateChange(async (event, session) => {
+    //   // Removido para não fazer login automático
+    // });
+    // return () => subscription.unsubscribe();
+
   }, []);
 
   async function signIn(email: string, password: string) {
+    // Limpar qualquer sessão antes de logar
+    await auth.signOut();
+    localStorage.removeItem('supabase.auth.token');
+    sessionStorage.clear();
+    
     const { error } = await auth.signIn(email, password);
     if (error) throw error;
   }
@@ -164,6 +153,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signOut() {
     setLoading(true);
     await auth.signOut();
+    localStorage.removeItem('supabase.auth.token');
+    sessionStorage.clear();
     setSession(null);
     setUser(null);
     setProfile(null);
@@ -171,12 +162,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }
 
-  // Admin identificado por role ou email especifico
   const isAdmin = profile?.role === 'admin' || user?.email === 'joao@etorkbrasil.com.br';
 
-  // Logs para debug
   console.log('AuthContext - isAdmin:', isAdmin);
-  console.log('AuthContext - profile role:', profile?.role);
   console.log('AuthContext - user email:', user?.email);
 
   return (
