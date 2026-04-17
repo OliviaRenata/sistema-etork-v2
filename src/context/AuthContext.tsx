@@ -115,34 +115,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  useEffect(() => {
-    // CORREÇÃO: Forçar logout ao iniciar para não manter sessão
-    const clearSessionAndStart = async () => {
-      // Limpar qualquer sessão existente
-      await auth.signOut();
-      localStorage.removeItem('supabase.auth.token');
-      sessionStorage.clear();
-      
-      setSession(null);
-      setUser(null);
-      setProfile(null);
-      setFranchisee(null);
-      setLoading(false);
-    };
-    
-    clearSessionAndStart();
-
-    // Não manter listener de auth state change para evitar login automático
-    // const { data: { subscription } } = auth.onAuthStateChange(async (event, session) => {
-    //   // Removido para não fazer login automático
-    // });
-    // return () => subscription.unsubscribe();
-
-  }, []);
-
   async function signIn(email: string, password: string) {
-    // Limpar qualquer sessão antes de logar
-    await auth.signOut();
+    // Limpar sessão anterior antes de logar
     localStorage.removeItem('supabase.auth.token');
     sessionStorage.clear();
     
@@ -152,15 +126,79 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signOut() {
     setLoading(true);
-    await auth.signOut();
-    localStorage.removeItem('supabase.auth.token');
-    sessionStorage.clear();
-    setSession(null);
-    setUser(null);
-    setProfile(null);
-    setFranchisee(null);
-    setLoading(false);
+    try {
+      await auth.signOut();
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+    } finally {
+      localStorage.removeItem('supabase.auth.token');
+      sessionStorage.clear();
+      setSession(null);
+      setUser(null);
+      setProfile(null);
+      setFranchisee(null);
+      setLoading(false);
+      window.location.href = '/login';
+    }
   }
+
+  useEffect(() => {
+    const initAuth = async () => {
+      setLoading(true);
+      try {
+        // Limpar qualquer sessão inválida primeiro
+        const { data: { session }, error } = await auth.getSession();
+        
+        if (error || !session) {
+          // Sessão inválida ou não existe
+          localStorage.removeItem('supabase.auth.token');
+          sessionStorage.clear();
+          setUser(null);
+          setSession(null);
+          setLoading(false);
+          return;
+        }
+
+        setSession(session);
+        setUser(session.user);
+        await loadProfile(session.user.id, session.user.email!);
+        
+      } catch (error) {
+        console.error('Erro na inicializacao:', error);
+        localStorage.removeItem('supabase.auth.token');
+        sessionStorage.clear();
+        setLoading(false);
+      }
+    };
+
+    initAuth();
+
+    const { data: { subscription } } = auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+        localStorage.removeItem('supabase.auth.token');
+        sessionStorage.clear();
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+        setFranchisee(null);
+        setLoading(false);
+        return;
+      }
+
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        await loadProfile(session.user.id, session.user.email!);
+      } else {
+        setProfile(null);
+        setFranchisee(null);
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const isAdmin = profile?.role === 'admin' || user?.email === 'joao@etorkbrasil.com.br';
 
