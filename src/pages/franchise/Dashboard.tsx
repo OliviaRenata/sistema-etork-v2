@@ -86,7 +86,7 @@ export default function FranchiseDashboard() {
   const isDark = currentTheme === 'dark';
   
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
+  const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
 
@@ -119,10 +119,13 @@ export default function FranchiseDashboard() {
     loadData();
     loadAnnouncement();
 
+    // Canal de tempo real para pedidos do franqueado
     const channel = supabase
-      .channel('orders-updates')
+      .channel('franchise-orders')
       .on('postgres_changes', {
-        event: '*', schema: 'public', table: 'orders',
+        event: '*',
+        schema: 'public',
+        table: 'orders',
         filter: `franchisee_id=eq.${franchisee.id}`,
       }, () => loadData())
       .subscribe();
@@ -132,35 +135,45 @@ export default function FranchiseDashboard() {
 
   async function loadData() {
     if (!franchisee) return;
+    
     try {
-      const [ordersRes, statsRes] = await Promise.all([
-        supabase.from('orders')
-          .select('*, order_items(count)')
-          .eq('franchisee_id', franchisee.id)
-          .order('created_at', { ascending: false })
-          .limit(5),
-        supabase.from('orders')
-          .select('status, total_amount, created_at')
-          .eq('franchisee_id', franchisee.id),
-      ]);
+      // Buscar pedidos do franqueado
+      const { data: orders, error: ordersError } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('franchisee_id', franchisee.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
 
-      const orders = ordersRes.data || [];
-      const allOrders = statsRes.data || [];
+      if (ordersError) throw ordersError;
+
+      // Buscar todos os pedidos para estatísticas
+      const { data: allOrders, error: statsError } = await supabase
+        .from('orders')
+        .select('status, total_amount, created_at')
+        .eq('franchisee_id', franchisee.id);
+
+      if (statsError) throw statsError;
+
+      const ordersList = orders || [];
+      const allOrdersList = allOrders || [];
       const now = new Date();
-      const thisMonth = allOrders.filter(o =>
-        new Date(o.created_at).getMonth() === now.getMonth() &&
-        new Date(o.created_at).getFullYear() === now.getFullYear()
-      );
+      const thisMonth = allOrdersList.filter(o => {
+        const date = new Date(o.created_at);
+        return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+      });
 
-      setRecentOrders(orders as Order[]);
+      setRecentOrders(ordersList);
       setStats({
-        total_orders: allOrders.length,
+        total_orders: allOrdersList.length,
         orders_this_month: thisMonth.length,
-        pending_orders: allOrders.filter(o => ['solicitado', 'em_producao'].includes(o.status)).length,
-        total_spent: allOrders.reduce((s, o) => s + (o.total_amount || 0), 0),
+        pending_orders: allOrdersList.filter(o => ['solicitado', 'em_producao'].includes(o.status)).length,
+        total_spent: allOrdersList.reduce((s, o) => s + (o.total_amount || 0), 0),
         balance: franchisee.balance,
         credit_limit: franchisee.credit_limit,
       });
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
     } finally {
       setLoading(false);
     }
@@ -197,6 +210,7 @@ export default function FranchiseDashboard() {
     }
   `;
 
+  // Verificação de acesso
   if (!franchisee && !loading) {
     return (
       <div style={{ background: colors.background, minHeight: '100vh', padding: 24 }}>
@@ -219,7 +233,7 @@ export default function FranchiseDashboard() {
         {/* Header */}
         <div style={{ marginBottom: 32 }}>
           <h1 style={{ color: colors.text, fontSize: 24, fontWeight: 700, margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: 10 }}>
-            {greeting()}, {profile?.full_name?.split(' ')[0]} 
+            {greeting()}, {profile?.full_name?.split(' ')[0] || 'Franqueado'} 
             <WaveIcon width={22} height={22} />
           </h1>
           <p style={{ color: colors.textSecondary, fontSize: 14, margin: 0 }}>
@@ -278,7 +292,7 @@ export default function FranchiseDashboard() {
         </div>
 
         {/* Stats grid */}
-        {stats && (
+        {stats ? (
           <div style={{ 
             display: 'grid', 
             gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', 
@@ -317,6 +331,10 @@ export default function FranchiseDashboard() {
               isDark={isDark}
               colors={colors}
             />
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', padding: 40, color: colors.textSecondary }}>
+            Carregando estatísticas...
           </div>
         )}
 
@@ -450,13 +468,13 @@ export default function FranchiseDashboard() {
                       onClick={() => window.location.href = `/orders/${order.id}`}
                     >
                       <td style={{ padding: '14px 20px', fontSize: 13, color: colors.accent, fontWeight: 600 }}>
-                        {order.order_number}
+                        {order.order_number || order.id.slice(0, 8)}
                       </td>
                       <td style={{ padding: '14px 20px', fontSize: 13, color: colors.textSecondary }}>
                         {formatDate(order.created_at)}
                       </td>
                       <td style={{ padding: '14px 20px', fontSize: 13, color: colors.text, fontWeight: 600 }}>
-                        {formatCurrency(order.total_amount)}
+                        {formatCurrency(order.total_amount || 0)}
                       </td>
                       <td style={{ padding: '14px 20px' }}>
                         <StatusBadge status={order.status} />

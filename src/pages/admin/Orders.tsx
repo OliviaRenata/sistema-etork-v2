@@ -1,18 +1,24 @@
-// src/pages/admin/Orders.tsx
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+// Importamos os ícones originais
+import { Car, ArrowRight } from 'lucide-react';
 import type { Order, OrderStatus } from '../../types';
 import { ORDER_STATUS_LABEL } from '../../types';
 import StatusBadge from '../../components/ui/StatusBadge';
 import { formatCurrency, formatDate } from '../../lib/utils';
 
-const ALL_STATUSES: (OrderStatus | 'todos')[] = ['todos', 'solicitado', 'em_producao', 'enviado', 'concluido', 'cancelado'];
+// CASTING: Transformamos os ícones em 'any' para evitar o erro de JSX component
+const CarIcon = Car as any;
+const ArrowRightIcon = ArrowRight as any;
+
+// Lista de status incluindo 'entregue'
+const ALL_STATUSES = ['todos', 'solicitado', 'em_producao', 'enviado', 'concluido', 'cancelado', 'entregue'] as const;
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterStatus, setFilterStatus] = useState<OrderStatus | 'todos'>('todos');
+  const [filterStatus, setFilterStatus] = useState<string>('todos');
   const [search, setSearch] = useState('');
 
   useEffect(() => {
@@ -22,26 +28,40 @@ export default function AdminOrders() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => loadOrders())
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   async function loadOrders() {
-    const { data } = await supabase
-      .from('orders')
-      .select('*, franchisee:franchisees(company_name, code), order_items(count)')
-      .order('created_at', { ascending: false });
-    setOrders((data || []) as unknown as Order[]);
-    setLoading(false);
+    setLoading(true);
+    try {
+      // Query otimizada buscando a relação com franqueados
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          franchisee:franchisees(company_name, code)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setOrders((data || []) as unknown as Order[]);
+    } catch (error) {
+      console.error('Erro ao carregar pedidos:', error);
+    } finally {
+      setLoading(false);
+    }
   }
 
   const filtered = orders.filter(o =>
     (filterStatus === 'todos' || o.status === filterStatus) &&
     (search === '' ||
-      o.order_number.toLowerCase().includes(search.toLowerCase()) ||
-      (o.franchisee as unknown as { company_name: string })?.company_name?.toLowerCase().includes(search.toLowerCase()))
+      o.order_number?.toLowerCase().includes(search.toLowerCase()) ||
+      (o.franchisee as any)?.company_name?.toLowerCase().includes(search.toLowerCase()) ||
+      o.vehicle_plate?.toLowerCase().includes(search.toLowerCase()))
   );
 
-  // Status counts for tabs
   const counts = orders.reduce((acc, o) => {
     acc[o.status] = (acc[o.status] || 0) + 1;
     acc.todos = (acc.todos || 0) + 1;
@@ -58,17 +78,15 @@ export default function AdminOrders() {
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="Buscar por número ou franqueado..."
+          placeholder="Buscar por número, placa ou franqueado..."
           style={{
             padding: '9px 14px', background: 'var(--surface)', border: '1px solid var(--border)',
             borderRadius: 8, color: 'var(--text)', fontSize: 13, outline: 'none', width: 260,
           }}
-          onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-          onBlur={e => e.target.style.borderColor = 'var(--border)'}
         />
       </div>
 
-      {/* Status filter tabs */}
+      {/* Abas de Filtro */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 20, flexWrap: 'wrap' }}>
         {ALL_STATUSES.map(s => (
           <button key={s} onClick={() => setFilterStatus(s)}
@@ -80,7 +98,7 @@ export default function AdminOrders() {
               borderColor: filterStatus === s ? 'var(--accent)' : 'var(--border)',
               cursor: 'pointer', letterSpacing: 0.5,
             }}>
-            {s === 'todos' ? 'Todos' : ORDER_STATUS_LABEL[s as OrderStatus]}
+            {s === 'todos' ? 'Todos' : (ORDER_STATUS_LABEL[s as OrderStatus] || s)}
             {counts[s] > 0 && (
               <span style={{
                 marginLeft: 6, fontSize: 10,
@@ -94,13 +112,13 @@ export default function AdminOrders() {
         ))}
       </div>
 
-      {/* Orders table */}
+      {/* Tabela de Pedidos */}
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
         {loading ? (
           <div style={{ padding: 32, textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>Carregando pedidos...</div>
         ) : filtered.length === 0 ? (
           <div style={{ padding: 32, textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>
-            Nenhum pedido encontrado para os filtros selecionados.
+            Nenhum pedido encontrado.
           </div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -115,19 +133,17 @@ export default function AdminOrders() {
             </thead>
             <tbody>
               {filtered.map(order => (
-                <tr key={order.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.1s' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                <tr key={order.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.1s' }}>
                   <td style={{ padding: '12px 16px' }}>
-                    <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 700 }}>{order.order_number}</span>
+                    <div style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 700 }}>{order.order_number}</div>
                     {order.vehicle_plate && (
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#555', marginTop: 2 }}>
-                        <CarIcon width={12} height={12} /> {order.vehicle_plate}
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
+                        <CarIcon size={12} /> {order.vehicle_plate}
                       </div>
                     )}
                   </td>
                   <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text)' }}>
-                    {(order.franchisee as unknown as { company_name: string })?.company_name || '—'}
+                    {(order.franchisee as any)?.company_name || '—'}
                   </td>
                   <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--muted)' }}>
                     {formatDate(order.created_at)}
@@ -141,7 +157,7 @@ export default function AdminOrders() {
                   <td style={{ padding: '12px 16px' }}>
                     <Link to={`/admin/orders/${order.id}`}
                       style={{ color: 'var(--accent)', fontSize: 12, textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      Detalhes <ArrowRightIcon width={12} height={12} />
+                      Detalhes <ArrowRightIcon size={12} />
                     </Link>
                   </td>
                 </tr>

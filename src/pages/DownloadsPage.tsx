@@ -1,10 +1,26 @@
-// src/pages/DownloadsPage.tsx
-
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { DownloadIcon, TrashIcon, FileIcon, PlusIcon } from '../components/ui/Icons';
+// Importação dos ícones do Lucide
+import { 
+  Download, 
+  Trash2, 
+  FileText, 
+  Plus, 
+  Search, 
+  FileArchive, 
+  HardDrive 
+} from 'lucide-react';
+
+// Casting para evitar erros de JSX do React
+const DownloadIcon = Download as any;
+const TrashIcon = Trash2 as any;
+const FileIcon = FileText as any;
+const PlusIcon = Plus as any;
+const SearchIcon = Search as any;
+const SoftwareIcon = FileArchive as any;
+const DriverIcon = HardDrive as any;
 
 interface DownloadFile {
   id: string;
@@ -18,7 +34,6 @@ interface DownloadFile {
   downloads_count: number;
   is_active: boolean;
   created_at: string;
-  updated_at: string;
 }
 
 export default function DownloadsPage() {
@@ -34,40 +49,30 @@ export default function DownloadsPage() {
   const [formData, setFormData] = useState({
     file_name: '',
     description: '',
-    category: 'remap',
+    category: 'software',
     version: '1.0',
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
-  // Cores baseadas no tema
   const colors = {
     text: isDark ? '#e0e0e0' : '#1a1a1a',
     textMuted: isDark ? '#888888' : '#666666',
-    textLight: isDark ? '#666666' : '#999999',
     surface: isDark ? '#111111' : '#ffffff',
-    surfaceHover: isDark ? '#1a1a1a' : '#f5f5f5',
     border: isDark ? '#222222' : '#e0e0e0',
-    borderHover: isDark ? '#3a3000' : '#e6b800',
     accent: '#e6b800',
     inputBg: isDark ? '#0d0d0d' : '#f5f5f5',
-    inputBorder: isDark ? '#2a2a2a' : '#ddd',
-    modalBg: isDark ? '#111111' : '#ffffff',
-    modalBorder: isDark ? '#222222' : '#e0e0e0',
-    successBg: isDark ? '#0a1a0a' : '#e8f5e9',
-    successColor: isDark ? '#4ade80' : '#2e7d32',
-    errorBg: isDark ? '#1a0a0a' : '#ffebee',
-    errorColor: isDark ? '#f87171' : '#c62828',
+    error: '#f87171',
+    success: '#4ade80'
   };
 
   const categories = [
     { value: 'todos', label: 'Todos' },
-    { value: 'remap', label: 'Remap' },
-    { value: 'chip', label: 'Chip' },
+    { value: 'instalador', label: 'Instaladores' },
     { value: 'software', label: 'Software' },
-    { value: 'documentos', label: 'Documentos' },
     { value: 'drivers', label: 'Drivers' },
+    { value: 'documentos', label: 'Documentos' },
   ];
 
   useEffect(() => {
@@ -82,441 +87,222 @@ export default function DownloadsPage() {
       .eq('is_active', true)
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Erro ao carregar arquivos:', error);
-    } else {
-      setFiles(data || []);
-    }
+    if (!error) setFiles(data || []);
     setLoading(false);
   }
 
   async function handleDownload(file: DownloadFile) {
     try {
-      await supabase
-        .from('download_files')
-        .update({ downloads_count: (file.downloads_count || 0) + 1 })
-        .eq('id', file.id);
+      // Incrementar contador
+      await supabase.rpc('increment_download_count', { row_id: file.id });
 
-      const { data, error } = await supabase
-        .storage
+      const { data, error } = await supabase.storage
         .from('downloads')
-        .createSignedUrl(file.file_path, 3600);
+        .createSignedUrl(file.file_path, 60);
 
       if (error) throw error;
-      window.open(data.signedUrl, '_blank');
-    } catch (error) {
-      console.error('Erro ao baixar arquivo:', error);
-      setMessage({ type: 'error', text: 'Erro ao baixar arquivo. Tente novamente.' });
-      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+      window.location.href = data.signedUrl;
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Erro ao processar download.' });
     }
   }
 
   async function handleUpload() {
-    if (!selectedFile) {
-      setMessage({ type: 'error', text: 'Selecione um arquivo para upload.' });
-      return;
-    }
+    if (!selectedFile) return setMessage({ type: 'error', text: 'Selecione um arquivo.' });
 
     setUploading(true);
     try {
-      const fileName = `${Date.now()}-${selectedFile.name}`;
-      const filePath = `downloads/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
+      const filePath = `files/${Date.now()}-${selectedFile.name}`;
+      const { error: storageError } = await supabase.storage
         .from('downloads')
         .upload(filePath, selectedFile);
 
-      if (uploadError) throw uploadError;
+      if (storageError) throw storageError;
 
-      const { error: dbError } = await supabase
-        .from('download_files')
-        .insert({
-          file_name: formData.file_name || selectedFile.name,
-          file_path: filePath,
-          file_size: selectedFile.size,
-          mime_type: selectedFile.type,
-          description: formData.description,
-          category: formData.category,
-          version: formData.version,
-          is_active: true,
-          downloads_count: 0,
-        });
+      const { error: dbError } = await supabase.from('download_files').insert({
+        file_name: formData.file_name || selectedFile.name,
+        file_path: filePath,
+        file_size: selectedFile.size,
+        mime_type: selectedFile.type,
+        description: formData.description,
+        category: formData.category,
+        version: formData.version,
+      });
 
       if (dbError) throw dbError;
 
-      setMessage({ type: 'success', text: 'Arquivo enviado com sucesso!' });
+      setMessage({ type: 'success', text: 'Arquivo adicionado!' });
       setShowModal(false);
       resetForm();
       loadFiles();
-    } catch (error) {
-      console.error('Erro ao enviar arquivo:', error);
-      setMessage({ type: 'error', text: 'Erro ao enviar arquivo.' });
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Erro no upload.' });
     } finally {
       setUploading(false);
-      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
     }
   }
 
   async function handleDelete(file: DownloadFile) {
-    if (!confirm(`Tem certeza que deseja excluir "${file.file_name}"?`)) return;
+    if (!confirm('Excluir este arquivo permanentemente?')) return;
 
     try {
-      const { error: storageError } = await supabase.storage
-        .from('downloads')
-        .remove([file.file_path]);
-
-      if (storageError) console.error('Erro ao deletar do storage:', storageError);
-
-      const { error: dbError } = await supabase
-        .from('download_files')
-        .delete()
-        .eq('id', file.id);
-
-      if (dbError) throw dbError;
-
-      setMessage({ type: 'success', text: 'Arquivo excluído com sucesso!' });
+      await supabase.storage.from('downloads').remove([file.file_path]);
+      await supabase.from('download_files').delete().eq('id', file.id);
       loadFiles();
-    } catch (error) {
-      console.error('Erro ao excluir arquivo:', error);
-      setMessage({ type: 'error', text: 'Erro ao excluir arquivo.' });
+      setMessage({ type: 'success', text: 'Arquivo removido.' });
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Erro ao excluir.' });
     }
-    setTimeout(() => setMessage({ type: '', text: '' }), 3000);
   }
 
   function resetForm() {
-    setFormData({
-      file_name: '',
-      description: '',
-      category: 'remap',
-      version: '1.0',
-    });
+    setFormData({ file_name: '', description: '', category: 'software', version: '1.0' });
     setSelectedFile(null);
   }
 
-  const filteredFiles = files.filter(file => {
-    const matchesSearch = file.file_name.toLowerCase().includes(search.toLowerCase()) ||
-                          file.description.toLowerCase().includes(search.toLowerCase());
-    const matchesCategory = category === 'todos' || file.category === category;
-    return matchesSearch && matchesCategory;
-  });
-
-  function formatFileSize(bytes: number) {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  }
-
-  function getCategoryColor(cat: string) {
-    const colorsMap: Record<string, string> = {
-      remap: '#e6b800',
-      chip: '#22c55e',
-      software: '#3b82f6',
-      documentos: '#a855f7',
-      drivers: '#ef4444',
-    };
-    return colorsMap[cat] || '#888';
-  }
+  const filteredFiles = files.filter(f => 
+    (category === 'todos' || f.category === category) &&
+    f.file_name.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <div>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+    <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+      {/* Topo com botão de Adicionar para Admin */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 30 }}>
         <div>
-          <h1 style={{ color: colors.text, fontSize: 20, fontWeight: 700, margin: '0 0 4px' }}>
-            Central de Downloads
-          </h1>
-          <p style={{ color: colors.textMuted, fontSize: 13, margin: 0 }}>
-            Arquivos disponíveis para download
-          </p>
+          <h1 style={{ color: colors.text, margin: 0, fontSize: 24 }}>Downloads e Instaladores</h1>
+          <p style={{ color: colors.textMuted }}>Arquivos oficiais para franqueados Etork</p>
         </div>
+        
         {isAdmin && (
-          <button
+          <button 
             onClick={() => setShowModal(true)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '10px 20px', background: colors.accent, color: '#000',
-              border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700,
-              cursor: 'pointer', transition: 'background 0.15s',
+            style={{ 
+              background: colors.accent, border: 'none', padding: '12px 20px', 
+              borderRadius: 8, fontWeight: 'bold', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 8 
             }}
-            onMouseEnter={e => e.currentTarget.style.background = '#ffd000'}
-            onMouseLeave={e => e.currentTarget.style.background = colors.accent}
           >
-            <PlusIcon width={16} height={16} /> Adicionar Arquivo
+            <PlusIcon size={18} /> Adicionar Arquivo
           </button>
         )}
       </div>
 
-      {/* Message */}
-      {message.text && (
-        <div style={{
-          padding: '10px 14px', marginBottom: 18, borderRadius: 10,
-          background: message.type === 'error' ? colors.errorBg : colors.successBg,
-          border: `1px solid ${message.type === 'error' ? '#4f1c1c' : '#153a22'}`,
-          color: message.type === 'error' ? colors.errorColor : colors.successColor,
-        }}>
-          {message.text}
+      {/* Busca e Filtros */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+        <div style={{ position: 'relative', flex: 1 }}>
+          <SearchIcon size={18} style={{ position: 'absolute', left: 12, top: 12, color: colors.textMuted }} />
+          <input 
+            placeholder="Buscar por nome..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ 
+              width: '100%', padding: '12px 12px 12px 40px', background: colors.inputBg,
+              border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text
+            }}
+          />
         </div>
-      )}
-
-      {/* Filters */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap', alignItems: 'center' }}>
-        <input
-          type="text"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Buscar arquivos..."
-          style={{
-            flex: 1, minWidth: 200, padding: '10px 14px', borderRadius: 8, fontSize: 13, outline: 'none',
-            background: colors.inputBg, border: `1px solid ${colors.inputBorder}`, color: colors.text,
-          }}
-          onFocus={e => e.currentTarget.style.borderColor = colors.accent}
-          onBlur={e => e.currentTarget.style.borderColor = colors.inputBorder}
-        />
-        <select
+        <select 
           value={category}
           onChange={e => setCategory(e.target.value)}
-          style={{
-            padding: '10px 14px', borderRadius: 8, fontSize: 13, outline: 'none', cursor: 'pointer',
-            background: colors.inputBg, border: `1px solid ${colors.inputBorder}`, color: colors.text,
-          }}
+          style={{ padding: '10px', background: colors.inputBg, color: colors.text, border: `1px solid ${colors.border}`, borderRadius: 8 }}
         >
-          {categories.map(cat => (
-            <option key={cat.value} value={cat.value}>{cat.label}</option>
-          ))}
+          {categories.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
         </select>
       </div>
 
-      {/* Files Grid */}
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: 60, color: colors.textMuted }}>
-          Carregando arquivos...
-        </div>
-      ) : filteredFiles.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: 60, color: colors.textMuted }}>
-          Nenhum arquivo encontrado.
-          {isAdmin && (
-            <div style={{ marginTop: 12 }}>
-              <button
-                onClick={() => setShowModal(true)}
-                style={{ color: colors.accent, background: 'none', border: 'none', cursor: 'pointer' }}
-              >
-                Clique aqui para adicionar o primeiro arquivo
-              </button>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gap: 12 }}>
-          {filteredFiles.map(file => (
-            <div
-              key={file.id}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '16px 20px', background: colors.surface,
-                border: `1px solid ${colors.border}`, borderRadius: 12,
-                transition: 'all 0.15s',
-              }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = colors.borderHover}
-              onMouseLeave={e => e.currentTarget.style.borderColor = colors.border}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1 }}>
-                <div style={{
-                  width: 48, height: 48, borderRadius: 10,
-                  background: `${colors.accent}20`, display: 'flex',
-                  alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <FileIcon width={24} height={24} stroke={colors.accent} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 4 }}>
-                    <span style={{ fontSize: 15, fontWeight: 600, color: colors.text }}>
-                      {file.file_name}
-                    </span>
-                    <span style={{
-                      fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
-                      background: `${getCategoryColor(file.category)}20`,
-                      color: getCategoryColor(file.category),
-                      border: `1px solid ${getCategoryColor(file.category)}40`,
-                    }}>
-                      {categories.find(c => c.value === file.category)?.label || file.category}
-                    </span>
-                    <span style={{ fontSize: 11, color: colors.textMuted }}>
-                      v{file.version}
-                    </span>
-                  </div>
-                  {file.description && (
-                    <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 4 }}>
-                      {file.description}
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', gap: 16, fontSize: 11, color: colors.textLight }}>
-                    <span>{formatFileSize(file.file_size)}</span>
-                    <span>📥 {file.downloads_count || 0} downloads</span>
-                    <span>📅 {new Date(file.created_at).toLocaleDateString('pt-BR')}</span>
-                  </div>
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button
-                  onClick={() => handleDownload(file)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 6,
-                    padding: '8px 16px', background: colors.accent, color: '#000',
-                    border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600,
-                    cursor: 'pointer', transition: 'background 0.15s',
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#ffd000'}
-                  onMouseLeave={e => e.currentTarget.style.background = colors.accent}
-                >
-                  <DownloadIcon width={14} height={14} /> Baixar
-                </button>
-                {isAdmin && (
-                  <button
-                    onClick={() => handleDelete(file)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 6,
-                      padding: '8px 12px', background: 'transparent',
-                      border: `1px solid ${colors.errorColor}80`, borderRadius: 8,
-                      color: colors.errorColor, cursor: 'pointer', transition: 'all 0.15s',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = colors.errorBg; e.currentTarget.style.borderColor = colors.errorColor; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = `${colors.errorColor}80`; }}
-                  >
-                    <TrashIcon width={14} height={14} /> Excluir
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Upload Modal */}
-      {showModal && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 1000,
-        }}>
-          <div style={{
-            background: colors.modalBg, borderRadius: 16,
-            width: 500, maxWidth: '90vw', padding: 24,
-            border: `1px solid ${colors.modalBorder}`,
+      {/* Lista de Arquivos */}
+      <div style={{ display: 'grid', gap: 15 }}>
+        {filteredFiles.map(file => (
+          <div key={file.id} style={{ 
+            background: colors.surface, border: `1px solid ${colors.border}`, 
+            padding: '15px 20px', borderRadius: 12, display: 'flex', 
+            alignItems: 'center', justifyContent: 'space-between' 
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h2 style={{ color: colors.text, fontSize: 18, margin: 0 }}>
-                Adicionar Arquivo
-              </h2>
-              <button
-                onClick={() => { setShowModal(false); resetForm(); }}
-                style={{ background: 'none', border: 'none', color: colors.textMuted, fontSize: 24, cursor: 'pointer' }}
-              >
-                ×
-              </button>
-            </div>
-
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: colors.textMuted, marginBottom: 6, letterSpacing: 1 }}>
-                ARQUIVO *
-              </label>
-              <input
-                type="file"
-                onChange={e => setSelectedFile(e.target.files?.[0] || null)}
-                style={{
-                  width: '100%', padding: '10px', borderRadius: 8, fontSize: 13,
-                  background: colors.inputBg, border: `1px solid ${colors.inputBorder}`, color: colors.text,
-                }}
-              />
-            </div>
-
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: colors.textMuted, marginBottom: 6, letterSpacing: 1 }}>
-                NOME DO ARQUIVO
-              </label>
-              <input
-                type="text"
-                value={formData.file_name}
-                onChange={e => setFormData({ ...formData, file_name: e.target.value })}
-                placeholder="Nome exibido (opcional)"
-                style={{
-                  width: '100%', padding: '10px', borderRadius: 8, fontSize: 13, outline: 'none',
-                  background: colors.inputBg, border: `1px solid ${colors.inputBorder}`, color: colors.text,
-                }}
-              />
-            </div>
-
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: colors.textMuted, marginBottom: 6, letterSpacing: 1 }}>
-                DESCRIÇÃO
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={e => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Descrição do arquivo..."
-                rows={3}
-                style={{
-                  width: '100%', padding: '10px', borderRadius: 8, fontSize: 13, outline: 'none', resize: 'vertical',
-                  background: colors.inputBg, border: `1px solid ${colors.inputBorder}`, color: colors.text,
-                }}
-              />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
+              <div style={{ background: `${colors.accent}15`, padding: 12, borderRadius: 10 }}>
+                {file.category === 'instalador' ? <SoftwareIcon color={colors.accent} /> : <FileIcon color={colors.accent} />}
+              </div>
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: colors.textMuted, marginBottom: 6, letterSpacing: 1 }}>
-                  CATEGORIA
-                </label>
-                <select
-                  value={formData.category}
-                  onChange={e => setFormData({ ...formData, category: e.target.value })}
-                  style={{
-                    width: '100%', padding: '10px', borderRadius: 8, fontSize: 13, cursor: 'pointer',
-                    background: colors.inputBg, border: `1px solid ${colors.inputBorder}`, color: colors.text,
+                <h3 style={{ color: colors.text, margin: '0 0 5px 0', fontSize: 16 }}>{file.file_name}</h3>
+                <div style={{ fontSize: 12, color: colors.textMuted, display: 'flex', gap: 15 }}>
+                  <span>Versão: {file.version}</span>
+                  <span>Tamanho: {(file.file_size / 1024 / 1024).toFixed(2)} MB</span>
+                  <span>Downloads: {file.downloads_count || 0}</span>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button 
+                onClick={() => handleDownload(file)}
+                title="Baixar arquivo"
+                style={{ 
+                  background: `${colors.accent}20`, border: `1px solid ${colors.accent}`, 
+                  color: colors.accent, padding: '8px 15px', borderRadius: 6, 
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 
+                }}
+              >
+                <DownloadIcon size={16} /> Download
+              </button>
+
+              {isAdmin && (
+                <button 
+                  onClick={() => handleDelete(file)}
+                  title="Excluir arquivo"
+                  style={{ 
+                    background: 'transparent', border: `1px solid ${colors.error}50`, 
+                    color: colors.error, padding: '8px', borderRadius: 6, cursor: 'pointer' 
                   }}
                 >
-                  {categories.filter(c => c.value !== 'todos').map(cat => (
-                    <option key={cat.value} value={cat.value}>{cat.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: colors.textMuted, marginBottom: 6, letterSpacing: 1 }}>
-                  VERSÃO
-                </label>
-                <input
-                  type="text"
-                  value={formData.version}
-                  onChange={e => setFormData({ ...formData, version: e.target.value })}
-                  placeholder="1.0"
-                  style={{
-                    width: '100%', padding: '10px', borderRadius: 8, fontSize: 13, outline: 'none',
-                    background: colors.inputBg, border: `1px solid ${colors.inputBorder}`, color: colors.text,
-                  }}
-                />
-              </div>
+                  <TrashIcon size={16} />
+                </button>
+              )}
             </div>
+          </div>
+        ))}
+      </div>
 
-            <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
-              <button
-                onClick={handleUpload}
+      {/* Modal de Upload (Admin) */}
+      {showModal && (
+        <div style={{ 
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', 
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 
+        }}>
+          <div style={{ background: colors.surface, padding: 30, borderRadius: 15, width: '400px', border: `1px solid ${colors.border}` }}>
+            <h2 style={{ color: colors.text, marginTop: 0 }}>Novo Arquivo</h2>
+            
+            <input type="file" onChange={e => setSelectedFile(e.target.files?.[0] || null)} style={{ marginBottom: 15, color: colors.text }} />
+            
+            <input 
+              placeholder="Nome do software/arquivo" 
+              value={formData.file_name}
+              onChange={e => setFormData({...formData, file_name: e.target.value})}
+              style={{ width: '100%', padding: 10, marginBottom: 10, borderRadius: 5, border: `1px solid ${colors.border}`, background: colors.inputBg, color: colors.text }}
+            />
+
+            <select 
+              value={formData.category}
+              onChange={e => setFormData({...formData, category: e.target.value})}
+              style={{ width: '100%', padding: 10, marginBottom: 10, borderRadius: 5, border: `1px solid ${colors.border}`, background: colors.inputBg, color: colors.text }}
+            >
+              <option value="instalador">Instalador (.exe / .msi)</option>
+              <option value="software">Software / App</option>
+              <option value="drivers">Drivers</option>
+              <option value="documentos">Manuais / Docs</option>
+            </select>
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button 
                 disabled={uploading}
-                style={{
-                  flex: 1, padding: '12px', background: colors.accent, color: '#000',
-                  border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700,
-                  cursor: uploading ? 'not-allowed' : 'pointer', opacity: uploading ? 0.6 : 1,
-                }}
+                onClick={handleUpload}
+                style={{ flex: 1, padding: 12, background: colors.accent, border: 'none', borderRadius: 8, fontWeight: 'bold', cursor: 'pointer' }}
               >
-                {uploading ? 'ENVIANDO...' : 'ENVIAR ARQUIVO'}
+                {uploading ? 'Enviando...' : 'Confirmar'}
               </button>
-              <button
-                onClick={() => { setShowModal(false); resetForm(); }}
-                style={{
-                  padding: '12px 20px', background: 'transparent',
-                  border: `1px solid ${colors.border}`, borderRadius: 8,
-                  color: colors.textMuted, cursor: 'pointer', fontSize: 13,
-                }}
+              <button 
+                onClick={() => setShowModal(false)}
+                style={{ padding: 12, background: 'transparent', border: `1px solid ${colors.border}`, color: colors.textMuted, borderRadius: 8, cursor: 'pointer' }}
               >
                 Cancelar
               </button>

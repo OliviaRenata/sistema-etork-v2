@@ -10,7 +10,7 @@ import { DashboardIcon, OrdersIcon, FranchiseesIcon, FinanceIcon, WarningIcon, A
 import { formatCurrency, formatDate } from '../../lib/utils';
 import { useTheme } from '../../context/ThemeContext';
 
-// Ícones adicionais - SEM props style para evitar erro
+// Ícones adicionais
 const IconTrendingUp = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <polyline points="23 6 13.5 15.5 8 10 1 18"/>
@@ -100,7 +100,7 @@ export default function AdminDashboard() {
   
   const [stats, setStats] = useState<Stats | null>(null);
   const [franchiseeStats, setFranchiseeStats] = useState<FranchiseeStats[]>([]);
-  const [recent, setRecent] = useState<Order[]>([]);
+  const [recent, setRecent] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
   const [draftBody, setDraftBody] = useState('');
@@ -122,47 +122,91 @@ export default function AdminDashboard() {
     tableRowHover: isDark ? '#1a1a1a' : '#f9fafb',
   };
 
+  // Verificação de acesso
+  if (profile?.role !== 'admin') {
+    return (
+      <div style={{ background: colors.background, minHeight: '100vh', padding: 24 }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', textAlign: 'center', padding: 60 }}>
+          <h2 style={{ color: colors.text }}>Acesso negado</h2>
+          <p style={{ color: colors.textSecondary }}>Você não tem permissão para acessar esta página.</p>
+        </div>
+      </div>
+    );
+  }
+
   useEffect(() => {
     loadData();
     loadAnnouncement();
     
-    const channel = supabase.channel('admin-dash')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => loadData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'franchisees' }, () => loadData())
+    // Canal de tempo real para orders
+    const ordersChannel = supabase
+      .channel('admin-dash-orders')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'orders' }, 
+        () => loadData()
+      )
+      .subscribe();
+    
+    // Canal de tempo real para franchisees
+    const franchiseesChannel = supabase
+      .channel('admin-dash-franchisees')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'franchisees' }, 
+        () => loadData()
+      )
       .subscribe();
       
-    return () => { supabase.removeChannel(channel); };
+    return () => { 
+      supabase.removeChannel(ordersChannel);
+      supabase.removeChannel(franchiseesChannel);
+    };
   }, [selectedPeriod]);
 
   async function loadData() {
     setLoading(true);
     
     try {
-      const [franchiseesRes, ordersRes] = await Promise.all([
-        supabase.from('franchisees').select('id, company_name, code, balance, credit_limit, active'),
-        supabase.from('orders').select('*, franchisee:franchisees(company_name, code)').order('created_at', { ascending: false })
-      ]);
+      // Buscar franqueados
+      const { data: franchisees, error: franchiseesError } = await supabase
+        .from('franchisees')
+        .select('id, company_name, code, balance, credit_limit, active');
       
-      const franchisees = franchiseesRes.data || [];
-      const orders = ordersRes.data || [];
+      if (franchiseesError) throw franchiseesError;
+      
+      // Buscar pedidos com join
+      const { data: orders, error: ordersError } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          franchisee:franchisees(company_name, code)
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (ordersError) throw ordersError;
+      
+      const franchiseesList = franchisees || [];
+      const ordersList = orders || [];
       const now = new Date();
       const currentMonth = now.getMonth();
       const currentYear = now.getFullYear();
       
-      let filteredOrders = orders;
+      // Filtrar por período
+      let filteredOrders = ordersList;
       if (selectedPeriod === 'month') {
-        filteredOrders = orders.filter(o => 
-          new Date(o.created_at).getMonth() === currentMonth &&
-          new Date(o.created_at).getFullYear() === currentYear
-        );
+        filteredOrders = ordersList.filter(o => {
+          const date = new Date(o.created_at);
+          return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+        });
       } else if (selectedPeriod === 'year') {
-        filteredOrders = orders.filter(o => 
-          new Date(o.created_at).getFullYear() === currentYear
-        );
+        filteredOrders = ordersList.filter(o => {
+          const date = new Date(o.created_at);
+          return date.getFullYear() === currentYear;
+        });
       }
       
-      const franchiseeStatsData: FranchiseeStats[] = franchisees.map(f => {
-        const franchiseeOrders = orders.filter(o => o.franchisee_id === f.id);
+      // Estatísticas por franqueado
+      const franchiseeStatsData: FranchiseeStats[] = franchiseesList.map(f => {
+        const franchiseeOrders = ordersList.filter(o => o.franchisee_id === f.id);
         const lastOrder = franchiseeOrders[0];
         
         return {
@@ -176,22 +220,23 @@ export default function AdminDashboard() {
         };
       }).sort((a, b) => b.total_spent - a.total_spent);
       
-      const activeFranchisees = franchisees.filter(f => f.active === true).length;
-      const monthOrders = selectedPeriod === 'month' ? filteredOrders : orders.filter(o =>
-        new Date(o.created_at).getMonth() === currentMonth &&
-        new Date(o.created_at).getFullYear() === currentYear
-      );
+      // Estatísticas gerais
+      const activeFranchisees = franchiseesList.filter(f => f.active === true).length;
+      const monthOrders = ordersList.filter(o => {
+        const date = new Date(o.created_at);
+        return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+      });
       
-      const completedOrders = orders.filter(o => o.status === 'entregue');
+      const completedOrders = ordersList.filter(o => o.status === 'entregue' || o.status === 'concluido');
       const totalRevenue = filteredOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
       const avgOrderValue = filteredOrders.length > 0 ? totalRevenue / filteredOrders.length : 0;
       
       setStats({
-        total_franchisees: franchisees.length,
+        total_franchisees: franchiseesList.length,
         active_franchisees: activeFranchisees,
         total_orders: filteredOrders.length,
-        pending: orders.filter(o => o.status === 'solicitado').length,
-        in_production: orders.filter(o => o.status === 'em_producao').length,
+        pending: ordersList.filter(o => o.status === 'solicitado').length,
+        in_production: ordersList.filter(o => o.status === 'em_producao').length,
         completed: completedOrders.length,
         revenue_month: monthOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0),
         revenue_total: totalRevenue,
@@ -199,7 +244,7 @@ export default function AdminDashboard() {
       });
       
       setFranchiseeStats(franchiseeStatsData);
-      setRecent(orders.slice(0, 10));
+      setRecent(ordersList.slice(0, 10));
       
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
@@ -212,6 +257,7 @@ export default function AdminDashboard() {
     const { data, error } = await supabase
       .from('announcements')
       .select('*')
+      .eq('active', true)
       .order('updated_at', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -381,7 +427,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Stats Cards */}
-        {stats && (
+        {stats ? (
           <>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 20 }}>
               <div style={{ 
@@ -460,6 +506,10 @@ export default function AdminDashboard() {
               />
             </div>
           </>
+        ) : (
+          <div style={{ textAlign: 'center', padding: 40, color: colors.textSecondary }}>
+            Carregando estatísticas...
+          </div>
         )}
 
         {/* Urgent Alert */}

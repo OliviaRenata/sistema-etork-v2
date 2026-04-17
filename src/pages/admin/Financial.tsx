@@ -75,7 +75,7 @@ export default function AdminFinancial() {
   const { theme: currentTheme } = useTheme();
   const isDark = currentTheme === 'dark';
   
-  const [records, setRecords] = useState<FinancialRecord[]>([]);
+  const [records, setRecords] = useState<any[]>([]);
   const [franchisees, setFranchisees] = useState<Franchisee[]>([]);
   const [franchiseeFinancials, setFranchiseeFinancials] = useState<FranchiseeFinancial[]>([]);
   const [loading, setLoading] = useState(true);
@@ -104,6 +104,20 @@ export default function AdminFinancial() {
 
   useEffect(() => {
     loadData();
+
+    const channel = supabase
+      .channel('admin-financial')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'financial_records' }, 
+        () => loadData()
+      )
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'franchisees' },
+        () => loadData()
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   async function loadData() {
@@ -121,13 +135,12 @@ export default function AdminFinancial() {
       if (recRes.error) console.error('Erro ao buscar registros financeiros', recRes.error);
       if (francRes.error) console.error('Erro ao buscar franqueados', francRes.error);
       
-      const allRecords = (recRes.data || []) as unknown as FinancialRecord[];
-      const allFranchisees = (francRes.data || []) as unknown as Franchisee[];
+      const allRecords = recRes.data || [];
+      const allFranchisees = francRes.data || [];
       
       setRecords(allRecords);
-      setFranchisees(allFranchisees);
+      setFranchisees(allFranchisees as Franchisee[]);
       
-      // Calcular estatísticas por franqueado
       const stats = allFranchisees.map(f => {
         const franchiseeRecords = allRecords.filter(r => r.franchisee_id === f.id);
         const debitRecords = franchiseeRecords.filter(r => r.type === 'debit');
@@ -140,8 +153,8 @@ export default function AdminFinancial() {
           balance: f.balance,
           credit_limit: f.credit_limit,
           total_orders: franchiseeRecords.filter(r => r.type === 'debit').length,
-          total_spent: debitRecords.reduce((sum, r) => sum + r.amount, 0),
-          pending_amount: pendingRecords.reduce((sum, r) => sum + r.amount, 0),
+          total_spent: debitRecords.reduce((sum, r) => sum + (r.amount || 0), 0),
+          pending_amount: pendingRecords.reduce((sum, r) => sum + (r.amount || 0), 0),
         };
       }).sort((a, b) => b.total_spent - a.total_spent);
       
@@ -163,18 +176,20 @@ export default function AdminFinancial() {
     return true;
   });
 
-  const totalRevenue = records.filter(r => r.type === 'debit').reduce((s, r) => s + r.amount, 0);
-  const totalPending = records.filter(r => r.type === 'debit' && r.payment_status === 'pendente').reduce((s, r) => s + r.amount, 0);
-  const totalPaid = records.filter(r => r.type === 'debit' && r.payment_status === 'pago').reduce((s, r) => s + r.amount, 0);
-  const totalCredits = records.filter(r => r.type === 'credit' || r.type === 'payment').reduce((s, r) => s + r.amount, 0);
+  const totalRevenue = records.filter(r => r.type === 'debit').reduce((s, r) => s + (r.amount || 0), 0);
+  const totalPending = records.filter(r => r.type === 'debit' && r.payment_status === 'pendente').reduce((s, r) => s + (r.amount || 0), 0);
+  const totalPaid = records.filter(r => r.type === 'debit' && r.payment_status === 'pago').reduce((s, r) => s + (r.amount || 0), 0);
+  const totalCredits = records.filter(r => r.type === 'credit' || r.type === 'payment').reduce((s, r) => s + (r.amount || 0), 0);
+
+  const filteredTotal = filteredRecords.reduce((sum, r) => sum + (r.amount || 0), 0);
 
   function exportCSV() {
     const header = 'Data,Franqueado,Descrição,Pedido,Tipo,Valor,Status\n';
     const rows = filteredRecords.map(r => [
       formatDateShort(r.created_at),
-      (r.franchisee_id as unknown as { company_name: string })?.company_name || '',
+      r.franchisee?.company_name || '',
       r.description,
-      (r.order as unknown as { order_number: string })?.order_number || '',
+      r.order?.order_number || '',
       r.type,
       r.amount.toFixed(2),
       r.payment_status,
@@ -201,7 +216,6 @@ export default function AdminFinancial() {
       <style>{spinKeyframes}</style>
       <div style={{ maxWidth: 1400, margin: '0 auto', padding: '24px' }}>
         
-        {/* Header */}
         <div style={{ marginBottom: 28 }}>
           <h1 style={{ color: colors.text, fontSize: 24, fontWeight: 700, margin: '0 0 6px' }}>
             Financeiro - Administrativo
@@ -211,7 +225,6 @@ export default function AdminFinancial() {
           </p>
         </div>
 
-        {/* Summary Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 28 }}>
           <AdminStat 
             label="Receita Total" 
@@ -253,7 +266,6 @@ export default function AdminFinancial() {
           />
         </div>
 
-        {/* Filters Bar */}
         <div style={{ 
           background: colors.surface, 
           border: `1px solid ${colors.border}`, 
@@ -412,7 +424,6 @@ export default function AdminFinancial() {
           )}
         </div>
 
-        {/* Franchisee Financial Summary Table */}
         {franchiseeFinancials.length > 0 && (
           <div style={{
             background: colors.surface,
@@ -471,7 +482,6 @@ export default function AdminFinancial() {
           </div>
         )}
 
-        {/* All Transactions Table */}
         <div style={{
           background: colors.surface,
           border: `1px solid ${colors.border}`,
@@ -523,13 +533,13 @@ export default function AdminFinancial() {
                         {formatDateShort(r.created_at)}
                       </td>
                       <td style={{ padding: '10px 14px', fontSize: 12, color: colors.text }}>
-                        {(r.franchisee_id as unknown as { company_name: string })?.company_name || '—'}
+                        {r.franchisee?.company_name || '—'}
                       </td>
                       <td style={{ padding: '10px 14px', fontSize: 12, color: colors.textSecondary }}>
                         {r.description}
                       </td>
                       <td style={{ padding: '10px 14px', fontSize: 12, color: colors.accent }}>
-                        {(r.order as unknown as { order_number: string })?.order_number || '—'}
+                        {r.order?.order_number || '—'}
                       </td>
                       <td style={{ padding: '10px 14px' }}>
                         <span style={{
@@ -556,7 +566,7 @@ export default function AdminFinancial() {
                       </td>
                       <td style={{ padding: '10px 14px' }}>
                         <button
-                          onClick={() => {/* Abrir modal de detalhes */}}
+                          onClick={() => {}}
                           style={{
                             background: 'transparent',
                             border: 'none',
@@ -571,6 +581,17 @@ export default function AdminFinancial() {
                     </tr>
                   ))}
                 </tbody>
+                <tfoot>
+                  <tr style={{ borderTop: `2px solid ${colors.border}`, background: colors.tableHeaderBg }}>
+                    <td colSpan={5} style={{ padding: '10px 14px', fontSize: 12, fontWeight: 600, color: colors.text }}>
+                      Total:
+                    </td>
+                    <td style={{ padding: '10px 14px', fontSize: 13, fontWeight: 700, color: colors.accent }}>
+                      {formatCurrency(filteredTotal)}
+                    </td>
+                    <td colSpan={2} />
+                  </tr>
+                </tfoot>
               </table>
             </div>
           )}

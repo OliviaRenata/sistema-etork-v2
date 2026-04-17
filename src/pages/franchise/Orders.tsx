@@ -4,9 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { supabase, callFunction, storage } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import { formatCurrency } from '../../lib/utils';
 import type { Order, OrderStatus } from '../../types';
-import { ORDER_STATUS_LABEL, ORDER_STATUS_COLOR } from '../../types';
+import { ORDER_STATUS_LABEL } from '../../types';
+import { formatCurrency, formatDate } from '../../lib/utils';
 
 type FormData = {
   plate: string;
@@ -69,14 +69,13 @@ const toolOptions = [
 
 export default function FranchiseOrders() {
   const navigate = useNavigate();
-  const { franchisee, loading } = useAuth();
+  const { franchisee, loading: authLoading } = useAuth();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
   // Orders state
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -111,6 +110,7 @@ export default function FranchiseOrders() {
     textPrimary: isDark ? '#fff' : '#1a1a1a',
     textSecondary: isDark ? '#888' : '#666',
     textMuted: isDark ? '#555' : '#999',
+    accent: '#e6b800',
     statusAmber: isDark ? '#854d0e' : '#fef3c7',
     statusBlue: isDark ? '#1e3a8a' : '#dbeafe',
     statusPurple: isDark ? '#7c3aed' : '#e9d5ff',
@@ -123,8 +123,10 @@ export default function FranchiseOrders() {
   useEffect(() => {
     if (franchisee?.id) {
       loadOrders();
+    } else if (!authLoading) {
+      setLoadingOrders(false);
     }
-  }, [franchisee?.id]);
+  }, [franchisee?.id, authLoading]);
 
   async function loadOrders() {
     if (!franchisee?.id) {
@@ -138,17 +140,19 @@ export default function FranchiseOrders() {
         .from('orders')
         .select(`
           *,
-          order_items:order_items(
-            quantity,
-            item:items(name, unit_price)
-          ),
           order_files(id, file_name, file_path)
         `)
         .eq('franchisee_id', franchisee.id)
         .order('created_at', { ascending: false });
 
       if (ordersError) throw ordersError;
-      setOrders(ordersData || []);
+      
+      const formattedOrders = (ordersData || []).map(order => ({
+        ...order,
+        order_files: order.order_files || [],
+      }));
+      
+      setOrders(formattedOrders);
     } catch (err) {
       console.error('Error loading orders:', err);
     } finally {
@@ -172,6 +176,7 @@ export default function FranchiseOrders() {
 
     try {
       const result = await callFunction<{ order: { id: string } }>('create-order', {
+        franchisee_id: franchisee?.id,
         vehicle_plate: formData.plate.trim(),
         chassi: formData.chassi.trim() || undefined,
         model: formData.model.trim() || undefined,
@@ -180,6 +185,7 @@ export default function FranchiseOrders() {
         cv: formData.cv.trim() || undefined,
         fuel: formData.fuel,
         dtc: formData.dtc.trim() || undefined,
+        total_amount: 0,
         notes: `Ferramenta: ${formData.tool.join(', ') || 'Não informada'} | Performance: ${formData.performance.join(', ') || 'Nenhuma'} | Obs: ${formData.notes.trim()}`,
       });
 
@@ -269,7 +275,7 @@ export default function FranchiseOrders() {
   };
 
   const getStatusColor = (status: OrderStatus) => {
-    const colorMap = {
+    const colorMap: Record<string, string> = {
       solicitado: colors.statusAmber,
       em_producao: colors.statusBlue,
       enviado: colors.statusPurple,
@@ -306,80 +312,86 @@ export default function FranchiseOrders() {
     padding: 20,
   };
 
+  if (!franchisee && !authLoading) {
+    return (
+      <div style={{ textAlign: 'center', padding: 60, color: colors.statusRed }}>
+        <h2>Erro de Acesso</h2>
+        <p>Você não tem permissão para acessar esta página ou seu perfil de franqueado não foi encontrado.</p>
+        <p>Entre em contato com o suporte se acreditar que isso é um erro.</p>
+      </div>
+    );
+  }
+
+  if (authLoading || loadingOrders) {
+    return (
+      <div style={{ textAlign: 'center', padding: 60, color: colors.textSecondary }}>
+        Carregando pedidos...
+      </div>
+    );
+  }
+
   return (
     <div style={{ maxWidth: 1400, margin: '0 auto', padding: '24px' }}>
-      {/* Show error if franchisee not loaded */}
-      {!franchisee && !loading ? (
-        <div style={{ textAlign: 'center', padding: 60, color: colors.statusRed }}>
-          <h2>Erro de Acesso</h2>
-          <p>Você não tem permissão para acessar esta página ou seu perfil de franqueado não foi encontrado.</p>
-          <p>Entre em contato com o suporte se acreditar que isso é um erro.</p>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: colors.textPrimary }}>Meus Arquivos</h1>
+          <p style={{ margin: '4px 0 0', color: colors.textSecondary, fontSize: 13 }}>
+            Gerencie seus pedidos e envie novos arquivos
+          </p>
         </div>
-      ) : loading ? (
-        <div style={{ textAlign: 'center', padding: 60, color: colors.textSecondary }}>
-          Carregando pedidos...
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button
+            onClick={() => navigate(-1)}
+            style={{
+              padding: '10px 20px',
+              background: 'transparent',
+              border: `1px solid ${colors.borderCard}`,
+              borderRadius: 8,
+              color: colors.textSecondary,
+              cursor: 'pointer',
+              fontSize: 13,
+              fontWeight: 600,
+            }}
+          >
+            Voltar
+          </button>
+          <button
+            onClick={() => setShowNewOrderForm(!showNewOrderForm)}
+            style={{
+              padding: '10px 24px',
+              background: '#e6b800',
+              border: 'none',
+              borderRadius: 8,
+              color: '#000',
+              cursor: 'pointer',
+              fontSize: 13,
+              fontWeight: 700,
+            }}
+          >
+            {showNewOrderForm ? 'Cancelar' : '+ Enviar Arquivos'}
+          </button>
         </div>
-      ) : (
-        <>
-          {/* Header with navigation */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
-            <div>
-              <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: colors.textPrimary }}>Meus Arquivos</h1>
-              <p style={{ margin: '4px 0 0', color: colors.textSecondary, fontSize: 13 }}>
-                Gerencie seus pedidos e envie novos arquivos
-              </p>
-            </div>
-            <div style={{ display: 'flex', gap: 12 }}>
-              <button
-                onClick={() => navigate('/support')}
-                style={{
-                  padding: '10px 20px',
-                  background: 'transparent',
-                  border: `1px solid ${colors.borderCard}`,
-                  borderRadius: 8,
-                  color: colors.textSecondary,
-                  cursor: 'pointer',
-                  fontSize: 13,
-                  fontWeight: 600,
-                }}
-              >
-                Suporte
-              </button>
-              <button
-                onClick={() => setShowNewOrderForm(!showNewOrderForm)}
-                style={{
-                  padding: '10px 24px',
-                  background: '#e6b800',
-                  border: 'none',
-                  borderRadius: 8,
-                  color: '#000',
-                  cursor: 'pointer',
-                  fontSize: 13,
-                  fontWeight: 700,
-                }}
-              >
-                {showNewOrderForm ? 'Cancelar Novo Pedido' : '+ Enviar Novos Arquivos'}
-              </button>
-            </div>
-          </div>
+      </div>
 
-          {/* Success/Error Messages */}
-          {submitSuccess && (
-            <div style={{ marginBottom: 16, padding: '14px 16px', background: '#163a0f', color: '#d1fae5', borderRadius: 12 }}>
-              {submitSuccess}
-            </div>
-          )}
+      {/* Messages */}
+      {submitSuccess && (
+        <div style={{ marginBottom: 16, padding: '14px 16px', background: '#163a0f', color: '#d1fae5', borderRadius: 12 }}>
+          {submitSuccess}
+        </div>
+      )}
 
-          {submitError && (
-            <div style={{ marginBottom: 16, padding: '14px 16px', background: '#7f1d1d', color: '#fecaca', borderRadius: 12 }}>
-              {submitError}
-            </div>
-          )}
+      {submitError && (
+        <div style={{ marginBottom: 16, padding: '14px 16px', background: '#7f1d1d', color: '#fecaca', borderRadius: 12 }}>
+          {submitError}
+        </div>
+      )}
 
-          {/* New Order Form */}
-          {showNewOrderForm && (
+      {/* New Order Form */}
+      {showNewOrderForm && (
         <div style={{ marginBottom: 32 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+            {/* Vehicle Info */}
             <div style={sectionStyle}>
               <h2 style={{ marginTop: 0, marginBottom: 18, color: colors.textPrimary, fontSize: 16 }}>Informações do Veículo</h2>
 
@@ -465,6 +477,7 @@ export default function FranchiseOrders() {
               />
             </div>
 
+            {/* Performance and Tools */}
             <div style={sectionStyle}>
               <h2 style={{ marginTop: 0, marginBottom: 18, color: colors.textPrimary, fontSize: 16 }}>Performance e Ferramentas</h2>
 
@@ -534,6 +547,7 @@ export default function FranchiseOrders() {
             </div>
           </div>
 
+          {/* File Upload */}
           <div style={{ ...sectionStyle, marginTop: 20 }}>
             <h2 style={{ marginTop: 0, marginBottom: 18, color: colors.textPrimary, fontSize: 16 }}>Upload de Arquivos</h2>
 
@@ -579,6 +593,7 @@ export default function FranchiseOrders() {
             />
           </div>
 
+          {/* Submit Buttons */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 20 }}>
             <button
               type="button"
@@ -623,9 +638,9 @@ export default function FranchiseOrders() {
         </div>
       )}
 
-      {/* Orders Table - Meus Arquivos */}
+      {/* Orders Table */}
       <div style={{ background: colors.bgCard, border: `1px solid ${colors.borderCard}`, borderRadius: 12, overflow: 'hidden' }}>
-        {/* Table Header with sorting and selection */}
+        {/* Table Header */}
         <div style={{ padding: '16px 20px', borderBottom: `1px solid ${colors.borderCard}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
@@ -676,13 +691,9 @@ export default function FranchiseOrders() {
         </div>
 
         {/* Table Body */}
-        {loadingOrders ? (
+        {sortedOrders.length === 0 ? (
           <div style={{ padding: 60, textAlign: 'center', color: colors.textSecondary }}>
-            Carregando pedidos...
-          </div>
-        ) : sortedOrders.length === 0 ? (
-          <div style={{ padding: 60, textAlign: 'center', color: colors.textSecondary }}>
-            Nenhum pedido encontrado. Clique em "Enviar Novos Arquivos" para começar.
+            Nenhum pedido encontrado. Clique em "Enviar Arquivos" para começar.
           </div>
         ) : (
           sortedOrders.map((order) => (
@@ -697,7 +708,7 @@ export default function FranchiseOrders() {
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '40px 80px 1fr 120px 100px 80px',
+                  gridTemplateColumns: '40px 100px 1fr 120px 100px 80px',
                   alignItems: 'center',
                   padding: '14px 20px',
                   cursor: 'pointer',
@@ -714,8 +725,8 @@ export default function FranchiseOrders() {
                   />
                 </div>
                 <div>
-                  <span style={{ fontWeight: 600, color: colors.textPrimary, fontSize: 14 }}>
-                    {order.id.slice(0, 6).toUpperCase()}
+                  <span style={{ fontWeight: 600, color: colors.textPrimary, fontSize: 13 }}>
+                    {order.order_number || order.id.slice(0, 8)}
                   </span>
                 </div>
                 <div>
@@ -732,7 +743,7 @@ export default function FranchiseOrders() {
                   </span>
                 </div>
                 <div style={{ fontSize: 12, color: colors.textSecondary }}>
-                  {new Date(order.created_at).toLocaleString('pt-BR')}
+                  {formatDate(order.created_at)}
                 </div>
                 <div>
                   {order.order_files && order.order_files.length > 0 && (
@@ -748,73 +759,46 @@ export default function FranchiseOrders() {
                   )}
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); /* Open ticket */ }}
-                    style={{
-                      padding: '6px 12px',
-                      background: 'transparent',
-                      border: `1px solid ${colors.borderCard}`,
-                      borderRadius: 6,
-                      fontSize: 11,
-                      color: colors.textSecondary,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Ver Ticket
-                  </button>
+                  <span style={{ fontWeight: 600, color: colors.accent }}>
+                    {formatCurrency(order.total_amount)}
+                  </span>
                 </div>
               </div>
 
               {/* Expanded Details */}
               {expandedOrderId === order.id && (
-                <div style={{ padding: '16px 20px 20px 100px', background: colors.bgCardHover, borderTop: `1px solid ${colors.borderCard}` }}>
+                <div style={{ padding: '16px 20px 20px 60px', background: colors.bgCardHover, borderTop: `1px solid ${colors.borderCard}` }}>
                   {/* Vehicle Info */}
-                  {order.vehicle_plate && (
-                    <div style={{ marginBottom: 16, display: 'flex', flexWrap: 'wrap', gap: 16 }}>
-                      {order.vehicle_plate && (
-                        <div>
-                          <div style={{ fontSize: 11, color: colors.textMuted }}>PLACA</div>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: colors.textPrimary }}>{order.vehicle_plate}</div>
-                        </div>
-                      )}
-                      {order.notes && (
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 11, color: colors.textMuted }}>OBSERVAÇÕES</div>
-                          <div style={{ fontSize: 12, color: colors.textSecondary }}>{order.notes}</div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Order Items */}
-                  {order.order_items && order.order_items.length > 0 && (
-                    <div style={{ marginBottom: 16 }}>
-                      <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 8 }}>SERVIÇOS SOLICITADOS</div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                        {order.order_items.map((item, idx) => (
-                          <span key={idx} style={{
-                            padding: '4px 10px',
-                            background: isDark ? '#1a1a1a' : '#f0f0f0',
-                            borderRadius: 6,
-                            fontSize: 12,
-                            color: colors.textPrimary,
-                          }}>
-                            {item.item?.name || 'Item'} × {item.quantity}
-                          </span>
-                        ))}
+                  <div style={{ marginBottom: 16, display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+                    {order.vehicle_plate && (
+                      <div>
+                        <div style={{ fontSize: 11, color: colors.textMuted }}>PLACA</div>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: colors.textPrimary }}>{order.vehicle_plate}</div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                    {(order as any).model && (
+                      <div>
+                        <div style={{ fontSize: 11, color: colors.textMuted }}>MODELO</div>
+                        <div style={{ fontSize: 14, color: colors.textPrimary }}>{(order as any).model}</div>
+                      </div>
+                    )}
+                    {order.notes && (
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 11, color: colors.textMuted }}>OBSERVAÇÕES</div>
+                        <div style={{ fontSize: 12, color: colors.textSecondary }}>{order.notes}</div>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Files */}
                   {order.order_files && order.order_files.length > 0 && (
                     <div>
                       <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 8 }}>ARQUIVOS ANEXADOS</div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                        {order.order_files.map((file) => (
+                        {order.order_files.map((file: any) => (
                           <a
                             key={file.id}
-                            href={file.file_path}
+                            href={supabase.storage.from('order-files').getPublicUrl(file.file_path).data.publicUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             style={{
@@ -857,7 +841,7 @@ export default function FranchiseOrders() {
             Anterior
           </button>
           <span style={{ fontSize: 13, color: colors.textSecondary }}>
-            1 / {Math.ceil(orders.length / 10) || 1}
+            Página 1
           </span>
           <button
             disabled
@@ -874,9 +858,6 @@ export default function FranchiseOrders() {
           </button>
         </div>
       </div>
-        </>
-      )}
-
     </div>
   );
 }

@@ -66,7 +66,7 @@ export default function FranchiseFinancial() {
   const { theme: currentTheme } = useTheme();
   const isDark = currentTheme === 'dark';
   
-  const [records, setRecords] = useState<FinancialRecord[]>([]);
+  const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
@@ -91,19 +91,28 @@ export default function FranchiseFinancial() {
   };
 
   useEffect(() => {
-    // Verifica se franchisee existe antes de carregar
     if (franchisee && franchisee.id) {
       loadData();
     } else {
       setRecords([]);
       setLoading(false);
     }
+
+    // Canal de tempo real para atualizações automáticas
+    const channel = supabase
+      .channel('franchise-financial')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'financial_records', filter: `franchisee_id=eq.${franchisee?.id}` }, 
+        () => loadData()
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [franchisee]);
 
   async function loadData() {
-    // Verificação dupla de segurança
     if (!franchisee || !franchisee.id) {
-      console.log('Franqueado não encontrado, não é possível carregar dados financeiros');
+      console.log('Franqueado não encontrado');
       setLoading(false);
       return;
     }
@@ -121,7 +130,7 @@ export default function FranchiseFinancial() {
         console.error('Erro carregando financeiro do franqueado', error);
         setRecords([]);
       } else {
-        setRecords((data || []) as unknown as FinancialRecord[]);
+        setRecords(data || []);
       }
     } catch (err) {
       console.error('Erro inesperado:', err);
@@ -139,9 +148,10 @@ export default function FranchiseFinancial() {
     return true;
   });
 
-  const totalDebit = records.filter(r => r.type === 'debit').reduce((s, r) => s + r.amount, 0);
-  const totalCredit = records.filter(r => r.type === 'credit' || r.type === 'payment').reduce((s, r) => s + r.amount, 0);
-  const paidDebit = records.filter(r => r.type === 'debit' && r.payment_status === 'pago').reduce((s, r) => s + r.amount, 0);
+  const totalDebit = records.filter(r => r.type === 'debit').reduce((s, r) => s + (r.amount || 0), 0);
+  const totalCredit = records.filter(r => r.type === 'credit' || r.type === 'payment').reduce((s, r) => s + (r.amount || 0), 0);
+  const paidDebit = records.filter(r => r.type === 'debit' && r.payment_status === 'pago').reduce((s, r) => s + (r.amount || 0), 0);
+  const filteredTotal = filteredRecords.reduce((sum, r) => sum + (r.amount || 0), 0);
   
   const currentBalance = (franchisee?.balance || 0) + (franchisee?.credit_limit || 0);
 
@@ -150,9 +160,9 @@ export default function FranchiseFinancial() {
     const rows = filteredRecords.map(r => [
       formatDateShort(r.created_at),
       r.description,
-      (r.order as unknown as { order_number: string })?.order_number || '',
+      r.order?.order_number || '',
       r.type,
-      r.amount.toFixed(2),
+      (r.amount || 0).toFixed(2),
       r.payment_status,
     ].join(',')).join('\n');
 
@@ -172,7 +182,6 @@ export default function FranchiseFinancial() {
     }
   `;
 
-  // Verificação para mostrar mensagem quando não há franqueado
   if (!franchisee || !franchisee.id) {
     return (
       <div style={{ background: colors.background, minHeight: '100vh', padding: 24 }}>
@@ -334,7 +343,6 @@ export default function FranchiseFinancial() {
                   color: colors.text,
                   fontSize: 12,
                 }}
-                placeholder="Data inicial"
               />
 
               <input
@@ -349,7 +357,6 @@ export default function FranchiseFinancial() {
                   color: colors.text,
                   fontSize: 12,
                 }}
-                placeholder="Data final"
               />
 
               {(filterType || filterStatus || dateRange.start || dateRange.end) && (
@@ -433,7 +440,7 @@ export default function FranchiseFinancial() {
                         {r.description}
                       </td>
                       <td style={{ padding: '12px 16px', fontSize: 12, color: colors.accent }}>
-                        {(r.order as unknown as { order_number: string })?.order_number || '—'}
+                        {r.order?.order_number || '—'}
                       </td>
                       <td style={{ padding: '12px 16px' }}>
                         <span style={{
@@ -467,6 +474,17 @@ export default function FranchiseFinancial() {
                     </tr>
                   ))}
                 </tbody>
+                <tfoot>
+                  <tr style={{ borderTop: `2px solid ${colors.border}`, background: colors.tableHeaderBg }}>
+                    <td colSpan={4} style={{ padding: '10px 14px', fontSize: 12, fontWeight: 600, color: colors.text }}>
+                      Total:
+                    </td>
+                    <td style={{ padding: '10px 14px', fontSize: 13, fontWeight: 700, color: colors.accent }}>
+                      {formatCurrency(filteredTotal)}
+                    </td>
+                    <td />
+                  </tr>
+                </tfoot>
               </table>
             </div>
           )}
@@ -476,7 +494,7 @@ export default function FranchiseFinancial() {
   );
 }
 
-// Componente SummaryCard corrigido
+// Componente SummaryCard
 function SummaryCard({ label, value, icon, color, isDark }: { 
   label: string; 
   value: string; 
