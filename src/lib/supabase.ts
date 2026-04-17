@@ -2,16 +2,17 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-// 1. Configuração do Cliente
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('⚠️ Variáveis de ambiente do Supabase não encontradas. Verifique o seu arquivo .env ou as configurações do Netlify.');
+  console.warn('⚠️ Variáveis de ambiente do Supabase não encontradas.');
 }
 
-// Função auxiliar para obter o token do localStorage
-const getToken = () => localStorage.getItem('sb-access-token');
+// Função para obter o token
+const getToken = () => {
+  return localStorage.getItem('sb-access-token');
+};
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -24,48 +25,51 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   realtime: {
     params: { eventsPerSecond: 10 },
   },
-  global: {
-    headers: {
-      ...(getToken() && { Authorization: `Bearer ${getToken()}` })
-    }
-  }
 });
 
-// EXPOR PARA O CONSOLE (Para você testar)
+// EXPOR PARA O CONSOLE
 if (typeof window !== 'undefined') {
   (window as any).supabase = supabase;
 }
 
-// 2. Auth Helpers
 export const auth = {
   signIn: (email: string, password: string) =>
     supabase.auth.signInWithPassword({ email, password }),
-
   signOut: () => supabase.auth.signOut(),
-
   getSession: () => supabase.auth.getSession(),
-
   onAuthStateChange: (cb: Parameters<typeof supabase.auth.onAuthStateChange>[0]) =>
     supabase.auth.onAuthStateChange(cb),
 };
 
-// 3. Edge Function Caller
+// Edge Function Caller CORRIGIDO
 export async function callFunction<T>(
   name: string,
   body?: any,
   method: 'POST' | 'PATCH' | 'DELETE' = 'POST'
 ): Promise<T> {
+  // Buscar o token diretamente do localStorage
   const token = getToken();
   
   if (!token) {
-    throw new Error('Usuário não autenticado. Por favor, faça login novamente.');
+    // Tentar buscar da sessão
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      throw new Error('Usuário não autenticado. Faça login novamente.');
+    }
+    localStorage.setItem('sb-access-token', session.access_token);
   }
+
+  const finalToken = getToken();
+  
+  console.log('Chamando função:', name);
+  console.log('Token existe?', !!finalToken);
 
   const { data, error } = await supabase.functions.invoke<T>(name, {
     method,
     body,
     headers: {
-      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${finalToken}`,
     },
   });
 
@@ -77,15 +81,17 @@ export async function callFunction<T>(
   return data as T;
 }
 
-// 4. Storage Helpers
 export const storage = {
   uploadOrderFile: async (orderId: string, file: File) => {
+    const token = getToken();
     const path = `${orderId}/${Date.now()}-${file.name}`;
+    
     const { data, error } = await supabase.storage
       .from('order-files')
       .upload(path, file, { 
         upsert: false,
-        contentType: file.type 
+        contentType: file.type,
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
     
     if (error) throw error;
