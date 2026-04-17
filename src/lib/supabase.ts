@@ -9,9 +9,21 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('⚠️ Variáveis de ambiente do Supabase não encontradas.');
 }
 
-// Função para obter o token
-const getToken = () => {
-  return localStorage.getItem('sb-access-token');
+// Função para obter o token de forma confiável
+const getToken = async () => {
+  // Primeiro tenta do localStorage
+  let token = localStorage.getItem('sb-access-token');
+  
+  // Se não tiver, tenta da sessão
+  if (!token) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      token = session.access_token;
+      localStorage.setItem('sb-access-token', token);
+    }
+  }
+  
+  return token;
 };
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -27,7 +39,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
-// EXPOR PARA O CONSOLE
 if (typeof window !== 'undefined') {
   (window as any).supabase = supabase;
 }
@@ -37,8 +48,7 @@ export const auth = {
     supabase.auth.signInWithPassword({ email, password }),
   signOut: () => supabase.auth.signOut(),
   getSession: () => supabase.auth.getSession(),
-  onAuthStateChange: (cb: Parameters<typeof supabase.auth.onAuthStateChange>[0]) =>
-    supabase.auth.onAuthStateChange(cb),
+  onAuthStateChange: (cb: any) => supabase.auth.onAuthStateChange(cb),
 };
 
 // Edge Function Caller CORRIGIDO
@@ -47,29 +57,23 @@ export async function callFunction<T>(
   body?: any,
   method: 'POST' | 'PATCH' | 'DELETE' = 'POST'
 ): Promise<T> {
-  // Buscar o token diretamente do localStorage
-  const token = getToken();
-  
-  if (!token) {
-    // Tentar buscar da sessão
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      throw new Error('Usuário não autenticado. Faça login novamente.');
-    }
-    localStorage.setItem('sb-access-token', session.access_token);
-  }
-
-  const finalToken = getToken();
+  // Buscar o token
+  const token = await getToken();
   
   console.log('Chamando função:', name);
-  console.log('Token existe?', !!finalToken);
+  console.log('Token obtido:', token ? 'Sim - ' + token.substring(0, 30) + '...' : 'Não');
+  
+  if (!token) {
+    console.error('Token não encontrado. Usuário não autenticado.');
+    throw new Error('Usuário não autenticado. Faça login novamente.');
+  }
 
   const { data, error } = await supabase.functions.invoke<T>(name, {
     method,
     body,
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${finalToken}`,
+      'Authorization': `Bearer ${token}`,
     },
   });
 
@@ -83,7 +87,7 @@ export async function callFunction<T>(
 
 export const storage = {
   uploadOrderFile: async (orderId: string, file: File) => {
-    const token = getToken();
+    const token = await getToken();
     const path = `${orderId}/${Date.now()}-${file.name}`;
     
     const { data, error } = await supabase.storage
@@ -102,15 +106,12 @@ export const storage = {
     const { data, error } = await supabase.storage
       .from('order-files')
       .createSignedUrl(path, expiresIn);
-    
     if (error) throw error;
     return data.signedUrl;
   },
 
   deleteFile: async (path: string) => {
-    const { error } = await supabase.storage
-      .from('order-files')
-      .remove([path]);
+    const { error } = await supabase.storage.from('order-files').remove([path]);
     if (error) throw error;
   },
 };
