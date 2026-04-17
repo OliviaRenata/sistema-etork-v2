@@ -1,4 +1,4 @@
-// src/pages/admin/AdminFranchisees.tsx
+// src/pages/admin/Franchisees.tsx
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -24,7 +24,12 @@ export default function AdminFranchisees() {
   };
 
   if (!isAdmin) {
-    return <div style={{ padding: 60, textAlign: 'center' }}>Acesso negado</div>;
+    return (
+      <div style={{ padding: 60, textAlign: 'center' }}>
+        <h2>Acesso negado</h2>
+        <p>Você não tem permissão para acessar esta página.</p>
+      </div>
+    );
   }
 
   useEffect(() => {
@@ -34,9 +39,10 @@ export default function AdminFranchisees() {
   async function loadFranchisees() {
     setLoading(true);
     try {
+      // CORREÇÃO: Remover o join com users que não existe
       const { data, error } = await supabase
         .from('franchisees')
-        .select('*, users:user_id(email)')
+        .select('*')
         .order('company_name');
       
       if (error) throw error;
@@ -96,24 +102,22 @@ export default function AdminFranchisees() {
               <thead>
                 <tr style={{ borderBottom: `1px solid ${colors.border}`, background: isDark ? '#0f0f0f' : '#fafafa' }}>
                   <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: colors.textSecondary }}>EMPRESA</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: colors.textSecondary }}>CÓDIGO</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: colors.textSecondary }}>EMAIL</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: colors.textSecondary }}>CODIGO</th>
                   <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: colors.textSecondary }}>STATUS</th>
                   <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: colors.textSecondary }}>CADASTRO</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: 11, fontWeight: 700, color: colors.textSecondary }}>AÇÕES</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: 11, fontWeight: 700, color: colors.textSecondary }}>ACOES</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={6} style={{ padding: 60, textAlign: 'center' }}>Carregando...</td></tr>
+                  <tr><td colSpan={5} style={{ padding: 60, textAlign: 'center', color: colors.textSecondary }}>Carregando...</td></tr>
                 ) : franchisees.length === 0 ? (
-                  <tr><td colSpan={6} style={{ padding: 60, textAlign: 'center' }}>Nenhum franqueado encontrado</td></tr>
+                  <tr><td colSpan={5} style={{ padding: 60, textAlign: 'center', color: colors.textSecondary }}>Nenhum franqueado encontrado</td></tr>
                 ) : (
                   franchisees.map((f) => (
                     <tr key={f.id} style={{ borderBottom: `1px solid ${colors.border}` }}>
                       <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600, color: colors.text }}>{f.company_name}</td>
                       <td style={{ padding: '12px 16px', fontSize: 13, color: colors.accent }}>{f.code}</td>
-                      <td style={{ padding: '12px 16px', fontSize: 12, color: colors.textSecondary }}>{(f.users as any)?.email || '—'}</td>
                       <td style={{ padding: '12px 16px' }}>
                         <span style={{ 
                           display: 'inline-block', 
