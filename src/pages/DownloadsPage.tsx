@@ -1,3 +1,4 @@
+// src/pages/DownloadsPage.tsx (versão ajustada)
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -10,7 +11,9 @@ import {
   Plus, 
   Search, 
   FileArchive, 
-  HardDrive 
+  HardDrive,
+  Edit,
+  Eye
 } from 'lucide-react';
 
 // Casting para evitar erros de JSX do React
@@ -21,6 +24,8 @@ const PlusIcon = Plus as any;
 const SearchIcon = Search as any;
 const SoftwareIcon = FileArchive as any;
 const DriverIcon = HardDrive as any;
+const EditIcon = Edit as any;
+const EyeIcon = Eye as any;
 
 interface DownloadFile {
   id: string;
@@ -37,7 +42,7 @@ interface DownloadFile {
 }
 
 export default function DownloadsPage() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const { theme: currentTheme } = useTheme();
   const isDark = currentTheme === 'dark';
   
@@ -46,6 +51,7 @@ export default function DownloadsPage() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('todos');
   const [showModal, setShowModal] = useState(false);
+  const [editingFile, setEditingFile] = useState<DownloadFile | null>(null);
   const [formData, setFormData] = useState({
     file_name: '',
     description: '',
@@ -81,11 +87,16 @@ export default function DownloadsPage() {
 
   async function loadFiles() {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('download_files')
-      .select('*')
-      .eq('is_active', true)
-      .order('created_at', { ascending: false });
+    
+    // Admin vê todos os arquivos (incluindo inativos)
+    // Franqueados vê apenas ativos
+    let query = supabase.from('download_files').select('*');
+    
+    if (!isAdmin) {
+      query = query.eq('is_active', true);
+    }
+    
+    const { data, error } = await query.order('created_at', { ascending: false });
 
     if (!error) setFiles(data || []);
     setLoading(false);
@@ -93,7 +104,7 @@ export default function DownloadsPage() {
 
   async function handleDownload(file: DownloadFile) {
     try {
-      // Incrementar contador
+      // Incrementar contador de downloads
       await supabase.rpc('increment_download_count', { row_id: file.id });
 
       const { data, error } = await supabase.storage
@@ -101,18 +112,27 @@ export default function DownloadsPage() {
         .createSignedUrl(file.file_path, 60);
 
       if (error) throw error;
-      window.location.href = data.signedUrl;
+      
+      // Abrir em nova aba
+      window.open(data.signedUrl, '_blank');
     } catch (err) {
       setMessage({ type: 'error', text: 'Erro ao processar download.' });
+      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
     }
   }
 
   async function handleUpload() {
-    if (!selectedFile) return setMessage({ type: 'error', text: 'Selecione um arquivo.' });
+    if (!selectedFile) {
+      setMessage({ type: 'error', text: 'Selecione um arquivo.' });
+      return;
+    }
 
     setUploading(true);
     try {
-      const filePath = `files/${Date.now()}-${selectedFile.name}`;
+      const fileExt = selectedFile.name.split('.').pop();
+      const fileName = `${Date.now()}-${selectedFile.name}`;
+      const filePath = `files/${fileName}`;
+      
       const { error: storageError } = await supabase.storage
         .from('downloads')
         .upload(filePath, selectedFile);
@@ -127,37 +147,139 @@ export default function DownloadsPage() {
         description: formData.description,
         category: formData.category,
         version: formData.version,
+        is_active: true,
+        downloads_count: 0,
       });
 
       if (dbError) throw dbError;
 
-      setMessage({ type: 'success', text: 'Arquivo adicionado!' });
+      setMessage({ type: 'success', text: 'Arquivo adicionado com sucesso!' });
       setShowModal(false);
       resetForm();
       loadFiles();
+      
+      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
     } catch (err) {
-      setMessage({ type: 'error', text: 'Erro no upload.' });
+      console.error('Erro no upload:', err);
+      setMessage({ type: 'error', text: 'Erro ao fazer upload do arquivo.' });
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleUpdate() {
+    if (!editingFile) return;
+    
+    setUploading(true);
+    try {
+      const updates: any = {
+        file_name: formData.file_name,
+        description: formData.description,
+        category: formData.category,
+        version: formData.version,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Se um novo arquivo foi selecionado, fazer upload
+      if (selectedFile) {
+        const fileExt = selectedFile.name.split('.').pop();
+        const fileName = `${Date.now()}-${selectedFile.name}`;
+        const filePath = `files/${fileName}`;
+        
+        const { error: storageError } = await supabase.storage
+          .from('downloads')
+          .upload(filePath, selectedFile);
+
+        if (storageError) throw storageError;
+        
+        // Remover arquivo antigo
+        await supabase.storage.from('downloads').remove([editingFile.file_path]);
+        
+        updates.file_path = filePath;
+        updates.file_size = selectedFile.size;
+        updates.mime_type = selectedFile.type;
+      }
+
+      const { error: dbError } = await supabase
+        .from('download_files')
+        .update(updates)
+        .eq('id', editingFile.id);
+
+      if (dbError) throw dbError;
+
+      setMessage({ type: 'success', text: 'Arquivo atualizado com sucesso!' });
+      setShowModal(false);
+      setEditingFile(null);
+      resetForm();
+      loadFiles();
+      
+      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+    } catch (err) {
+      console.error('Erro ao atualizar:', err);
+      setMessage({ type: 'error', text: 'Erro ao atualizar arquivo.' });
     } finally {
       setUploading(false);
     }
   }
 
   async function handleDelete(file: DownloadFile) {
-    if (!confirm('Excluir este arquivo permanentemente?')) return;
+    if (!confirm(`Tem certeza que deseja excluir "${file.file_name}" permanentemente?`)) return;
 
     try {
+      // Remover do storage
       await supabase.storage.from('downloads').remove([file.file_path]);
-      await supabase.from('download_files').delete().eq('id', file.id);
+      
+      // Remover do banco
+      const { error } = await supabase
+        .from('download_files')
+        .delete()
+        .eq('id', file.id);
+
+      if (error) throw error;
+      
       loadFiles();
-      setMessage({ type: 'success', text: 'Arquivo removido.' });
+      setMessage({ type: 'success', text: 'Arquivo removido com sucesso!' });
+      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
     } catch (err) {
-      setMessage({ type: 'error', text: 'Erro ao excluir.' });
+      console.error('Erro ao excluir:', err);
+      setMessage({ type: 'error', text: 'Erro ao excluir arquivo.' });
     }
+  }
+
+  async function handleToggleActive(file: DownloadFile) {
+    try {
+      const { error } = await supabase
+        .from('download_files')
+        .update({ is_active: !file.is_active, updated_at: new Date().toISOString() })
+        .eq('id', file.id);
+
+      if (error) throw error;
+      
+      loadFiles();
+      setMessage({ type: 'success', text: `Arquivo ${!file.is_active ? 'ativado' : 'desativado'} com sucesso!` });
+      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+    } catch (err) {
+      console.error('Erro ao alterar status:', err);
+      setMessage({ type: 'error', text: 'Erro ao alterar status.' });
+    }
+  }
+
+  function openEditModal(file: DownloadFile) {
+    setEditingFile(file);
+    setFormData({
+      file_name: file.file_name,
+      description: file.description || '',
+      category: file.category,
+      version: file.version,
+    });
+    setSelectedFile(null);
+    setShowModal(true);
   }
 
   function resetForm() {
     setFormData({ file_name: '', description: '', category: 'software', version: '1.0' });
     setSelectedFile(null);
+    setEditingFile(null);
   }
 
   const filteredFiles = files.filter(f => 
@@ -167,6 +289,25 @@ export default function DownloadsPage() {
 
   return (
     <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+      {/* Mensagem de feedback */}
+      {message.text && (
+        <div style={{
+          position: 'fixed',
+          top: 20,
+          right: 20,
+          zIndex: 1000,
+          padding: '12px 20px',
+          borderRadius: 8,
+          background: message.type === 'error' ? '#dc2626' : '#10b981',
+          color: '#fff',
+          fontSize: 13,
+          fontWeight: 600,
+          animation: 'fadeIn 0.3s ease'
+        }}>
+          {message.text}
+        </div>
+      )}
+
       {/* Topo com botão de Adicionar para Admin */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 30 }}>
         <div>
@@ -176,7 +317,10 @@ export default function DownloadsPage() {
         
         {isAdmin && (
           <button 
-            onClick={() => setShowModal(true)}
+            onClick={() => {
+              resetForm();
+              setShowModal(true);
+            }}
             style={{ 
               background: colors.accent, border: 'none', padding: '12px 20px', 
               borderRadius: 8, fontWeight: 'bold', cursor: 'pointer',
@@ -198,111 +342,216 @@ export default function DownloadsPage() {
             onChange={e => setSearch(e.target.value)}
             style={{ 
               width: '100%', padding: '12px 12px 12px 40px', background: colors.inputBg,
-              border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text
+              border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text,
+              outline: 'none'
             }}
           />
         </div>
         <select 
           value={category}
           onChange={e => setCategory(e.target.value)}
-          style={{ padding: '10px', background: colors.inputBg, color: colors.text, border: `1px solid ${colors.border}`, borderRadius: 8 }}
+          style={{ 
+            padding: '10px 16px', background: colors.inputBg, color: colors.text, 
+            border: `1px solid ${colors.border}`, borderRadius: 8, cursor: 'pointer'
+          }}
         >
           {categories.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
         </select>
       </div>
 
       {/* Lista de Arquivos */}
-      <div style={{ display: 'grid', gap: 15 }}>
-        {filteredFiles.map(file => (
-          <div key={file.id} style={{ 
-            background: colors.surface, border: `1px solid ${colors.border}`, 
-            padding: '15px 20px', borderRadius: 12, display: 'flex', 
-            alignItems: 'center', justifyContent: 'space-between' 
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
-              <div style={{ background: `${colors.accent}15`, padding: 12, borderRadius: 10 }}>
-                {file.category === 'instalador' ? <SoftwareIcon color={colors.accent} /> : <FileIcon color={colors.accent} />}
-              </div>
-              <div>
-                <h3 style={{ color: colors.text, margin: '0 0 5px 0', fontSize: 16 }}>{file.file_name}</h3>
-                <div style={{ fontSize: 12, color: colors.textMuted, display: 'flex', gap: 15 }}>
-                  <span>Versão: {file.version}</span>
-                  <span>Tamanho: {(file.file_size / 1024 / 1024).toFixed(2)} MB</span>
-                  <span>Downloads: {file.downloads_count || 0}</span>
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: 60, color: colors.textMuted }}>Carregando arquivos...</div>
+      ) : filteredFiles.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: 60, color: colors.textMuted }}>
+          Nenhum arquivo encontrado.
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gap: 15 }}>
+          {filteredFiles.map(file => (
+            <div key={file.id} style={{ 
+              background: colors.surface, border: `1px solid ${colors.border}`, 
+              padding: '15px 20px', borderRadius: 12, display: 'flex', 
+              alignItems: 'center', justifyContent: 'space-between',
+              flexWrap: 'wrap', gap: 15,
+              opacity: file.is_active ? 1 : 0.6
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
+                <div style={{ background: `${colors.accent}15`, padding: 12, borderRadius: 10 }}>
+                  {file.category === 'instalador' ? <SoftwareIcon color={colors.accent} /> : 
+                   file.category === 'drivers' ? <DriverIcon color={colors.accent} /> :
+                   <FileIcon color={colors.accent} />}
+                </div>
+                <div>
+                  <h3 style={{ color: colors.text, margin: '0 0 5px 0', fontSize: 16 }}>
+                    {file.file_name}
+                    {!file.is_active && <span style={{ marginLeft: 8, fontSize: 10, color: colors.error }}>(Inativo)</span>}
+                  </h3>
+                  <div style={{ fontSize: 12, color: colors.textMuted, display: 'flex', gap: 15, flexWrap: 'wrap' }}>
+                    <span>Versão: {file.version}</span>
+                    <span>Tamanho: {(file.file_size / 1024 / 1024).toFixed(2)} MB</span>
+                    <span>Downloads: {file.downloads_count || 0}</span>
+                    <span>Categoria: {file.category}</span>
+                  </div>
+                  {file.description && (
+                    <p style={{ fontSize: 12, color: colors.textMuted, margin: '5px 0 0 0' }}>{file.description}</p>
+                  )}
                 </div>
               </div>
-            </div>
 
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button 
-                onClick={() => handleDownload(file)}
-                title="Baixar arquivo"
-                style={{ 
-                  background: `${colors.accent}20`, border: `1px solid ${colors.accent}`, 
-                  color: colors.accent, padding: '8px 15px', borderRadius: 6, 
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 
-                }}
-              >
-                <DownloadIcon size={16} /> Download
-              </button>
-
-              {isAdmin && (
+              <div style={{ display: 'flex', gap: 10 }}>
                 <button 
-                  onClick={() => handleDelete(file)}
-                  title="Excluir arquivo"
+                  onClick={() => handleDownload(file)}
+                  title="Baixar arquivo"
                   style={{ 
-                    background: 'transparent', border: `1px solid ${colors.error}50`, 
-                    color: colors.error, padding: '8px', borderRadius: 6, cursor: 'pointer' 
+                    background: `${colors.accent}20`, border: `1px solid ${colors.accent}`, 
+                    color: colors.accent, padding: '8px 15px', borderRadius: 6, 
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 
                   }}
                 >
-                  <TrashIcon size={16} />
+                  <DownloadIcon size={16} /> Download
                 </button>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
 
-      {/* Modal de Upload (Admin) */}
+                {isAdmin && (
+                  <>
+                    <button 
+                      onClick={() => openEditModal(file)}
+                      title="Editar arquivo"
+                      style={{ 
+                        background: 'transparent', border: `1px solid ${colors.border}`, 
+                        color: colors.text, padding: '8px', borderRadius: 6, cursor: 'pointer' 
+                      }}
+                    >
+                      <EditIcon size={16} />
+                    </button>
+                    <button 
+                      onClick={() => handleToggleActive(file)}
+                      title={file.is_active ? "Desativar" : "Ativar"}
+                      style={{ 
+                        background: file.is_active ? '#dc262620' : '#10b98120',
+                        border: `1px solid ${file.is_active ? '#dc2626' : '#10b981'}`, 
+                        color: file.is_active ? '#dc2626' : '#10b981', 
+                        padding: '8px', borderRadius: 6, cursor: 'pointer' 
+                      }}
+                    >
+                      {file.is_active ? <EyeIcon size={16} /> : <EyeIcon size={16} />}
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(file)}
+                      title="Excluir arquivo"
+                      style={{ 
+                        background: 'transparent', border: `1px solid #dc262650`, 
+                        color: '#dc2626', padding: '8px', borderRadius: 6, cursor: 'pointer' 
+                      }}
+                    >
+                      <TrashIcon size={16} />
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Modal de Upload/Edição (Admin) */}
       {showModal && (
         <div style={{ 
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', 
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 
         }}>
-          <div style={{ background: colors.surface, padding: 30, borderRadius: 15, width: '400px', border: `1px solid ${colors.border}` }}>
-            <h2 style={{ color: colors.text, marginTop: 0 }}>Novo Arquivo</h2>
+          <div style={{ 
+            background: colors.surface, padding: 30, borderRadius: 15, 
+            width: '500px', maxWidth: '90%', border: `1px solid ${colors.border}`
+          }}>
+            <h2 style={{ color: colors.text, marginTop: 0 }}>
+              {editingFile ? 'Editar Arquivo' : 'Novo Arquivo'}
+            </h2>
             
-            <input type="file" onChange={e => setSelectedFile(e.target.files?.[0] || null)} style={{ marginBottom: 15, color: colors.text }} />
+            <div style={{ marginBottom: 15 }}>
+              <label style={{ display: 'block', marginBottom: 5, fontSize: 12, color: colors.textMuted }}>ARQUIVO *</label>
+              <input 
+                type="file" 
+                onChange={e => setSelectedFile(e.target.files?.[0] || null)} 
+                style={{ color: colors.text, width: '100%' }}
+              />
+              {editingFile && !selectedFile && (
+                <p style={{ fontSize: 11, color: colors.textMuted, marginTop: 5 }}>Deixe em branco para manter o arquivo atual</p>
+              )}
+            </div>
             
             <input 
               placeholder="Nome do software/arquivo" 
               value={formData.file_name}
               onChange={e => setFormData({...formData, file_name: e.target.value})}
-              style={{ width: '100%', padding: 10, marginBottom: 10, borderRadius: 5, border: `1px solid ${colors.border}`, background: colors.inputBg, color: colors.text }}
+              style={{ 
+                width: '100%', padding: 10, marginBottom: 10, borderRadius: 5, 
+                border: `1px solid ${colors.border}`, background: colors.inputBg, color: colors.text,
+                outline: 'none'
+              }}
             />
 
-            <select 
-              value={formData.category}
-              onChange={e => setFormData({...formData, category: e.target.value})}
-              style={{ width: '100%', padding: 10, marginBottom: 10, borderRadius: 5, border: `1px solid ${colors.border}`, background: colors.inputBg, color: colors.text }}
-            >
-              <option value="instalador">Instalador (.exe / .msi)</option>
-              <option value="software">Software / App</option>
-              <option value="drivers">Drivers</option>
-              <option value="documentos">Manuais / Docs</option>
-            </select>
+            <textarea
+              placeholder="Descrição do arquivo"
+              value={formData.description}
+              onChange={e => setFormData({...formData, description: e.target.value})}
+              rows={3}
+              style={{ 
+                width: '100%', padding: 10, marginBottom: 10, borderRadius: 5, 
+                border: `1px solid ${colors.border}`, background: colors.inputBg, color: colors.text,
+                outline: 'none', resize: 'vertical'
+              }}
+            />
 
-            <div style={{ display: 'flex', gap: 10 }}>
+            <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
+              <select 
+                value={formData.category}
+                onChange={e => setFormData({...formData, category: e.target.value})}
+                style={{ 
+                  flex: 1, padding: 10, borderRadius: 5, 
+                  border: `1px solid ${colors.border}`, background: colors.inputBg, color: colors.text,
+                  outline: 'none'
+                }}
+              >
+                <option value="instalador">Instalador (.exe / .msi)</option>
+                <option value="software">Software / App</option>
+                <option value="drivers">Drivers</option>
+                <option value="documentos">Manuais / Docs</option>
+              </select>
+
+              <input 
+                placeholder="Versão"
+                value={formData.version}
+                onChange={e => setFormData({...formData, version: e.target.value})}
+                style={{ 
+                  width: 100, padding: 10, borderRadius: 5, 
+                  border: `1px solid ${colors.border}`, background: colors.inputBg, color: colors.text,
+                  outline: 'none'
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
               <button 
                 disabled={uploading}
-                onClick={handleUpload}
-                style={{ flex: 1, padding: 12, background: colors.accent, border: 'none', borderRadius: 8, fontWeight: 'bold', cursor: 'pointer' }}
+                onClick={editingFile ? handleUpdate : handleUpload}
+                style={{ 
+                  flex: 1, padding: 12, background: colors.accent, border: 'none', 
+                  borderRadius: 8, fontWeight: 'bold', cursor: 'pointer',
+                  opacity: uploading ? 0.7 : 1
+                }}
               >
-                {uploading ? 'Enviando...' : 'Confirmar'}
+                {uploading ? 'Processando...' : editingFile ? 'ATUALIZAR' : 'ENVIAR'}
               </button>
               <button 
-                onClick={() => setShowModal(false)}
-                style={{ padding: 12, background: 'transparent', border: `1px solid ${colors.border}`, color: colors.textMuted, borderRadius: 8, cursor: 'pointer' }}
+                onClick={() => {
+                  setShowModal(false);
+                  resetForm();
+                }}
+                style={{ 
+                  padding: 12, background: 'transparent', border: `1px solid ${colors.border}`, 
+                  color: colors.textMuted, borderRadius: 8, cursor: 'pointer' 
+                }}
               >
                 Cancelar
               </button>
@@ -310,6 +559,14 @@ export default function DownloadsPage() {
           </div>
         </div>
       )}
+
+      {/* CSS para animação */}
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }
