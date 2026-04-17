@@ -1,15 +1,13 @@
-// Adicione esta linha no topo para o Vite reconhecer o 'import.meta.env'
 /// <reference types="vite/client" />
 
 import { createClient } from '@supabase/supabase-js';
 
-// Usamos uma string vazia como fallback para evitar o erro de tipo 'desconhecido'
+// 1. Configuração do Cliente
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  // Em produção no Netlify, esse erro não deve disparar se as variáveis estiverem lá
-  console.warn('Variáveis de ambiente do Supabase não encontradas.');
+  console.warn('⚠️ Variáveis de ambiente do Supabase não encontradas. Verifique o seu arquivo .env ou as configurações do Netlify.');
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -22,7 +20,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
-// ─── Auth helpers ──────────────────────────────────────────
+// 2. Auth Helpers
 export const auth = {
   signIn: (email: string, password: string) =>
     supabase.auth.signInWithPassword({ email, password }),
@@ -35,42 +33,46 @@ export const auth = {
     supabase.auth.onAuthStateChange(cb),
 };
 
-// ─── Edge Function caller ──────────────────────────────────
-// ─── Edge Function caller ──────────────────────────────────
+// 3. Edge Function Caller (CORRIGIDO)
 export async function callFunction<T>(
   name: string,
-  body?: any, // Mudamos de unknown para any
+  body?: any,
   method: 'POST' | 'PATCH' | 'DELETE' = 'POST'
 ): Promise<T> {
+  // Verificamos a sessão apenas para garantir que o usuário está logado
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error('Não autenticado');
 
+  // Removido o header Authorization manual para evitar o erro ES256
+  // O SDK do Supabase anexa automaticamente a Anon Key correta
   const { data, error } = await supabase.functions.invoke<T>(name, {
     method,
-    body, // Agora o TS aceita o body aqui
-    headers: { Authorization: `Bearer ${session.access_token}` },
+    body,
   });
 
   if (error) throw error;
   return data as T;
 }
-// ─── Storage helpers ───────────────────────────────────────
-// ─── Storage helpers ───────────────────────────────────────
+
+// 4. Storage Helpers
 export const storage = {
   uploadOrderFile: async (orderId: string, file: File) => {
     const path = `${orderId}/${Date.now()}-${file.name}`;
     const { data, error } = await supabase.storage
       .from('order-files')
-      .upload(path, file as any, { upsert: false }); // Adicionamos 'as any' aqui
+      .upload(path, file as any, { 
+        upsert: false,
+        contentType: file.type // Garante que o tipo do arquivo seja enviado corretamente
+      });
     
     if (error) throw error;
-    // O retorno do data pode ser nulo, então garantimos o retorno do path
     return data?.path || ''; 
   },
 
   getSignedUrl: async (path: string, expiresIn = 3600) => {
     const { data, error } = await supabase.storage
-      .from('order-files').createSignedUrl(path, expiresIn);
+      .from('order-files')
+      .createSignedUrl(path, expiresIn);
     
     if (error) throw error;
     return data.signedUrl;
