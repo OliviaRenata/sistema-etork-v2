@@ -1,170 +1,143 @@
 // supabase/functions/create-order/index.ts
 // Edge Function: POST /create-order
-// Creates a validated order with items, files and notifications
+// Cria um novo pedido de remap
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface OrderItem {
-  item_id: string;
-  quantity: number;
-  notes?: string;
-}
+// VALORES REAIS DO SEU SUPABASE
+const supabaseUrl = "https://vkxhjynnaekpeklmfebr.supabase.co";
+const supabaseServiceKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZreGhqeW5uYWVrcGVrbG1mZWJyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjI1NTkzNywiZXhwIjoyMDkxODMxOTM3fQ.WWedj2Iogv7jHBYtgZS9bWpRP00-z_QxIKMRyp69cFc";
 
-interface CreateOrderPayload {
-  notes?: string;
-  vehicle_plate?: string;
-  items: OrderItem[];
-}
-
-serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+serve(async (req: Request) => {
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
 
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { persistSession: false },
+    });
 
-    // Auth check
+    // Auth check - valida token do usuário
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return json({ error: "Unauthorized" }, 401);
-
-    const { data: { user }, error: authErr } = await supabase.auth.getUser(
-      authHeader.replace("Bearer ", "")
-    );
-    if (authErr || !user) return json({ error: "Unauthorized" }, 401);
-
-    // Get profile
-    const { data: profile } = await supabase
-      .from("profiles").select("role").eq("id", user.id).single();
-    if (!profile) return json({ error: "Profile not found" }, 404);
-
-    // Get franchisee
-    const { data: franchisee } = await supabase
-      .from("franchisees").select("id, active, balance, credit_limit")
-      .eq("user_id", user.id).single();
-    if (!franchisee || !franchisee.active) return json({ error: "Franqueado não encontrado ou inativo" }, 403);
-
-    const body: CreateOrderPayload = await req.json();
-
-    // Validate items
-    if (!body.items?.length) return json({ error: "Pedido deve ter pelo menos 1 item" }, 400);
-
-    // Fetch item prices server-side (never trust client prices)
-    const itemIds = body.items.map(i => i.item_id);
-    const { data: catalogItems } = await supabase
-      .from("items").select("id, name, unit_price, active, requires_file")
-      .in("id", itemIds);
-
-    if (!catalogItems || catalogItems.length !== itemIds.length) {
-      return json({ error: "Um ou mais itens não encontrados" }, 400);
+    if (!authHeader) {
+      return json({ error: "Unauthorized: No token provided" }, 401);
     }
 
-    const inactiveItem = catalogItems.find(i => !i.active);
-    if (inactiveItem) return json({ error: `Item "${inactiveItem.name}" está inativo` }, 400);
-
-    // Build order items with server-side prices
-    const orderItems = body.items.map(oi => {
-      const catalogItem = catalogItems.find(c => c.id === oi.item_id)!;
-      return {
-        item_id: oi.item_id,
-        quantity: oi.quantity,
-        unit_price: catalogItem.unit_price,
-        notes: oi.notes,
-      };
-    });
-
-    const totalAmount = orderItems.reduce((sum, i) => sum + (i.quantity * i.unit_price), 0);
-
-    // Credit check
-    const availableCredit = franchisee.credit_limit + franchisee.balance;
-    if (totalAmount > availableCredit) {
-      return json({ error: `Saldo insuficiente. Disponível: R$ ${availableCredit.toFixed(2)}` }, 400);
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authErr } = await supabase.auth.getUser(token);
+    
+    if (authErr || !user) {
+      console.error("Auth error:", authErr);
+      return json({ error: "Unauthorized: Invalid token" }, 401);
     }
 
-    // Plate lookup (if provided)
-    let vehicleInfo = null;
-    if (body.vehicle_plate) {
-      vehicleInfo = await lookupVehiclePlate(body.vehicle_plate);
+    // Busca o franqueado do usuário
+    const { data: franchisee, error: franchiseeErr } = await supabase
+      .from("franchisees")
+      .select("id, active, balance, credit_limit")
+      .eq("user_id", user.id)
+      .single();
+
+    if (franchiseeErr || !franchisee) {
+      return json({ error: "Franqueado não encontrado" }, 403);
     }
 
-    // Create order
+    if (!franchisee.active) {
+      return json({ error: "Franqueado inativo" }, 403);
+    }
+
+    const body = await req.json();
+
+    // Valida campos obrigatórios
+    if (!body.vehicle_plate) {
+      return json({ error: "Placa do veículo é obrigatória" }, 400);
+    }
+
+    // Cria o pedido
     const { data: order, error: orderErr } = await supabase
-      .from("orders").insert({
+      .from("orders")
+      .insert({
         franchisee_id: franchisee.id,
-        notes: body.notes,
         vehicle_plate: body.vehicle_plate,
-        vehicle_info: vehicleInfo,
-        created_by: user.id,
-        updated_by: user.id,
-      }).select().single();
+        chassi: body.chassi || null,
+        model: body.model || null,
+        year: body.year || null,
+        engine: body.engine || null,
+        cv: body.cv || null,
+        fuel: body.fuel || null,
+        km: body.km || null,
+        transmission: body.transmission || null,
+        hw_number: body.hw_number || null,
+        sw_number: body.sw_number || null,
+        system: body.system || null,
+        reading_mode: body.readingMode || null,
+        performance: body.performance || [],
+        tool: body.tool || [],
+        notes: body.notes || null,
+        total_amount: body.total_amount || 0,
+        status: "solicitado"
+      })
+      .select()
+      .single();
 
-    if (orderErr) throw orderErr;
+    if (orderErr) {
+      console.error("Order creation error:", orderErr);
+      return json({ error: "Erro ao criar pedido: " + orderErr.message }, 500);
+    }
 
-    // Insert order items
-    const { error: itemsErr } = await supabase.from("order_items").insert(
-      orderItems.map(oi => ({ ...oi, order_id: order.id }))
-    );
-    if (itemsErr) throw itemsErr;
+    // Registro financeiro (débito)
+    if (body.total_amount && body.total_amount > 0) {
+      const { error: financeErr } = await supabase
+        .from("financial_records")
+        .insert({
+          franchisee_id: franchisee.id,
+          order_id: order.id,
+          type: "debit",
+          amount: body.total_amount,
+          description: `Pedido ${order.order_number || order.id} - ${body.vehicle_plate}`,
+          payment_status: "pendente"
+        });
 
-    // Debit franchisee balance
-    await supabase.from("franchisees")
-      .update({ balance: franchisee.balance - totalAmount })
-      .eq("id", franchisee.id);
+      if (financeErr) {
+        console.error("Financial record error:", financeErr);
+      }
 
-    // Financial record
-    await supabase.from("financial_records").insert({
-      franchisee_id: franchisee.id,
-      order_id: order.id,
-      type: "debit",
-      amount: totalAmount,
-      description: `Pedido ${order.order_number}`,
-      payment_status: "pendente",
-      created_by: user.id,
-    });
+      // Atualiza saldo do franqueado
+      const { error: balanceErr } = await supabase
+        .from("franchisees")
+        .update({ balance: franchisee.balance - body.total_amount })
+        .eq("id", franchisee.id);
 
-    // Status history
-    await supabase.from("order_status_history").insert({
-      order_id: order.id,
-      from_status: null,
-      to_status: "solicitado",
-      changed_by: user.id,
-      notes: "Pedido criado",
-    });
+      if (balanceErr) {
+        console.error("Balance update error:", balanceErr);
+      }
+    }
 
-    return json({ order, message: "Pedido criado com sucesso" }, 201);
+    return json({ 
+      success: true,
+      order, 
+      message: "Pedido criado com sucesso" 
+    }, 201);
 
   } catch (err) {
-    console.error(err);
-    return json({ error: "Erro interno do servidor" }, 500);
+    console.error("Unexpected error:", err);
+    const errorMessage = err instanceof Error ? err.message : "Erro interno do servidor";
+    return json({ error: errorMessage }, 500);
   }
 });
 
-async function lookupVehiclePlate(plate: string) {
-  try {
-    // Integration with Brazilian vehicle plate API
-    // Replace with actual API endpoint/key
-    const cleanPlate = plate.replace(/[^A-Z0-9]/gi, "").toUpperCase();
-    const response = await fetch(
-      `https://brasilapi.com.br/api/fipe/tabela/v1`, // placeholder
-      { headers: { "Content-Type": "application/json" } }
-    );
-    if (!response.ok) return null;
-    return { plate: cleanPlate, queried_at: new Date().toISOString() };
-  } catch {
-    return null;
-  }
-}
-
-function json(data: unknown, status = 200) {
+function json(data: unknown, status: number = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
-}
+});
