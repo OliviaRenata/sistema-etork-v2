@@ -88,6 +88,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function loadProfile(userId: string, userEmail: string) {
+    setLoading(true);
+    const unlockTimer = window.setTimeout(() => {
+      setLoading(false);
+    }, 8000);
+
     try {
       let { data: prof } = await supabase
         .from('profiles')
@@ -127,6 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Erro em loadProfile:', error);
     } finally {
+      window.clearTimeout(unlockTimer);
       setLoading(false);
     }
   }
@@ -167,7 +173,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (initialSession?.user) {
           setSession(initialSession);
           setUser(initialSession.user);
-          await loadProfile(initialSession.user.id, initialSession.user.email!);
+          void loadProfile(initialSession.user.id, initialSession.user.email!);
         } else {
           setUser(null);
           setSession(null);
@@ -187,11 +193,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     initAuth();
 
-    const { data: { subscription } } = auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = auth.onAuthStateChange((event, session) => {
       if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session?.user) {
         setSession(session);
         setUser(session.user);
-        await loadProfile(session.user.id, session.user.email!);
+        // Evita await no callback do Supabase Auth para não travar o fluxo interno.
+        setTimeout(() => {
+          void loadProfile(session.user.id, session.user.email!);
+        }, 0);
       } else if (event === 'TOKEN_REFRESHED' && session?.user) {
         setSession(session);
         setUser(session.user);
@@ -203,6 +212,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setFranchisee(null);
         setLoading(false);
       }
+
+      return Promise.resolve();
     });
 
     return () => subscription.unsubscribe();
