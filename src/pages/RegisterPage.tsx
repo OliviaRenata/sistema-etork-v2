@@ -1,7 +1,7 @@
 // src/pages/RegisterPage.tsx
 
 import logoImg from '../assets/logoetork.png';
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
 const inputStyle: React.CSSProperties = {
@@ -32,6 +32,14 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<{ type: string; text: string }>({ type: '', text: '' });
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 960);
+    onResize();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   async function handleRegister(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -121,15 +129,15 @@ export default function RegisterPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', background: '#000', fontFamily: '"Inter", sans-serif' }}>
-      <div style={{ width: 460, minHeight: '100vh', flexShrink: 0, background: '#0a0a0a', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '48px 44px', position: 'relative' }}>
-        <div style={{ position: 'absolute', right: 0, top: '10%', bottom: '10%', width: 1, background: 'linear-gradient(to bottom, transparent, rgba(230,184,0,0.4) 40%, rgba(230,184,0,0.4) 60%, transparent)' }} />
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: isMobile ? 'column' : 'row', background: '#000', fontFamily: '"Inter", sans-serif' }}>
+      <div style={{ width: isMobile ? '100%' : 460, minHeight: '100vh', flexShrink: 0, background: '#0a0a0a', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: isMobile ? '28px 18px 22px' : '48px 44px', position: 'relative' }}>
+        <div style={{ display: isMobile ? 'none' : 'block', position: 'absolute', right: 0, top: '10%', bottom: '10%', width: 1, background: 'linear-gradient(to bottom, transparent, rgba(230,184,0,0.4) 40%, rgba(230,184,0,0.4) 60%, transparent)' }} />
 
         <div style={{ marginBottom: 44, textAlign: 'center' }}>
           <img
             src={logoImg}
             alt="Etork Brasil"
-            style={{ height: 60, width: 'auto', objectFit: 'contain', display: 'block', margin: '0 auto' }}
+            style={{ height: isMobile ? 52 : 60, width: 'auto', objectFit: 'contain', display: 'block', margin: '0 auto' }}
           />
         </div>
 
@@ -264,12 +272,12 @@ export default function RegisterPage() {
           <a href="/login" style={{ color: '#e6b800', fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>Fazer Login</a>
         </div>
 
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, textAlign: 'center', background: '#000', padding: '14px 0' }}>
+        <div style={{ position: isMobile ? 'static' : 'absolute', marginTop: isMobile ? 18 : 0, bottom: 0, left: 0, right: 0, textAlign: 'center', background: '#000', padding: '14px 0' }}>
           <p style={{ fontSize: 10, color: '#999', letterSpacing: 0.5, margin: 0 }}>(67) 99254-9181 · @etorkbrasil · Campo Grande/MS</p>
         </div>
       </div>
 
-      <div style={{ flex: 1, background: '#000', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ display: isMobile ? 'none' : 'flex', flex: 1, background: '#000', position: 'relative', overflow: 'hidden', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, transparent 0%, #e6b800 30%, #e6b800 60%, transparent 100%)' }} />
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(230,184,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(230,184,0,0.04) 1px, transparent 1px)', backgroundSize: '48px 48px' }} />
         <div style={{ position: 'absolute', top: '38%', left: '50%', transform: 'translate(-50%, -50%)', width: 420, height: 420, borderRadius: '50%', background: 'radial-gradient(circle, rgba(230,184,0,0.06) 0%, transparent 68%)', pointerEvents: 'none' }} />

@@ -6,7 +6,7 @@
 
 import logoImg from '../assets/logoetork.png';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
@@ -17,6 +17,14 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 960);
+    onResize();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -51,25 +59,26 @@ export default function LoginPage() {
     <div style={{ 
       minHeight: '100vh', 
       display: 'flex', 
-      flexDirection: 'row',
+      flexDirection: isMobile ? 'column' : 'row',
       flexWrap: 'wrap',
       fontFamily: '"Inter", "Helvetica Neue", sans-serif' 
     }}>
 
       {/* ─── ESQUERDA: formulário (460px fixo) ───────────────────────────────── */}
       <div style={{
-        width: 460, 
-        minHeight: '100vh', 
+        width: isMobile ? '100%' : 460,
+        minHeight: isMobile ? '100vh' : '100vh',
         flexShrink: 0,
         background: '#0a0a0a',
         display: 'flex', 
         flexDirection: 'column', 
         justifyContent: 'center',
-        padding: '48px 44px', 
+        padding: isMobile ? '28px 18px 22px' : '48px 44px',
         position: 'relative',
       }}>
         {/* Borda direita dourada */}
         <div style={{
+          display: isMobile ? 'none' : 'block',
           position: 'absolute', 
           right: 0, 
           top: '10%', 
@@ -85,7 +94,7 @@ export default function LoginPage() {
             src={logoImg}
             alt="Etork Brasil"
             style={{ 
-              height: 60, 
+              height: isMobile ? 52 : 60,
               width: 'auto', 
               objectFit: 'contain', 
               display: 'block', 
@@ -230,7 +239,7 @@ export default function LoginPage() {
         </div>
 
         {/* Contato no rodapé */}
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, textAlign: 'center', background: '#000', padding: '14px 0' }}>
+        <div style={{ position: isMobile ? 'static' : 'absolute', marginTop: isMobile ? 18 : 0, bottom: 0, left: 0, right: 0, textAlign: 'center', background: '#000', padding: '14px 0' }}>
           <p style={{ fontSize: 10, color: '#999', letterSpacing: 0.5, margin: 0 }}>
             (67) 99254-9181 · @etorkbrasil · Campo Grande/MS
           </p>
@@ -239,11 +248,11 @@ export default function LoginPage() {
 
       {/* ─── DIREITA: área BRANCA com logo RESPONSIVA ocupando TODO espaço ──── */}
       <div style={{
+        display: isMobile ? 'none' : 'flex',
         flex: 1,              // ← ocupa todo espaço restante (responsivo!)
         background: '#000000', // ← FUNDO BRANCO como na imagem
         position: 'relative',
         overflow: 'hidden',
-        display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',

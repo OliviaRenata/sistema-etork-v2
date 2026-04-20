@@ -95,6 +95,7 @@ export default function AppLayout() {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
+  const [isMobile, setIsMobile] = useState(false);
 
   // Atualizar data/hora a cada segundo
   useEffect(() => {
@@ -103,6 +104,20 @@ export default function AppLayout() {
     }, 1000);
 
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const onResize = () => {
+      const mobile = window.innerWidth < 960;
+      setIsMobile(mobile);
+      if (!mobile) {
+        setSidebarOpen(false);
+      }
+    };
+
+    onResize();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
   }, []);
 
   const isDark = theme === 'dark';
@@ -163,7 +178,10 @@ export default function AppLayout() {
         flexDirection: 'column',
         position: 'fixed',
         top: 0, left: 0, bottom: 0,
-        zIndex: 100,
+        zIndex: 120,
+        transform: isMobile ? (sidebarOpen ? 'translateX(0)' : 'translateX(-102%)') : 'translateX(0)',
+        transition: 'transform 0.2s ease',
+        boxShadow: isMobile ? '0 10px 40px rgba(0,0,0,0.35)' : 'none',
       }}>
         {/* Logo */}
         <div style={{ padding: '24px 20px 20px', borderBottom: `1px solid ${colors.border}`, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10 }}>
@@ -216,6 +234,9 @@ export default function AppLayout() {
             <NavLink
               key={to}
               to={to}
+              onClick={() => {
+                if (isMobile) setSidebarOpen(false);
+              }}
               style={({ isActive }) => ({
                 display: 'flex',
                 alignItems: 'center',
@@ -303,40 +324,84 @@ export default function AppLayout() {
         </button>
       </aside>
 
+      {isMobile && sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.45)',
+            zIndex: 110,
+          }}
+        />
+      )}
+
       {/* Main */}
-      <main style={{ marginLeft: 240, flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <main style={{ marginLeft: isMobile ? 0 : 240, flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         {/* Topbar */}
         <header style={{
           height: 56, background: colors.topbar, borderBottom: `1px solid ${colors.border}`,
-          display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-          padding: '0 24px', gap: 16, position: 'sticky', top: 0, zIndex: 50,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: isMobile ? '0 12px' : '0 24px', gap: 12, position: 'sticky', top: 0, zIndex: 50,
         }}>
-          <NotificationBell />
-          <button
-            type="button"
-            onClick={toggleTheme}
-            style={{
-              padding: '8px 10px', borderRadius: 8, border: `1px solid ${colors.border}`,
-              background: 'transparent', color: colors.text, display: 'inline-flex', alignItems: 'center', gap: 6,
-              fontSize: 12, fontWeight: 600, cursor: 'pointer',
-            }}
-          >
-            {isDark ? <SunIcon width={16} height={16} /> : <MoonIcon width={16} height={16} />}
-            {isDark ? 'Claro' : 'Escuro'}
-          </button>
-          <div style={{ width: 1, height: 20, background: colors.border }} />
-          <div style={{ fontSize: 12, color: colors.muted, display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span>
-              {currentDateTime.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })}
-            </span>
-            <span>
-              {currentDateTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-            </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {isMobile && (
+              <button
+                type="button"
+                onClick={() => setSidebarOpen(true)}
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 8,
+                  border: `1px solid ${colors.border}`,
+                  background: 'transparent',
+                  color: colors.text,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                }}
+                aria-label="Abrir menu"
+              >
+                ☰
+              </button>
+            )}
+            {isMobile && (
+              <div style={{ fontSize: 12, color: colors.muted, fontWeight: 600 }}>
+                {currentDateTime.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+              </div>
+            )}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <NotificationBell />
+            <button
+              type="button"
+              onClick={toggleTheme}
+              style={{
+                padding: '8px 10px', borderRadius: 8, border: `1px solid ${colors.border}`,
+                background: 'transparent', color: colors.text, display: 'inline-flex', alignItems: 'center', gap: 6,
+                fontSize: 12, fontWeight: 600, cursor: 'pointer',
+              }}
+            >
+              {isDark ? <SunIcon width={16} height={16} /> : <MoonIcon width={16} height={16} />}
+              {!isMobile && (isDark ? 'Claro' : 'Escuro')}
+            </button>
+            {!isMobile && <div style={{ width: 1, height: 20, background: colors.border }} />}
+            {!isMobile && (
+              <div style={{ fontSize: 12, color: colors.muted, display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span>
+                  {currentDateTime.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })}
+                </span>
+                <span>
+                  {currentDateTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                </span>
+              </div>
+            )}
           </div>
         </header>
 
         {/* Content */}
-        <div style={{ flex: 1, padding: 24, background: colors.bg }}>
+        <div style={{ flex: 1, padding: isMobile ? 14 : 24, background: colors.bg }}>
           <Outlet />
         </div>
       </main>
