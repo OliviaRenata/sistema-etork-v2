@@ -104,7 +104,7 @@ export default function AdminOrders() {
       if (error) throw error;
       
       // Buscar nomes dos franqueados separadamente
-      const franchiseeIds = [...new Set(data?.map(o => o.franchisee_id) || [])];
+      const franchiseeIds = [...new Set((data?.map(o => o.franchisee_id) || []).filter(Boolean))];
       if (franchiseeIds.length === 0) {
         setOrders([]);
         return;

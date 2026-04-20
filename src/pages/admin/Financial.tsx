@@ -1,5 +1,5 @@
 // src/pages/admin/Financial.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { formatDateShort } from '../../lib/utils';
 import { useTheme } from '../../context/ThemeContext';
@@ -112,6 +112,8 @@ const STATUS_COLORS_DARK: Record<string, { bg: string; text: string; dot: string
 export default function AdminFinancial() {
   const { theme: currentTheme } = useTheme();
   const isDark = currentTheme === 'dark';
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const financialCacheKey = 'admin-financial:cache-v1';
 
   const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -147,7 +149,31 @@ export default function AdminFinancial() {
   };
 
   // ── Dados ─────────────────────────────────────────────────────────────────
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', onResize);
+
+    const cached = sessionStorage.getItem(financialCacheKey);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached) as {
+          orders?: OrderSummary[];
+          franchisees?: { id: string; company_name: string; code: string }[];
+        };
+
+        if (parsed.orders?.length) setOrders(parsed.orders);
+        if (parsed.franchisees?.length) setFranchisees(parsed.franchisees);
+        setLoading(false);
+        loadData(true);
+      } catch {
+        loadData();
+      }
+    } else {
+      loadData();
+    }
+
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   async function loadData(silent = false) {
     silent ? setRefreshing(true) : setLoading(true);
@@ -164,7 +190,7 @@ export default function AdminFinancial() {
       if (oErr) throw oErr;
 
       setFranchisees(fData || []);
-      setOrders((oData || []).map(o => ({
+      const mappedOrders = (oData || []).map(o => ({
         id: o.id,
         order_number: o.order_number ?? '—',
         franchisee_name: (o.franchisee as any)?.company_name ?? '—',
@@ -174,7 +200,17 @@ export default function AdminFinancial() {
         status: o.status,
         created_at: o.created_at,
         notes: o.notes ?? '',
-      })));
+      }));
+
+      setOrders(mappedOrders);
+
+      sessionStorage.setItem(
+        financialCacheKey,
+        JSON.stringify({
+          orders: mappedOrders,
+          franchisees: fData || [],
+        })
+      );
     } catch (err) {
       console.error('Erro ao carregar dados:', err);
     } finally {
@@ -186,33 +222,35 @@ export default function AdminFinancial() {
   // ── Filtro + Ordenação ────────────────────────────────────────────────────
   const hasFilters = !!(filterFranchisee || filterStatus || dateRange.start || dateRange.end || searchTerm);
 
-  const filteredOrders = orders
-    .filter(o => {
-      if (filterFranchisee && o.franchisee_name !== filterFranchisee) return false;
-      if (filterStatus && o.status !== filterStatus) return false;
-      if (dateRange.start && new Date(o.created_at) < new Date(dateRange.start)) return false;
-      if (dateRange.end && new Date(o.created_at) > new Date(dateRange.end + 'T23:59:59')) return false;
-      if (searchTerm) {
-        const s = searchTerm.toLowerCase();
-        if (
-          !o.order_number.toLowerCase().includes(s) &&
-          !o.vehicle_plate.toLowerCase().includes(s) &&
-          !o.franchisee_name.toLowerCase().includes(s) &&
-          !o.model.toLowerCase().includes(s)
-        ) return false;
-      }
-      return true;
-    })
-    .sort((a, b) => {
-      let va = a[sortField] as string;
-      let vb = b[sortField] as string;
-      if (sortField === 'created_at') {
-        return sortDir === 'desc'
-          ? new Date(vb).getTime() - new Date(va).getTime()
-          : new Date(va).getTime() - new Date(vb).getTime();
-      }
-      return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
-    });
+  const filteredOrders = useMemo(() => {
+    return orders
+      .filter(o => {
+        if (filterFranchisee && o.franchisee_name !== filterFranchisee) return false;
+        if (filterStatus && o.status !== filterStatus) return false;
+        if (dateRange.start && new Date(o.created_at) < new Date(dateRange.start)) return false;
+        if (dateRange.end && new Date(o.created_at) > new Date(dateRange.end + 'T23:59:59')) return false;
+        if (searchTerm) {
+          const s = searchTerm.toLowerCase();
+          if (
+            !o.order_number.toLowerCase().includes(s) &&
+            !o.vehicle_plate.toLowerCase().includes(s) &&
+            !o.franchisee_name.toLowerCase().includes(s) &&
+            !o.model.toLowerCase().includes(s)
+          ) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        const va = a[sortField] as string;
+        const vb = b[sortField] as string;
+        if (sortField === 'created_at') {
+          return sortDir === 'desc'
+            ? new Date(vb).getTime() - new Date(va).getTime()
+            : new Date(va).getTime() - new Date(vb).getTime();
+        }
+        return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+      });
+  }, [orders, filterFranchisee, filterStatus, dateRange.start, dateRange.end, searchTerm, sortField, sortDir]);
 
   function toggleSort(field: SortField) {
     if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -220,14 +258,14 @@ export default function AdminFinancial() {
   }
 
   // ── Estatísticas ──────────────────────────────────────────────────────────
-  const stats = {
+  const stats = useMemo(() => ({
     total:       orders.length,
     solicitado:  orders.filter(o => o.status === 'solicitado').length,
     em_producao: orders.filter(o => o.status === 'em_producao').length,
     enviado:     orders.filter(o => o.status === 'enviado').length,
     concluido:   orders.filter(o => o.status === 'concluido').length,
     cancelado:   orders.filter(o => o.status === 'cancelado').length,
-  };
+  }), [orders]);
 
   // ── Export ────────────────────────────────────────────────────────────────
   function exportCSV() {
@@ -276,12 +314,12 @@ export default function AdminFinancial() {
   return (
     <div style={{ background: c.bg, minHeight: '100vh' }}>
       <style>{spinKeyframes}</style>
-      <div style={{ maxWidth: 1400, margin: '0 auto', padding: 24, animation: 'fadeIn 0.3s ease' }}>
+      <div style={{ maxWidth: 1400, margin: '0 auto', padding: isMobile ? 12 : 24, animation: 'fadeIn 0.3s ease' }}>
 
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28, flexWrap: 'wrap', gap: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: isMobile ? 18 : 28, flexWrap: 'wrap', gap: 16 }}>
           <div>
-            <h1 style={{ color: c.text, fontSize: 24, fontWeight: 800, margin: '0 0 4px' }}>
+            <h1 style={{ color: c.text, fontSize: isMobile ? 20 : 24, fontWeight: 800, margin: '0 0 4px' }}>
               Extrato de Pedidos
             </h1>
             <p style={{ color: c.textSec, fontSize: 13, margin: 0 }}>
@@ -327,7 +365,7 @@ export default function AdminFinancial() {
         {/* Barra de ferramentas */}
         <div style={{
           background: c.surface, border: `1px solid ${c.border}`,
-          borderRadius: 12, padding: '14px 18px', marginBottom: 20,
+          borderRadius: 12, padding: isMobile ? '12px 12px' : '14px 18px', marginBottom: 20,
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
             {/* Esquerda */}
@@ -397,7 +435,7 @@ export default function AdminFinancial() {
           {showFilters && (
             <div style={{
               marginTop: 14, paddingTop: 14, borderTop: `1px solid ${c.border}`,
-              display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10,
+              display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10,
             }}>
               <select value={filterFranchisee} onChange={e => setFilterFranchisee(e.target.value)} style={inputSt}>
                 <option value="">Todos os franqueados</option>
@@ -440,7 +478,7 @@ export default function AdminFinancial() {
 
           {/* Cabeçalho da tabela */}
           <div style={{
-            padding: '14px 18px', borderBottom: `1px solid ${c.border}`,
+            padding: isMobile ? '12px 12px' : '14px 18px', borderBottom: `1px solid ${c.border}`,
             display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8,
           }}>
             <h2 style={{ color: c.text, fontSize: 14, fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -468,6 +506,54 @@ export default function AdminFinancial() {
           ) : filteredOrders.length === 0 ? (
             <div style={{ padding: 64, textAlign: 'center', color: c.textMuted, fontSize: 13 }}>
               Nenhum pedido encontrado{hasFilters ? ' com os filtros aplicados.' : '.'}
+            </div>
+          ) : isMobile ? (
+            <div style={{ padding: 10, display: 'grid', gap: 8 }}>
+              {filteredOrders.map((order) => {
+                const st = statusStyle(order.status);
+                const isExpanded = expandedId === order.id;
+
+                return (
+                  <div key={order.id} style={{ border: `1px solid ${c.border}`, borderRadius: 8, overflow: 'hidden' }}>
+                    <button
+                      type="button"
+                      onClick={() => setExpandedId(isExpanded ? null : order.id)}
+                      style={{
+                        width: '100%',
+                        textAlign: 'left',
+                        background: isExpanded ? c.surfaceHover : 'transparent',
+                        border: 'none',
+                        padding: 10,
+                        color: c.text,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <div style={{ fontSize: 12, fontWeight: 700, color: c.accent }}>{order.order_number}</div>
+                      <div style={{ fontSize: 11, marginTop: 3 }}>{order.franchisee_name} · {order.franchisee_code}</div>
+                      <div style={{ fontSize: 11, color: c.textSec, marginTop: 2 }}>{order.vehicle_plate} · {formatDateShort(order.created_at)}</div>
+                      <div style={{ marginTop: 8 }}>
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 5,
+                          padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                          background: st.bg, color: st.text,
+                        }}>
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: st.dot, flexShrink: 0 }} />
+                          {STATUS_LABELS[order.status] ?? order.status}
+                        </span>
+                      </div>
+                    </button>
+
+                    {isExpanded && (
+                      <div style={{ borderTop: `1px solid ${c.border}`, background: c.surfaceHover, padding: 10 }}>
+                        <div style={{ fontSize: 11, color: c.textMuted, fontWeight: 700, marginBottom: 6 }}>MODELO</div>
+                        <div style={{ fontSize: 12, color: c.text, marginBottom: 10 }}>{order.model}</div>
+                        <div style={{ fontSize: 11, color: c.textMuted, fontWeight: 700, marginBottom: 6 }}>OBSERVAÇÕES</div>
+                        <div style={{ fontSize: 12, color: c.text }}>{order.notes || 'Sem observações registradas.'}</div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
@@ -565,11 +651,11 @@ export default function AdminFinancial() {
           {/* Rodapé */}
           {!loading && filteredOrders.length > 0 && (
             <div style={{
-              padding: '12px 18px', borderTop: `1px solid ${c.border}`,
+              padding: isMobile ? '10px 12px' : '12px 18px', borderTop: `1px solid ${c.border}`,
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               fontSize: 11, color: c.textMuted,
             }}>
-              <span>Clique em uma linha para ver as observações completas</span>
+              <span>{isMobile ? 'Toque em um card para ver detalhes' : 'Clique em uma linha para ver as observações completas'}</span>
               <span>{filteredOrders.length} resultado(s)</span>
             </div>
           )}

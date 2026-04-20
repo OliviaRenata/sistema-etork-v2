@@ -108,6 +108,7 @@ export default function AdminDashboard() {
   const { isAdmin } = useAuth();
   const { theme: currentTheme } = useTheme();
   const isDark = currentTheme === 'dark';
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   
   const [stats, setStats] = useState<Stats | null>(null);
   const [franchiseeStats, setFranchiseeStats] = useState<FranchiseeStats[]>([]);
@@ -135,8 +136,8 @@ export default function AdminDashboard() {
   // Verificação de acesso - USANDO isAdmin DO CONTEXTO
   if (!isAdmin) {
     return (
-      <div style={{ background: colors.background, minHeight: '100vh', padding: 24 }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', textAlign: 'center', padding: 60 }}>
+      <div style={{ background: colors.background, minHeight: '100vh', padding: isMobile ? 12 : 24 }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', textAlign: 'center', padding: isMobile ? 24 : 60 }}>
           <h2 style={{ color: colors.text }}>Acesso negado</h2>
           <p style={{ color: colors.textSecondary }}>Voce nao tem permissao para acessar esta pagina.</p>
           <button 
@@ -151,6 +152,9 @@ export default function AdminDashboard() {
   }
 
   useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', onResize);
+
     loadData();
     loadAnnouncement();
     
@@ -171,6 +175,7 @@ export default function AdminDashboard() {
       .subscribe();
       
     return () => { 
+      window.removeEventListener('resize', onResize);
       supabase.removeChannel(ordersChannel);
       supabase.removeChannel(franchiseesChannel);
     };
@@ -330,14 +335,14 @@ export default function AdminDashboard() {
   return (
     <div style={{ background: colors.background, minHeight: '100vh' }}>
       <style>{spinKeyframes}</style>
-      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '24px' }}>
+      <div style={{ maxWidth: 1400, margin: '0 auto', padding: isMobile ? '12px' : '24px' }}>
         
         {/* Header */}
-        <div style={{ marginBottom: 32 }}>
-          <h1 style={{ color: colors.text, fontSize: 24, fontWeight: 700, margin: '0 0 8px' }}>
+        <div style={{ marginBottom: isMobile ? 20 : 32 }}>
+          <h1 style={{ color: colors.text, fontSize: isMobile ? 20 : 24, fontWeight: 700, margin: '0 0 8px' }}>
             Painel Administrativo
           </h1>
-          <p style={{ color: colors.textSecondary, fontSize: 14, margin: 0 }}>
+          <p style={{ color: colors.textSecondary, fontSize: isMobile ? 12 : 14, margin: 0 }}>
             Visao geral completa de TODOS os franqueados e operacoes Etork Brasil
           </p>
         </div>
@@ -347,8 +352,8 @@ export default function AdminDashboard() {
           background: colors.surface, 
           border: `1px solid ${colors.border}`, 
           borderRadius: 12, 
-          padding: 20, 
-          marginBottom: 32 
+          padding: isMobile ? 14 : 20, 
+          marginBottom: isMobile ? 20 : 32 
         }}>
           <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginBottom: 16 }}>
             <div style={{
@@ -443,7 +448,7 @@ export default function AdminDashboard() {
 
         {/* Stats Cards */}
         {stats && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 32 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: isMobile ? 20 : 32 }}>
             <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #e6b800` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <span style={{ fontSize: 10, color: colors.textMuted, fontWeight: 600 }}>FRANQUEADOS</span>
@@ -491,7 +496,7 @@ export default function AdminDashboard() {
         {stats && stats.pending > 0 && (
           <div style={{
             padding: '12px 16px',
-            marginBottom: 32,
+            marginBottom: isMobile ? 20 : 32,
             background: isDark ? '#1a1200' : '#fef3c7',
             border: `1px solid ${isDark ? '#3a2a00' : '#fde68a'}`,
             borderRadius: 8,
@@ -531,7 +536,7 @@ export default function AdminDashboard() {
             marginBottom: 32,
           }}>
             <div style={{
-              padding: '12px 16px',
+              padding: isMobile ? '10px 12px' : '12px 16px',
               borderBottom: `1px solid ${colors.border}`,
               display: 'flex',
               alignItems: 'center',
@@ -544,46 +549,59 @@ export default function AdminDashboard() {
                 Gerenciar <ArrowRightIcon width={10} height={10} />
               </Link>
             </div>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom: `1px solid ${colors.border}`, background: colors.tableHeaderBg }}>
-                    {['POS', 'FRANQUEADO', 'CODIGO', 'PEDIDOS', 'PENDENTES', 'STATUS', 'ULTIMO PEDIDO'].map(header => (
-                      <th key={header} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 9, fontWeight: 700, color: colors.textMuted, letterSpacing: 1 }}>
-                        {header}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {franchiseeStats.map((f, index) => (
-                    <tr key={f.id} style={{ borderBottom: `1px solid ${colors.border}` }}>
-                      <td style={{ padding: '10px 12px', fontSize: 11, fontWeight: 600, color: colors.textSecondary }}>#{index + 1}</td>
-                      <td style={{ padding: '10px 12px', fontSize: 12, fontWeight: 600, color: colors.text }}>
-                        {f.company_name}
-                        {!f.active && <span style={{ marginLeft: 6, fontSize: 9, color: '#e6b800' }}>(INATIVO)</span>}
-                      </td>
-                      <td style={{ padding: '10px 12px', fontSize: 11, color: colors.textSecondary }}>{f.code}</td>
-                      <td style={{ padding: '10px 12px', fontSize: 12, color: colors.text }}>{f.total_orders}</td>
-                      <td style={{ padding: '10px 12px' }}>
-                        {f.pending_orders > 0 ? (
-                          <span style={{ color: '#f59e0b', fontSize: 11, fontWeight: 600 }}>{f.pending_orders}</span>
-                        ) : (
-                          <IconCheckCircle />
-                        )}
-                      </td>
-                      <td style={{ padding: '10px 12px' }}>
-                        <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: f.active ? '#e6b800' : '#e6b800', marginRight: 5 }} />
-                        <span style={{ fontSize: 11, color: colors.textSecondary }}>{f.active ? 'Ativo' : 'Inativo'}</span>
-                      </td>
-                      <td style={{ padding: '10px 12px', fontSize: 11, color: colors.textSecondary }}>
-                        {f.last_order_date ? formatDate(f.last_order_date) : '—'}
-                      </td>
+            {isMobile ? (
+              <div style={{ padding: 10, display: 'grid', gap: 8 }}>
+                {franchiseeStats.map((f, index) => (
+                  <div key={f.id} style={{ border: `1px solid ${colors.border}`, borderRadius: 8, padding: 10 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: colors.text, marginBottom: 6 }}>#{index + 1} {f.company_name}</div>
+                    <div style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 2 }}>Código: {f.code}</div>
+                    <div style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 2 }}>Pedidos: {f.total_orders} | Pendentes: {f.pending_orders}</div>
+                    <div style={{ fontSize: 11, color: colors.textSecondary }}>Último pedido: {f.last_order_date ? formatDate(f.last_order_date) : '—'}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ borderBottom: `1px solid ${colors.border}`, background: colors.tableHeaderBg }}>
+                      {['POS', 'FRANQUEADO', 'CODIGO', 'PEDIDOS', 'PENDENTES', 'STATUS', 'ULTIMO PEDIDO'].map(header => (
+                        <th key={header} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 9, fontWeight: 700, color: colors.textMuted, letterSpacing: 1 }}>
+                          {header}
+                        </th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {franchiseeStats.map((f, index) => (
+                      <tr key={f.id} style={{ borderBottom: `1px solid ${colors.border}` }}>
+                        <td style={{ padding: '10px 12px', fontSize: 11, fontWeight: 600, color: colors.textSecondary }}>#{index + 1}</td>
+                        <td style={{ padding: '10px 12px', fontSize: 12, fontWeight: 600, color: colors.text }}>
+                          {f.company_name}
+                          {!f.active && <span style={{ marginLeft: 6, fontSize: 9, color: '#e6b800' }}>(INATIVO)</span>}
+                        </td>
+                        <td style={{ padding: '10px 12px', fontSize: 11, color: colors.textSecondary }}>{f.code}</td>
+                        <td style={{ padding: '10px 12px', fontSize: 12, color: colors.text }}>{f.total_orders}</td>
+                        <td style={{ padding: '10px 12px' }}>
+                          {f.pending_orders > 0 ? (
+                            <span style={{ color: '#f59e0b', fontSize: 11, fontWeight: 600 }}>{f.pending_orders}</span>
+                          ) : (
+                            <IconCheckCircle />
+                          )}
+                        </td>
+                        <td style={{ padding: '10px 12px' }}>
+                          <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: f.active ? '#e6b800' : '#e6b800', marginRight: 5 }} />
+                          <span style={{ fontSize: 11, color: colors.textSecondary }}>{f.active ? 'Ativo' : 'Inativo'}</span>
+                        </td>
+                        <td style={{ padding: '10px 12px', fontSize: 11, color: colors.textSecondary }}>
+                          {f.last_order_date ? formatDate(f.last_order_date) : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
@@ -595,7 +613,7 @@ export default function AdminDashboard() {
           overflow: 'hidden',
         }}>
           <div style={{
-            padding: '12px 16px',
+            padding: isMobile ? '10px 12px' : '12px 16px',
             borderBottom: `1px solid ${colors.border}`,
             display: 'flex',
             justifyContent: 'space-between',
@@ -616,40 +634,53 @@ export default function AdminDashboard() {
           ) : recent.length === 0 ? (
             <div style={{ padding: 40, textAlign: 'center', color: colors.textMuted }}>Nenhum pedido encontrado</div>
           ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom: `1px solid ${colors.border}`, background: colors.tableHeaderBg }}>
-                    {['PEDIDO', 'FRANQUEADO', 'DATA', 'STATUS', ''].map(header => (
-                      <th key={header} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 9, fontWeight: 700, color: colors.textMuted, letterSpacing: 1 }}>
-                        {header}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {recent.map(order => (
-                    <tr 
-                      key={order.id} 
-                      style={{ borderBottom: `1px solid ${colors.border}`, cursor: 'pointer' }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = colors.tableRowHover; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                      onClick={() => window.location.href = `/admin/orders/${order.id}`}
-                    >
-                      <td style={{ padding: '10px 12px', fontSize: 12, fontWeight: 600, color: colors.accent }}>{order.order_number}</td>
-                      <td style={{ padding: '10px 12px', fontSize: 11, color: colors.text }}>{(order.franchisee as unknown as { company_name: string })?.company_name || '—'}</td>
-                      <td style={{ padding: '10px 12px', fontSize: 11, color: colors.textSecondary }}>{formatDate(order.created_at)}</td>
-                      <td style={{ padding: '10px 12px' }}><StatusBadge status={order.status} /></td>
-                      <td style={{ padding: '10px 12px' }}>
-                        <Link to={`/admin/orders/${order.id}`} style={{ color: colors.accent, fontSize: 11, textDecoration: 'none' }}>
-                          Detalhes
-                        </Link>
-                      </td>
+            isMobile ? (
+              <div style={{ padding: 10, display: 'grid', gap: 8 }}>
+                {recent.map(order => (
+                  <Link key={order.id} to={`/admin/orders/${order.id}`} style={{ textDecoration: 'none', border: `1px solid ${colors.border}`, borderRadius: 8, padding: 10, color: colors.text }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: colors.accent }}>{order.order_number}</div>
+                    <div style={{ fontSize: 11, marginTop: 4 }}>{(order.franchisee as unknown as { company_name: string })?.company_name || '—'}</div>
+                    <div style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>{formatDate(order.created_at)}</div>
+                    <div style={{ marginTop: 8 }}><StatusBadge status={order.status} /></div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ borderBottom: `1px solid ${colors.border}`, background: colors.tableHeaderBg }}>
+                      {['PEDIDO', 'FRANQUEADO', 'DATA', 'STATUS', ''].map(header => (
+                        <th key={header} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 9, fontWeight: 700, color: colors.textMuted, letterSpacing: 1 }}>
+                          {header}
+                        </th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {recent.map(order => (
+                      <tr 
+                        key={order.id} 
+                        style={{ borderBottom: `1px solid ${colors.border}`, cursor: 'pointer' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = colors.tableRowHover; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                        onClick={() => window.location.href = `/admin/orders/${order.id}`}
+                      >
+                        <td style={{ padding: '10px 12px', fontSize: 12, fontWeight: 600, color: colors.accent }}>{order.order_number}</td>
+                        <td style={{ padding: '10px 12px', fontSize: 11, color: colors.text }}>{(order.franchisee as unknown as { company_name: string })?.company_name || '—'}</td>
+                        <td style={{ padding: '10px 12px', fontSize: 11, color: colors.textSecondary }}>{formatDate(order.created_at)}</td>
+                        <td style={{ padding: '10px 12px' }}><StatusBadge status={order.status} /></td>
+                        <td style={{ padding: '10px 12px' }}>
+                          <Link to={`/admin/orders/${order.id}`} style={{ color: colors.accent, fontSize: 11, textDecoration: 'none' }}>
+                            Detalhes
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )
           )}
         </div>
       </div>

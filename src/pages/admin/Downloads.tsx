@@ -74,6 +74,8 @@ export default function AdminDownloads() {
   const { isAdmin } = useAuth();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const downloadsCacheKey = 'admin-downloads:cache-v1';
   
   const [files, setFiles] = useState<DownloadFile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -103,7 +105,7 @@ export default function AdminDownloads() {
   // Verificar acesso
   if (!isAdmin) {
     return (
-      <div style={{ padding: 60, textAlign: 'center' }}>
+      <div style={{ padding: isMobile ? 24 : 60, textAlign: 'center' }}>
         <h2>Acesso negado</h2>
         <p>Você não tem permissão para acessar esta página.</p>
       </div>
@@ -111,23 +113,46 @@ export default function AdminDownloads() {
   }
 
   useEffect(() => {
-    loadFiles();
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', onResize);
+
+    const cached = sessionStorage.getItem(downloadsCacheKey);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached) as DownloadFile[];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setFiles(parsed);
+          setLoading(false);
+          loadFiles(true);
+        } else {
+          loadFiles();
+        }
+      } catch {
+        loadFiles();
+      }
+    } else {
+      loadFiles();
+    }
+
+    return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  async function loadFiles() {
-    setLoading(true);
+  async function loadFiles(silent = false) {
+    if (!silent) setLoading(true);
     try {
       const { data, error } = await supabase
         .from('download_files')
-        .select('*')
+        .select('id, file_name, file_path, file_size, mime_type, description, category, version, downloads_count, is_active, created_at')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setFiles(data || []);
+      const nextFiles = data || [];
+      setFiles(nextFiles);
+      sessionStorage.setItem(downloadsCacheKey, JSON.stringify(nextFiles));
     } catch (error) {
       console.error('Erro ao carregar arquivos:', error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }
 
@@ -166,7 +191,7 @@ export default function AdminDownloads() {
       setMessage({ type: 'success', text: 'Arquivo adicionado com sucesso!' });
       setShowModal(false);
       resetForm();
-      loadFiles();
+      loadFiles(true);
       
       setTimeout(() => setMessage({ type: '', text: '' }), 3000);
     } catch (err) {
@@ -219,7 +244,7 @@ export default function AdminDownloads() {
       setShowModal(false);
       setEditingFile(null);
       resetForm();
-      loadFiles();
+      loadFiles(true);
       
       setTimeout(() => setMessage({ type: '', text: '' }), 3000);
     } catch (err) {
@@ -242,8 +267,11 @@ export default function AdminDownloads() {
         .eq('id', file.id);
 
       if (error) throw error;
-      
-      loadFiles();
+
+      const nextFiles = files.filter((f) => f.id !== file.id);
+      setFiles(nextFiles);
+      sessionStorage.setItem(downloadsCacheKey, JSON.stringify(nextFiles));
+
       setMessage({ type: 'success', text: 'Arquivo removido com sucesso!' });
       setTimeout(() => setMessage({ type: '', text: '' }), 3000);
     } catch (err) {
@@ -260,8 +288,13 @@ export default function AdminDownloads() {
         .eq('id', file.id);
 
       if (error) throw error;
-      
-      loadFiles();
+
+      const nextFiles = files.map((f) =>
+        f.id === file.id ? { ...f, is_active: !f.is_active } : f
+      );
+      setFiles(nextFiles);
+      sessionStorage.setItem(downloadsCacheKey, JSON.stringify(nextFiles));
+
       setMessage({ type: 'success', text: `Arquivo ${!file.is_active ? 'ativado' : 'desativado'}!` });
       setTimeout(() => setMessage({ type: '', text: '' }), 3000);
     } catch (err) {
@@ -296,7 +329,7 @@ export default function AdminDownloads() {
   ];
 
   return (
-    <div style={{ background: colors.background, minHeight: '100vh', padding: 24 }}>
+    <div style={{ background: colors.background, minHeight: '100vh', padding: isMobile ? 12 : 24 }}>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         
         {/* Mensagem de feedback */}
@@ -304,7 +337,7 @@ export default function AdminDownloads() {
           <div style={{
             position: 'fixed',
             top: 20,
-            right: 20,
+            right: isMobile ? 12 : 20,
             zIndex: 1000,
             padding: '12px 20px',
             borderRadius: 8,
@@ -321,8 +354,8 @@ export default function AdminDownloads() {
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
           <div>
-            <h1 style={{ color: colors.text, fontSize: 24, margin: 0 }}>Gerenciar Downloads</h1>
-            <p style={{ color: colors.textSecondary, marginTop: 4 }}>Adicione, edite ou remova arquivos para os franqueados</p>
+            <h1 style={{ color: colors.text, fontSize: isMobile ? 20 : 24, margin: 0 }}>Gerenciar Downloads</h1>
+            <p style={{ color: colors.textSecondary, marginTop: 4, fontSize: isMobile ? 12 : 14 }}>Adicione, edite ou remova arquivos para os franqueados</p>
           </div>
           
           <button
@@ -334,7 +367,7 @@ export default function AdminDownloads() {
               display: 'flex',
               alignItems: 'center',
               gap: 8,
-              padding: '10px 20px',
+              padding: isMobile ? '9px 14px' : '10px 20px',
               background: colors.accent,
               color: '#000',
               border: 'none',
@@ -350,7 +383,7 @@ export default function AdminDownloads() {
 
         {/* Lista de arquivos */}
         <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 12, overflow: 'hidden' }}>
-          <div style={{ padding: '16px 20px', borderBottom: `1px solid ${colors.border}` }}>
+          <div style={{ padding: isMobile ? '12px 12px' : '16px 20px', borderBottom: `1px solid ${colors.border}` }}>
             <h3 style={{ color: colors.text, fontSize: 14, margin: 0 }}>Arquivos Disponíveis</h3>
           </div>
           
@@ -359,6 +392,37 @@ export default function AdminDownloads() {
           ) : files.length === 0 ? (
             <div style={{ padding: 60, textAlign: 'center', color: colors.textSecondary }}>
               Nenhum arquivo disponível. Clique em "Adicionar Arquivo" para começar.
+            </div>
+          ) : isMobile ? (
+            <div style={{ padding: 10, display: 'grid', gap: 10 }}>
+              {files.map((file) => (
+                <div key={file.id} style={{ border: `1px solid ${colors.border}`, borderRadius: 8, padding: 10, opacity: file.is_active ? 1 : 0.6 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: colors.text }}>{file.file_name}</div>
+                  {file.description && <div style={{ fontSize: 11, color: colors.textSecondary, marginTop: 4 }}>{file.description}</div>}
+                  <div style={{ fontSize: 11, color: colors.textSecondary, marginTop: 6 }}>Categoria: {file.category} · Versão: {file.version}</div>
+                  <div style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>Downloads: {file.downloads_count || 0} · {formatDate(file.created_at)}</div>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                    <button
+                      onClick={() => openEditModal(file)}
+                      style={{ flex: 1, background: 'none', border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.accent, padding: '7px 8px', fontSize: 11 }}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => handleToggleActive(file)}
+                      style={{ flex: 1, background: 'none', border: `1px solid ${colors.border}`, borderRadius: 6, color: file.is_active ? colors.error : colors.success, padding: '7px 8px', fontSize: 11 }}
+                    >
+                      {file.is_active ? 'Desativar' : 'Ativar'}
+                    </button>
+                    <button
+                      onClick={() => handleDelete(file)}
+                      style={{ flex: 1, background: 'none', border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.error, padding: '7px 8px', fontSize: 11 }}
+                    >
+                      Excluir
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
@@ -453,7 +517,7 @@ export default function AdminDownloads() {
             <div style={{
               background: colors.surface,
               borderRadius: 12,
-              padding: 24,
+              padding: isMobile ? 14 : 24,
               width: '90%',
               maxWidth: 500,
               position: 'relative'
@@ -476,7 +540,7 @@ export default function AdminDownloads() {
                 <XIcon />
               </button>
 
-              <h2 style={{ color: colors.text, margin: '0 0 20px', fontSize: 18 }}>
+              <h2 style={{ color: colors.text, margin: '0 0 20px', fontSize: isMobile ? 16 : 18 }}>
                 {editingFile ? 'Editar Arquivo' : 'Adicionar Arquivo'}
               </h2>
 
@@ -536,7 +600,7 @@ export default function AdminDownloads() {
                 />
               </div>
 
-              <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+              <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 12, marginBottom: 16 }}>
                 <div style={{ flex: 1 }}>
                   <label style={{ display: 'block', marginBottom: 6, fontSize: 12, fontWeight: 600, color: colors.textSecondary }}>CATEGORIA</label>
                   <select
@@ -557,7 +621,7 @@ export default function AdminDownloads() {
                   </select>
                 </div>
 
-                <div style={{ width: 100 }}>
+                <div style={{ width: isMobile ? '100%' : 100 }}>
                   <label style={{ display: 'block', marginBottom: 6, fontSize: 12, fontWeight: 600, color: colors.textSecondary }}>VERSÃO</label>
                   <input
                     type="text"
