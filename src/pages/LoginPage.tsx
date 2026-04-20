@@ -114,11 +114,13 @@ async function handleForgotPassword() {
             src={logoImg}
             alt="Etork Brasil"
             style={{ 
-              height: isMobile ? 52 : 60,
+              height: isMobile ? 72 : 90,
               width: 'auto', 
               objectFit: 'contain', 
-              display: 'block', 
-              margin: '0 auto' 
+              display: 'block',
+              margin: '0 auto',
+              boxShadow: '0 4px 32px rgba(0,0,0,0.10)',
+              borderRadius: 12
             }}
           />
         </div>
@@ -306,12 +308,14 @@ async function handleForgotPassword() {
             src={logoImg}
             alt="Etork Brasil"
             style={{ 
-              width: '100%',        // ← ocupa 100% da largura do container
-              maxWidth: 500,        // ← limite máximo para não ficar gigante
-              height: 'auto',       // ← altura automática mantém proporção
+              width: '100%',
+              maxWidth: 600, // aumenta o limite máximo
+              height: 'auto',
               objectFit: 'contain',
               display: 'block',
-              margin: '0 auto 32px auto',
+              margin: '0 auto 40px auto',
+              boxShadow: '0 8px 48px rgba(0,0,0,0.13)',
+              borderRadius: 16
             }}
           />
 

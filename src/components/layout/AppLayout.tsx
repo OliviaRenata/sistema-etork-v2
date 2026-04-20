@@ -183,8 +183,8 @@ export default function AppLayout() {
       }}>
         {/* Logo */}
         <div style={{ padding: '24px 20px 20px', borderBottom: `1px solid ${colors.border}`, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 170, height: 'auto' }}>
-            <img src={logoImg} alt="ETORK Brasil" style={{ width: 150, height: 'auto', display: 'block' }} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 170, height: 'auto', boxShadow: !isDark ? '0 4px 32px rgba(0,0,0,0.10)' : undefined, borderRadius: 12 }}>
+            <img src={logoImg} alt="ETORK Brasil" style={{ width: 160, height: 'auto', display: 'block' }} />
           </div>
           <div style={{ fontSize: 9, color: '#c0c0c0', letterSpacing: 1.2 }}>
             PORTAL  · SLAVE 
