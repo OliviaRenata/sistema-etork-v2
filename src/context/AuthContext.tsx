@@ -139,17 +139,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signOut() {
     setLoading(true);
     try {
-      await auth.signOut();
+      // Evita travar o logout caso a requisição remota demore.
+      await Promise.race([
+        auth.signOut(),
+        new Promise((resolve) => setTimeout(resolve, 1800)),
+      ]);
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
+    } finally {
+      clearSupabaseAuthStorage();
+      setSession(null);
+      setUser(null);
+      setProfile(null);
+      setFranchisee(null);
+      setLoading(false);
+      window.location.replace('/login');
     }
-    clearSupabaseAuthStorage();
-    setSession(null);
-    setUser(null);
-    setProfile(null);
-    setFranchisee(null);
-    setLoading(false);
-    window.location.href = '/login';
   }
 
   useEffect(() => {

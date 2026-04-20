@@ -1,7 +1,7 @@
 // src/components/layout/AppLayout.tsx
 
 import { useState, useEffect } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import NotificationBell from '../ui/NotificationBell';
@@ -92,7 +92,6 @@ const WhatsAppIcon = ({ width = 14, height = 14 }) => (
 export default function AppLayout() {
   const { profile, franchisee, isAdmin, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
   const [isMobile, setIsMobile] = useState(false);
@@ -158,7 +157,6 @@ export default function AppLayout() {
 
   async function handleSignOut() {
     await signOut();
-    navigate('/login');
   }
 
   return (
