@@ -8,9 +8,9 @@ import { formatDate } from '../../lib/utils';
 type OrderStatus = 'solicitado' | 'em_producao' | 'concluido';
 
 const statusOptions = [
-  { value: 'solicitado', label: 'Recebido', color: '#f59e0b' },
+  { value: 'solicitado', label: 'Recebido', color: '#f5d54a' },
   { value: 'em_producao', label: 'Em andamento', color: '#e6b800' },
-  { value: 'concluido', label: 'Concluído', color: '#e6b800' },
+  { value: 'concluido', label: 'Concluído', color: '#b38f00' },
 ] as const;
 
 function mapStatusForFlow(status: string): OrderStatus {
@@ -40,6 +40,37 @@ export default function AdminOrders() {
     accent: '#e6b800',
   };
 
+  const detailFieldPriority = [
+    'order_number',
+    'status',
+    'franchisee_id',
+    'vehicle_plate',
+    'model',
+    'chassi',
+    'year',
+    'engine',
+    'cv',
+    'fuel',
+    'notes',
+    'created_at',
+    'updated_at',
+    'id',
+  ];
+
+  function formatFieldLabel(field: string) {
+    return field
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (l) => l.toUpperCase());
+  }
+
+  function formatFieldValue(field: string, value: any) {
+    if (value === null || value === undefined || value === '') return '—';
+    if (field === 'created_at' || field === 'updated_at') return formatDate(String(value));
+    if (typeof value === 'boolean') return value ? 'Sim' : 'Não';
+    if (typeof value === 'object') return JSON.stringify(value, null, 2);
+    return String(value);
+  }
+
   if (!isAdmin) {
     return (
       <div style={{ padding: 60, textAlign: 'center' }}>
@@ -60,7 +91,7 @@ export default function AdminOrders() {
       // Consulta SIMPLES - sem join complexo
       let query = supabase
         .from('orders')
-        .select('id, order_number, franchisee_id, status, created_at, updated_at, vehicle_plate, model, notes')
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(50); // LIMITADO a 50 pedidos para não travar
 
@@ -203,28 +234,48 @@ export default function AdminOrders() {
             {orders.map((order) => (
               <div
                 key={order.id}
+                onClick={() => setSelectedOrder(order)}
                 style={{
                   background: colors.surface,
                   border: `1px solid ${colors.border}`,
-                  borderRadius: 12,
-                  padding: 16,
-                  transition: 'all 0.2s',
+                  borderLeft: `4px solid ${statusOptions.find((s) => s.value === order.flow_status)?.color || colors.accent}`,
+                  borderRadius: 14,
+                  padding: 18,
+                  transition: 'all 0.2s ease',
+                  cursor: 'pointer',
+                  boxShadow: isDark ? '0 4px 16px rgba(0, 0, 0, 0.25)' : '0 4px 14px rgba(0, 0, 0, 0.06)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = isDark ? '0 8px 20px rgba(0, 0, 0, 0.35)' : '0 8px 20px rgba(0, 0, 0, 0.10)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = isDark ? '0 4px 16px rgba(0, 0, 0, 0.25)' : '0 4px 14px rgba(0, 0, 0, 0.06)';
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: colors.accent }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: colors.accent, letterSpacing: 0.4 }}>
                       {order.order_number}
                     </div>
-                    <div style={{ fontSize: 12, color: colors.text, marginTop: 4 }}>
+                    <div style={{ fontSize: 14, color: colors.text, marginTop: 4, fontWeight: 600 }}>
                       {order.franchisee?.company_name || '—'}
                     </div>
                     <div style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>
                       Placa: {order.vehicle_plate || '—'} | Data: {formatDate(order.created_at)}
                     </div>
+                    <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 10, padding: '4px 8px', borderRadius: 999, border: `1px solid ${colors.border}`, color: colors.textSecondary }}>
+                        Código: {order.franchisee?.code || '—'}
+                      </span>
+                      <span style={{ fontSize: 10, padding: '4px 8px', borderRadius: 999, border: `1px solid ${colors.border}`, color: colors.textSecondary }}>
+                        ID: {order.id?.slice(0, 8)}...
+                      </span>
+                    </div>
                   </div>
                   
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
                     <span style={{
                       display: 'inline-block',
                       padding: '4px 12px',
@@ -255,6 +306,22 @@ export default function AdminOrders() {
                         <option key={opt.value} value={opt.value}>{opt.label}</option>
                       ))}
                     </select>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedOrder(order)}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: 6,
+                        border: `1px solid ${colors.border}`,
+                        background: isDark ? '#1a1a1a' : '#fafafa',
+                        color: colors.text,
+                        fontSize: 12,
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                      }}
+                    >
+                      Ver detalhes
+                    </button>
                   </div>
                 </div>
                 
@@ -271,6 +338,103 @@ export default function AdminOrders() {
                 )}
               </div>
             ))}
+          </div>
+        )}
+
+        {selectedOrder && (
+          <div
+            onClick={() => setSelectedOrder(null)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0, 0, 0, 0.72)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 18,
+              zIndex: 1000,
+            }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: 'min(960px, 96vw)',
+                maxHeight: '92vh',
+                overflow: 'auto',
+                background: colors.surface,
+                border: `1px solid ${colors.border}`,
+                borderRadius: 14,
+                boxShadow: '0 18px 48px rgba(0, 0, 0, 0.35)',
+              }}
+            >
+              <div
+                style={{
+                  position: 'sticky',
+                  top: 0,
+                  zIndex: 1,
+                  background: colors.surface,
+                  borderBottom: `1px solid ${colors.border}`,
+                  padding: '14px 16px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: 12,
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: colors.text }}>
+                    Detalhes do Pedido {selectedOrder.order_number || '—'}
+                  </div>
+                  <div style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
+                    Franqueado: {selectedOrder.franchisee?.company_name || '—'}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedOrder(null)}
+                  style={{
+                    border: `1px solid ${colors.border}`,
+                    background: 'transparent',
+                    color: colors.text,
+                    borderRadius: 8,
+                    fontSize: 13,
+                    cursor: 'pointer',
+                    padding: '8px 12px',
+                    fontWeight: 600,
+                  }}
+                >
+                  Fechar
+                </button>
+              </div>
+
+              <div style={{ padding: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 10 }}>
+                  {[
+                    ...detailFieldPriority.filter((field) => field in selectedOrder),
+                    ...Object.keys(selectedOrder).filter((field) => !detailFieldPriority.includes(field)),
+                  ]
+                    .filter((field) => field !== 'franchisee' && field !== 'flow_status')
+                    .map((field) => (
+                      <div
+                        key={field}
+                        style={{
+                          border: `1px solid ${colors.border}`,
+                          borderRadius: 10,
+                          padding: '10px 12px',
+                          background: isDark ? '#121212' : '#fafafa',
+                        }}
+                      >
+                        <div style={{ fontSize: 10, fontWeight: 700, color: colors.textSecondary, letterSpacing: 0.5 }}>
+                          {formatFieldLabel(field)}
+                        </div>
+                        <div style={{ marginTop: 6, fontSize: 12, color: colors.text, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                          {formatFieldValue(field, selectedOrder[field])}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
