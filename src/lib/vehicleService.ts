@@ -1,5 +1,5 @@
 // src/lib/vehicleService.ts
-// Serviço de consulta de placa - Com fallback para mock
+// Servico de consulta de placa - Com fallback para mock
 
 import { supabase } from './supabase';
 
@@ -12,6 +12,15 @@ export interface VehicleData {
   chassi: string;
   cv: string;
 }
+
+// Icones para logs (opcional, apenas para visualizacao)
+const ICONS = {
+  error: '[ERRO]',
+  warning: '[AVISO]',
+  success: '[OK]',
+  info: '[INFO]',
+  mock: '[MOCK]'
+};
 
 // Dados mock para fallback
 const getMockData = (plate: string): VehicleData => {
@@ -49,10 +58,10 @@ const getMockData = (plate: string): VehicleData => {
 
   return mockDatabase[cleanPlate] || {
     plate: cleanPlate,
-    model: "Modelo não encontrado",
+    model: "Modelo nao encontrado",
     year: new Date().getFullYear().toString(),
-    engine: "Motor não especificado",
-    fuel: "Não informado",
+    engine: "Motor nao especificado",
+    fuel: "Nao informado",
     chassi: `CHASSI${cleanPlate}`,
     cv: "0"
   };
@@ -62,55 +71,54 @@ export async function fetchVehicleByPlate(plate: string): Promise<VehicleData | 
   const cleanPlate = plate.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
   
   if (cleanPlate.length < 7) {
-    console.log('❌ Placa muito curta:', cleanPlate);
+    console.log(`${ICONS.warning} Placa muito curta:`, cleanPlate);
     return null;
   }
 
-  console.log(`🔍 Buscando dados para placa: ${cleanPlate}`);
+  console.log(`${ICONS.info} Buscando dados para placa: ${cleanPlate}`);
 
   try {
-    // Chamar diretamente a Edge Function sem callFunction
     const { data, error } = await supabase.functions.invoke('lookup-vehicle', {
       body: { plate: cleanPlate }
     });
 
     if (error) {
-      console.error('❌ Erro na Edge Function:', error.message);
-      console.log("📦 Usando dados mock como fallback.");
+      console.error(`${ICONS.error} Erro na Edge Function:`, error.message);
+      console.log(`${ICONS.mock} Usando dados mock como fallback.`);
       return getMockData(cleanPlate);
     }
 
     if (data && data.vehicle) {
-      console.log('✅ Dados recebidos da API:', data.vehicle);
+      console.log(`${ICONS.success} Dados recebidos da API:`, data.vehicle);
       return {
         plate: cleanPlate,
-        model: data.vehicle.model || "Modelo não encontrado",
+        model: data.vehicle.model || "Modelo nao encontrado",
         year: data.vehicle.year || new Date().getFullYear().toString(),
-        engine: data.vehicle.engine || "Motor não especificado",
-        fuel: data.vehicle.fuel || "Não informado",
+        engine: data.vehicle.engine || "Motor nao especificado",
+        fuel: data.vehicle.fuel || "Nao informado",
         chassi: data.vehicle.chassi || `CHASSI${cleanPlate}`,
         cv: data.vehicle.cv || data.vehicle.power || "0"
       };
     } else if (data && data.model) {
-      // Se a resposta veio direta sem wrapper 'vehicle'
+      console.log(`${ICONS.success} Dados recebidos da API (formato direto):`, data);
       return {
         plate: cleanPlate,
-        model: data.model || "Modelo não encontrado",
+        model: data.model || "Modelo nao encontrado",
         year: data.year || new Date().getFullYear().toString(),
-        engine: data.engine || "Motor não especificado",
-        fuel: data.fuel || "Não informado",
+        engine: data.engine || "Motor nao especificado",
+        fuel: data.fuel || "Nao informado",
         chassi: data.chassi || `CHASSI${cleanPlate}`,
         cv: data.cv || data.power || "0"
       };
     } else {
-      console.warn('⚠️ Edge Function não retornou dados válidos:', data);
-      console.log("📦 Usando dados mock como fallback.");
+      console.warn(`${ICONS.warning} Edge Function nao retornou dados validos:`, data);
+      console.log(`${ICONS.mock} Usando dados mock como fallback.`);
       return getMockData(cleanPlate);
     }
     
   } catch (error) {
-    console.error('❌ Erro ao consultar API de placas via Edge Function:', error);
-    console.log("📦 Usando dados mock como fallback.");
+    console.error(`${ICONS.error} Erro ao consultar API de placas via Edge Function:`, error);
+    console.log(`${ICONS.mock} Usando dados mock como fallback.`);
     return getMockData(cleanPlate);
   }
 }

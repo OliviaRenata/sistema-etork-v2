@@ -158,28 +158,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    // NÃO restaurar sessão automaticamente - sempre começar deslogado
     const initAuth = async () => {
       setLoading(true);
-      
-      // Limpar qualquer sessão existente
-      clearSupabaseAuthStorage();
-      
-      setUser(null);
-      setSession(null);
-      setProfile(null);
-      setFranchisee(null);
-      setLoading(false);
+
+      try {
+        const { data: { session: initialSession } } = await auth.getSession();
+
+        if (initialSession?.user) {
+          setSession(initialSession);
+          setUser(initialSession.user);
+          await loadProfile(initialSession.user.id, initialSession.user.email!);
+        } else {
+          setUser(null);
+          setSession(null);
+          setProfile(null);
+          setFranchisee(null);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Erro ao restaurar sessão:', error);
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+        setFranchisee(null);
+        setLoading(false);
+      }
     };
 
     initAuth();
 
-    // Apenas ouvir mudanças de autenticação, mas não restaurar sessão
     const { data: { subscription } } = auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') && session?.user) {
         setSession(session);
         setUser(session.user);
-        await loadProfile(session.user.id, session.user.email!);
+
+        if (!profile || profile.id !== session.user.id) {
+          await loadProfile(session.user.id, session.user.email!);
+        } else {
+          setLoading(false);
+        }
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setSession(null);
