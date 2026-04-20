@@ -4,7 +4,7 @@
 // LAYOUT CORRIGIDO: LOGO RESPONSIVA OCUPANDO TODA PARTE BRANCA
 // ════════════════════════════════════════════════════════════
 
-import logoImg from '../assets/logoetorkbrasil.png';
+import logoImg from '../assets/logoetork.png';
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
@@ -114,14 +114,14 @@ async function handleForgotPassword() {
             src={logoImg}
             alt="Etork Brasil"
             style={{ 
-              height: isMobile ? 120 : 180,
+              height: isMobile ? 78 : 112,
               width: 'auto', 
               objectFit: 'contain', 
               display: 'block',
               margin: '0 auto',
-              borderRadius: 12,
               background: 'transparent',
-              padding: 0
+              padding: 0,
+              filter: 'drop-shadow(0 6px 16px rgba(0,0,0,0.35))'
             }}
           />
         </div>
@@ -310,14 +310,13 @@ async function handleForgotPassword() {
             alt="Etork Brasil"
             style={{
               width: '100%',
-              maxWidth: 700,
-              minWidth: 220,
+              maxWidth: isMobile ? 320 : 520,
               height: 'auto',
               objectFit: 'contain',
               display: 'block',
-              margin: '0 auto 48px auto',
-              borderRadius: 12,
+              margin: '0 auto 36px auto',
               background: 'transparent',
+              filter: 'drop-shadow(0 10px 22px rgba(0,0,0,0.45))',
             }}
           />
 

@@ -190,7 +190,7 @@ export default function AppLayout() {
             width: 170,
             height: 'auto',
           }}>
-            <img src={logoImg} alt="ETORK Brasil" style={{ width: 150, height: 'auto', display: 'block', background: 'transparent', borderRadius: 8 }} />
+            <img src={logoImg} alt="ETORK Brasil" style={{ width: 150, height: 'auto', display: 'block', background: 'transparent', filter: 'drop-shadow(0 6px 14px rgba(0,0,0,0.22))' }} />
           </div>
           <div style={{ fontSize: 9, color: '#c0c0c0', letterSpacing: 1.2 }}>
             PORTAL  · SLAVE 
