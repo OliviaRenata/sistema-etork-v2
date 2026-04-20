@@ -271,7 +271,7 @@ export default function AdminDashboard() {
   async function loadAnnouncement() {
     const { data, error } = await supabase
       .from('announcements')
-      .select('*')
+      .select('id, title, body, active, created_by, created_at, updated_at')
       .eq('active', true)
       .order('updated_at', { ascending: false })
       .limit(1)

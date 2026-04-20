@@ -1,6 +1,6 @@
 // src/pages/franchise/Dashboard.tsx
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -160,11 +160,14 @@ export default function FranchiseDashboard() {
   const { theme: currentTheme } = useTheme();
   const isDark = currentTheme === 'dark';
   const isFranchiseeBlocked = !!franchisee && franchisee.active === false;
+  const refreshTimerRef = useRef<number | null>(null);
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
+
+  const dashboardCacheKey = franchisee ? `franchise-dashboard:${franchisee.id}` : null;
 
   const colors = {
     background: isDark ? '#0d0d0d' : '#f3f4f6',
@@ -196,20 +199,57 @@ export default function FranchiseDashboard() {
       setLoading(false);
       return;
     }
-    setLoading(true);
-    loadData();
-    loadAnnouncement();
+
+    let hasCache = false;
+    if (dashboardCacheKey) {
+      const cached = sessionStorage.getItem(dashboardCacheKey);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached) as {
+            stats?: DashboardStats;
+            recentOrders?: any[];
+            announcement?: Announcement | null;
+          };
+
+          if (parsed.stats) setStats(parsed.stats);
+          if (parsed.recentOrders) setRecentOrders(parsed.recentOrders);
+          if (parsed.announcement !== undefined) setAnnouncement(parsed.announcement);
+          hasCache = true;
+          setLoading(false);
+        } catch {
+          sessionStorage.removeItem(dashboardCacheKey);
+        }
+      }
+    }
+
+    loadData(hasCache);
+    loadAnnouncement(hasCache);
 
     const channel = supabase
       .channel('franchise-orders')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `franchisee_id=eq.${franchisee.id}` }, () => loadData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `franchisee_id=eq.${franchisee.id}` }, () => {
+        if (refreshTimerRef.current) {
+          window.clearTimeout(refreshTimerRef.current);
+        }
+
+        refreshTimerRef.current = window.setTimeout(() => {
+          loadData(true);
+        }, 250);
+      })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
-  }, [franchisee]);
+    return () => {
+      if (refreshTimerRef.current) {
+        window.clearTimeout(refreshTimerRef.current);
+      }
+      supabase.removeChannel(channel);
+    };
+  }, [franchisee, dashboardCacheKey]);
 
-  async function loadData() {
+  async function loadData(silent = false) {
     if (!franchisee) return;
+    if (!silent) setLoading(true);
+
     try {
       const now = new Date();
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
@@ -229,16 +269,16 @@ export default function FranchiseDashboard() {
           .limit(5),
         supabase
           .from('orders')
-          .select('*', { count: 'exact', head: true })
+          .select('id', { count: 'exact', head: true })
           .eq('franchisee_id', franchisee.id),
         supabase
           .from('orders')
-          .select('*', { count: 'exact', head: true })
+          .select('id', { count: 'exact', head: true })
           .eq('franchisee_id', franchisee.id)
           .in('status', ['solicitado', 'em_producao']),
         supabase
           .from('orders')
-          .select('*', { count: 'exact', head: true })
+          .select('id', { count: 'exact', head: true })
           .eq('franchisee_id', franchisee.id)
           .gte('created_at', monthStart)
           .lt('created_at', monthEnd),
@@ -249,28 +289,60 @@ export default function FranchiseDashboard() {
       if (pendingError) throw pendingError;
       if (monthError) throw monthError;
 
-      setRecentOrders(orders || []);
-      setStats({
+      const nextOrders = orders || [];
+      const nextStats = {
         total_orders: totalCount || 0,
         orders_this_month: monthCount || 0,
         pending_orders: pendingCount || 0,
         total_spent: 0,
         balance: 0,
         credit_limit: 0,
-      });
+      };
+
+      setRecentOrders(nextOrders);
+      setStats(nextStats);
+
+      if (dashboardCacheKey) {
+        const previous = sessionStorage.getItem(dashboardCacheKey);
+        const previousParsed = previous ? JSON.parse(previous) : {};
+
+        sessionStorage.setItem(
+          dashboardCacheKey,
+          JSON.stringify({
+            ...previousParsed,
+            stats: nextStats,
+            recentOrders: nextOrders,
+          })
+        );
+      }
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }
 
-  async function loadAnnouncement() {
+  async function loadAnnouncement(_silent = false) {
     const { data, error } = await supabase
-      .from('announcements').select('*').eq('active', true)
+      .from('announcements').select('id, title, body, active, created_by, created_at, updated_at').eq('active', true)
       .order('updated_at', { ascending: false }).limit(1).maybeSingle();
     if (error) { console.error('Erro carregando aviso', error); return; }
-    setAnnouncement(data || null);
+
+    const nextAnnouncement = data || null;
+    setAnnouncement(nextAnnouncement);
+
+    if (dashboardCacheKey) {
+      const previous = sessionStorage.getItem(dashboardCacheKey);
+      const previousParsed = previous ? JSON.parse(previous) : {};
+
+      sessionStorage.setItem(
+        dashboardCacheKey,
+        JSON.stringify({
+          ...previousParsed,
+          announcement: nextAnnouncement,
+        })
+      );
+    }
   }
 
   const greeting = () => {

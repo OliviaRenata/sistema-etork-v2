@@ -75,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { data: existingFranchisee, error: fetchError } = await supabase
         .from('franchisees')
-        .select('*')
+        .select('id, user_id, company_name, code, active, balance, credit_limit, created_at, updated_at')
         .eq('user_id', userId)
         .maybeSingle();
 
@@ -89,9 +89,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function loadProfile(userId: string, userEmail: string) {
     try {
-      let { data: prof, error: profileError } = await supabase
+      let { data: prof } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, role, full_name, email, created_at, updated_at')
         .eq('id', userId)
         .maybeSingle();
 
@@ -188,15 +188,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initAuth();
 
     const { data: { subscription } } = auth.onAuthStateChange(async (event, session) => {
-      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') && session?.user) {
+      if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session?.user) {
         setSession(session);
         setUser(session.user);
-
-        if (!profile || profile.id !== session.user.id) {
-          await loadProfile(session.user.id, session.user.email!);
-        } else {
-          setLoading(false);
-        }
+        await loadProfile(session.user.id, session.user.email!);
+      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+        setSession(session);
+        setUser(session.user);
+        setLoading(false);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setSession(null);
@@ -210,10 +209,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const isAdmin = profile?.role === 'admin' || user?.email === 'joao@etorkbrasil.com.br';
-
-  console.log('AuthContext - isAdmin:', isAdmin);
-  console.log('AuthContext - user email:', user?.email);
-  console.log('AuthContext - loading:', loading);
 
   return (
     <AuthContext.Provider value={{

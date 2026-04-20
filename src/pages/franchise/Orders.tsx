@@ -107,7 +107,14 @@ export default function FranchiseOrders() {
       const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select(`
-          *,
+          id,
+          order_number,
+          status,
+          created_at,
+          total_amount,
+          vehicle_plate,
+          model,
+          notes,
           order_files(id, file_name, file_path)
         `)
         .eq('franchisee_id', franchisee!.id)
@@ -119,7 +126,7 @@ export default function FranchiseOrders() {
 
         const { data: fallbackData, error: fallbackError } = await supabase
           .from('orders')
-          .select('*')
+          .select('id, order_number, status, created_at, total_amount, vehicle_plate, model, notes')
           .eq('franchisee_id', franchisee!.id)
           .order('created_at', { ascending: false });
 
