@@ -334,7 +334,7 @@ async function handleForgotPassword() {
               display: 'inline-block',
             }} />
             <span style={{ fontSize: 11, fontWeight: 700, color: '#333', letterSpacing: 2 }}>
-              REMAP · CHIP · PERFORMANCE
+              PORTAL · SLAVE 
             </span>
           </div>
 
