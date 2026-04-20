@@ -93,7 +93,7 @@ async function handleForgotPassword() {
         display: 'flex', 
         flexDirection: 'column', 
         justifyContent: 'center',
-        padding: isMobile ? '28px 18px 22px' : '4px 4px',
+        padding: isMobile ? '28px 18px 22px' : '48px 44px',
         position: 'relative',
       }}>
         {/* Borda direita dourada */}
@@ -109,7 +109,7 @@ async function handleForgotPassword() {
         }} />
 
         {/* Logo pequena no topo do formulário */}
-        <div style={{ marginBottom: 44, textAlign: 'center' }}>
+        <div style={{ marginBottom: 4, textAlign: 'center' }}>
           <img
             src={logoImg}
             alt="Etork Brasil"
