@@ -5,7 +5,6 @@ import { supabase, callFunction, storage } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import type { Order, OrderStatus } from '../../types';
-import { ORDER_STATUS_LABEL } from '../../types';
 import { formatCurrency, formatDate } from '../../lib/utils';
 
 type FormData = {
@@ -125,31 +124,7 @@ export default function FranchiseOrders() {
           .order('created_at', { ascending: false });
 
         if (fallbackError) {
-          // ← PASSO 3: se ambos falharem, tenta SEM filtro para diagnóstico
-          console.warn('Query sem join falhou:', fallbackError.message);
-
-          const { data: allData, error: allError } = await supabase
-            .from('orders')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(10);
-
-          if (allError) {
-            throw new Error(`Erro ao carregar pedidos: ${allError.message}`);
-          }
-
-          // Se chegou aqui, os dados existem mas o franchisee_id não bate
-          console.warn('Pedidos sem filtro:', allData);
-          console.warn('franchisee.id usado no filtro:', franchisee!.id);
-
-          setLoadError(
-            `Filtro por franchisee_id não retornou dados. ` +
-            `ID usado: ${franchisee!.id}. ` +
-            `Total de pedidos no banco (sem filtro): ${allData?.length ?? 0}. ` +
-            `Verifique o console para detalhes.`
-          );
-          setOrders([]);
-          return;
+          throw new Error(`Erro ao carregar pedidos: ${fallbackError.message}`);
         }
 
         setOrders((fallbackData || []).map(o => ({ ...o, order_files: [] })));
@@ -252,13 +227,18 @@ export default function FranchiseOrders() {
     return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
   });
 
-  const getStatusText = (status: OrderStatus) => ORDER_STATUS_LABEL[status] || status;
+  const getStatusText = (status: OrderStatus) => {
+    if (status === 'concluido') return 'Concluído';
+    if (status === 'solicitado') return 'Recebido';
+    if (status === 'cancelado') return 'Cancelado';
+    return 'Em andamento';
+  };
 
   const getStatusColor = (status: OrderStatus) => {
     const colorMap: Record<string, string> = {
       solicitado: colors.statusAmber,
       em_producao: colors.statusBlue,
-      enviado: colors.statusPurple,
+      enviado: colors.statusBlue,
       concluido: colors.statusGreen,
       cancelado: colors.statusRed,
     };

@@ -24,6 +24,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [franchisee, setFranchisee] = useState<Franchisee | null>(null);
   const [loading, setLoading] = useState(true);
 
+  function clearSupabaseAuthStorage() {
+    if (typeof window === 'undefined') return;
+
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith('sb-') && key.includes('auth-token')) {
+        localStorage.removeItem(key);
+      }
+    }
+
+    for (const key of Object.keys(sessionStorage)) {
+      if (key.startsWith('sb-') && key.includes('auth-token')) {
+        sessionStorage.removeItem(key);
+      }
+    }
+  }
+
   async function createFranchisee(userId: string, userEmail: string) {
     try {
       const companyCode = `FRAN${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
@@ -127,8 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
     }
-    localStorage.removeItem('supabase.auth.token');
-    sessionStorage.clear();
+    clearSupabaseAuthStorage();
     setSession(null);
     setUser(null);
     setProfile(null);
@@ -143,8 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       
       // Limpar qualquer sessão existente
-      localStorage.removeItem('supabase.auth.token');
-      sessionStorage.clear();
+      clearSupabaseAuthStorage();
       
       setUser(null);
       setSession(null);

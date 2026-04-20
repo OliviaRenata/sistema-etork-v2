@@ -22,7 +22,7 @@ import AppLayout from './components/layout/AppLayout';
 import LoadingScreen from './components/ui/LoadingScreen';
 
 export default function App() {
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, profile, franchisee, loading: authLoading } = useAuth();
   const [timedOut, setTimedOut] = useState(false);
 
   useEffect(() => {
@@ -57,18 +57,40 @@ export default function App() {
 
   // Se está logado, define se é admin ou franqueado
   const isAdmin = profile?.role === 'admin' || user?.email === 'joao@etorkbrasil.com.br';
+  const isFranchiseeBlocked = !isAdmin && !!franchisee && franchisee.active === false;
   console.log('📌 Usuário logado:', user.email, 'isAdmin:', isAdmin);
 
   return (
     <Routes>
       <Route path="/" element={<AppLayout />}>
         {/* Rotas COMUNS - ambos acessam */}
-        <Route path="downloads" element={<DownloadsPage />} />
+        <Route
+          path="downloads"
+          element={
+            isFranchiseeBlocked
+              ? <Navigate to="/dashboard" replace />
+              : <DownloadsPage />
+          }
+        />
         
         {/* Rotas do FRANQUEADO - admin também pode acessar */}
         <Route path="dashboard" element={<FranchiseDashboard />} />
-        <Route path="orders" element={<FranchiseOrders />} />
-        <Route path="orders/new" element={<FranchiseNewOrder />} />
+        <Route
+          path="orders"
+          element={
+            isFranchiseeBlocked
+              ? <Navigate to="/dashboard" replace />
+              : <FranchiseOrders />
+          }
+        />
+        <Route
+          path="orders/new"
+          element={
+            isFranchiseeBlocked
+              ? <Navigate to="/dashboard" replace />
+              : <FranchiseNewOrder />
+          }
+        />
         <Route path="financial" element={<FranchiseFinancial />} />
         
         {/* Rotas do ADMIN - apenas admin acessa */}

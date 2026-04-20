@@ -93,7 +93,9 @@ export default function AdminFranchisees() {
         
         <div style={{ marginBottom: 24 }}>
           <h1 style={{ color: colors.text, fontSize: 24, margin: 0 }}>Gerenciar Franqueados</h1>
-          <p style={{ color: colors.textSecondary, marginTop: 4 }}>Ative, inative ou exclua franqueados da plataforma</p>
+          <p style={{ color: colors.textSecondary, marginTop: 4 }}>
+            Bloqueie ou desbloqueie o acesso dos franqueados (bloqueado: sem telas de pedido)
+          </p>
         </div>
 
         <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 12, overflow: 'hidden' }}>
@@ -146,7 +148,7 @@ export default function AdminFranchisees() {
                               fontWeight: 600
                             }}
                           >
-                            {f.active ? 'Inativar' : 'Ativar'}
+                            {f.active ? 'Bloquear' : 'Desbloquear'}
                           </button>
                           <button
                             onClick={() => deleteFranchisee(f.id)}

@@ -5,15 +5,19 @@ import { supabase } from '../../lib/supabase';
 import { useTheme } from '../../context/ThemeContext';
 import { formatDate } from '../../lib/utils';
 
-type OrderStatus = 'solicitado' | 'em_producao' | 'enviado' | 'concluido' | 'cancelado';
+type OrderStatus = 'solicitado' | 'em_producao' | 'concluido';
 
 const statusOptions = [
-  { value: 'solicitado', label: 'Solicitado', color: '#f59e0b' },
-  { value: 'em_producao', label: 'Em Produção', color: '#3b82f6' },
-  { value: 'enviado', label: 'Enviado', color: '#8b5cf6' },
+  { value: 'solicitado', label: 'Recebido', color: '#f59e0b' },
+  { value: 'em_producao', label: 'Em andamento', color: '#3b82f6' },
   { value: 'concluido', label: 'Concluído', color: '#10b981' },
-  { value: 'cancelado', label: 'Cancelado', color: '#ef4444' },
-];
+] as const;
+
+function mapStatusForFlow(status: string): OrderStatus {
+  if (status === 'concluido') return 'concluido';
+  if (status === 'solicitado') return 'solicitado';
+  return 'em_producao';
+}
 
 export default function AdminOrders() {
   const { isAdmin } = useAuth();
@@ -56,7 +60,7 @@ export default function AdminOrders() {
       // Consulta SIMPLES - sem join complexo
       let query = supabase
         .from('orders')
-        .select('*')
+        .select('id, order_number, franchisee_id, status, created_at, updated_at, vehicle_plate, model, notes')
         .order('created_at', { ascending: false })
         .limit(50); // LIMITADO a 50 pedidos para não travar
 
@@ -70,6 +74,11 @@ export default function AdminOrders() {
       
       // Buscar nomes dos franqueados separadamente
       const franchiseeIds = [...new Set(data?.map(o => o.franchisee_id) || [])];
+      if (franchiseeIds.length === 0) {
+        setOrders([]);
+        return;
+      }
+
       const { data: franchisees } = await supabase
         .from('franchisees')
         .select('id, company_name, code')
@@ -80,6 +89,7 @@ export default function AdminOrders() {
       
       const ordersWithFranchisee = (data || []).map(order => ({
         ...order,
+        flow_status: mapStatusForFlow(order.status),
         franchisee: franchiseeMap.get(order.franchisee_id) || { company_name: '—', code: '—' }
       }));
       
@@ -221,14 +231,14 @@ export default function AdminOrders() {
                       borderRadius: 20,
                       fontSize: 11,
                       fontWeight: 600,
-                      background: statusOptions.find(s => s.value === order.status)?.color + '20',
-                      color: statusOptions.find(s => s.value === order.status)?.color,
+                      background: statusOptions.find(s => s.value === order.flow_status)?.color + '20',
+                      color: statusOptions.find(s => s.value === order.flow_status)?.color,
                     }}>
-                      {statusOptions.find(s => s.value === order.status)?.label || order.status}
+                      {statusOptions.find(s => s.value === order.flow_status)?.label || order.flow_status}
                     </span>
                     
                     <select
-                      value={order.status}
+                      value={order.flow_status}
                       onChange={(e) => updateOrderStatus(order.id, e.target.value as OrderStatus)}
                       disabled={updating}
                       style={{

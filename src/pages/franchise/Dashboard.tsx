@@ -159,6 +159,7 @@ export default function FranchiseDashboard() {
   const { franchisee, profile } = useAuth();
   const { theme: currentTheme } = useTheme();
   const isDark = currentTheme === 'dark';
+  const isFranchiseeBlocked = !!franchisee && franchisee.active === false;
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
@@ -210,27 +211,49 @@ export default function FranchiseDashboard() {
   async function loadData() {
     if (!franchisee) return;
     try {
-      const { data: orders, error: ordersError } = await supabase
-        .from('orders').select('*').eq('franchisee_id', franchisee.id)
-        .order('created_at', { ascending: false }).limit(5);
-      if (ordersError) throw ordersError;
-
-      const { data: allOrders, error: statsError } = await supabase
-        .from('orders').select('status, created_at').eq('franchisee_id', franchisee.id);
-      if (statsError) throw statsError;
-
       const now = new Date();
-      const allList = allOrders || [];
-      const thisMonth = allList.filter(o => {
-        const d = new Date(o.created_at);
-        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-      });
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
+
+      const [
+        { data: orders, error: ordersError },
+        { count: totalCount, error: totalError },
+        { count: pendingCount, error: pendingError },
+        { count: monthCount, error: monthError },
+      ] = await Promise.all([
+        supabase
+          .from('orders')
+          .select('id, order_number, status, created_at, vehicle_plate, model')
+          .eq('franchisee_id', franchisee.id)
+          .order('created_at', { ascending: false })
+          .limit(5),
+        supabase
+          .from('orders')
+          .select('*', { count: 'exact', head: true })
+          .eq('franchisee_id', franchisee.id),
+        supabase
+          .from('orders')
+          .select('*', { count: 'exact', head: true })
+          .eq('franchisee_id', franchisee.id)
+          .in('status', ['solicitado', 'em_producao']),
+        supabase
+          .from('orders')
+          .select('*', { count: 'exact', head: true })
+          .eq('franchisee_id', franchisee.id)
+          .gte('created_at', monthStart)
+          .lt('created_at', monthEnd),
+      ]);
+
+      if (ordersError) throw ordersError;
+      if (totalError) throw totalError;
+      if (pendingError) throw pendingError;
+      if (monthError) throw monthError;
 
       setRecentOrders(orders || []);
       setStats({
-        total_orders: allList.length,
-        orders_this_month: thisMonth.length,
-        pending_orders: allList.filter(o => ['solicitado', 'em_producao'].includes(o.status)).length,
+        total_orders: totalCount || 0,
+        orders_this_month: monthCount || 0,
+        pending_orders: pendingCount || 0,
         total_spent: 0,
         balance: 0,
         credit_limit: 0,
@@ -297,13 +320,62 @@ export default function FranchiseDashboard() {
               {franchisee?.company_name} · Código: <strong style={{ color: colors.accent }}>{franchisee?.code}</strong>
             </p>
           </div>
-          <Link
-            to="/orders/new"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 18px', background: colors.accent, color: '#000', borderRadius: 8, fontSize: 12, fontWeight: 700, textDecoration: 'none' }}
-          >
-            <PlusIcon width={14} height={14} /> NOVO PEDIDO
-          </Link>
+          {!isFranchiseeBlocked && (
+            <Link
+              to="/orders/new"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 18px', background: colors.accent, color: '#000', borderRadius: 8, fontSize: 12, fontWeight: 700, textDecoration: 'none' }}
+            >
+              <PlusIcon width={14} height={14} /> NOVO PEDIDO
+            </Link>
+          )}
         </div>
+
+        {isFranchiseeBlocked && (
+          <div
+            style={{
+              marginBottom: 18,
+              padding: '14px 16px',
+              borderRadius: 10,
+              border: `1px solid ${isDark ? '#5a1b1b' : '#f5b5b5'}`,
+              background: isDark ? '#2b1010' : '#fff1f1',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              flexWrap: 'wrap',
+            }}
+          >
+            <div style={{ minWidth: 240 }}>
+              <div style={{ color: '#ef4444', fontSize: 12, fontWeight: 800, letterSpacing: 0.3 }}>
+                ACESSO DE PEDIDOS BLOQUEADO
+              </div>
+              <div style={{ color: colors.text, fontSize: 12, marginTop: 4, lineHeight: 1.5 }}>
+                Seu acesso a telas de pedidos foi inativado pelo administrador. Para liberar, fale com o suporte.
+              </div>
+            </div>
+
+            <a
+              href="https://wa.me/5567998711313"
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                textDecoration: 'none',
+                padding: '8px 12px',
+                borderRadius: 8,
+                border: `1px solid ${isDark ? '#1f5f38' : '#b7eacb'}`,
+                color: '#25D366',
+                background: isDark ? '#0f1f16' : '#f0fff5',
+                fontSize: 12,
+                fontWeight: 700,
+              }}
+            >
+              <IconWhatsApp width={13} height={13} /> Suporte WhatsApp
+            </a>
+          </div>
+        )}
 
         {/* ── Stats Cards - MENORES ───────────────────────────────────────── */}
         {stats && (
@@ -411,9 +483,11 @@ export default function FranchiseDashboard() {
             <h2 style={{ color: colors.text, fontSize: 13, fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
               <IconClipboard /> Pedidos Recentes
             </h2>
-            <Link to="/orders" style={{ color: colors.accent, fontSize: 11, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
-              Ver todos <ArrowRightIcon width={10} height={10} />
-            </Link>
+            {!isFranchiseeBlocked && (
+              <Link to="/orders" style={{ color: colors.accent, fontSize: 11, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
+                Ver todos <ArrowRightIcon width={10} height={10} />
+              </Link>
+            )}
           </div>
 
           {loading ? (
@@ -422,8 +496,14 @@ export default function FranchiseDashboard() {
             </div>
           ) : recentOrders.length === 0 ? (
             <div style={{ padding: 40, textAlign: 'center', color: colors.textSecondary, fontSize: 12 }}>
-              Nenhum pedido encontrado.{' '}
-              <Link to="/orders/new" style={{ color: colors.accent, textDecoration: 'none', fontWeight: 600 }}>Criar primeiro pedido →</Link>
+              {isFranchiseeBlocked ? (
+                'Nenhum pedido recente para exibir.'
+              ) : (
+                <>
+                  Nenhum pedido encontrado.{' '}
+                  <Link to="/orders/new" style={{ color: colors.accent, textDecoration: 'none', fontWeight: 600 }}>Criar primeiro pedido →</Link>
+                </>
+              )}
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
@@ -439,14 +519,18 @@ export default function FranchiseDashboard() {
                   {recentOrders.map((order, index) => (
                     <tr
                       key={order.id}
-                      style={{ borderBottom: index === recentOrders.length - 1 ? 'none' : `1px solid ${colors.border}`, cursor: 'pointer' }}
-                      onClick={() => window.location.href = `/orders/${order.id}`}
+                      style={{ borderBottom: index === recentOrders.length - 1 ? 'none' : `1px solid ${colors.border}`, cursor: isFranchiseeBlocked ? 'default' : 'pointer' }}
+                      onClick={() => {
+                        if (!isFranchiseeBlocked) {
+                          window.location.href = `/orders/${order.id}`;
+                        }
+                      }}
                       onMouseEnter={e => (e.currentTarget.style.background = colors.surfaceHover)}
                       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                     >
                       <td style={{ padding: '10px 16px', fontSize: 12, color: colors.accent, fontWeight: 700 }}>{order.order_number || order.id.slice(0, 8)}</td>
                       <td style={{ padding: '10px 16px', fontSize: 12, color: colors.textSecondary }}>{formatDate(order.created_at)}</td>
-                      <td style={{ padding: '10px 16px' }}><StatusBadge status={order.status} /></td>
+                      <td style={{ padding: '10px 16px' }}><StatusBadge status={order.status} mode="franchise" /></td>
                     </tr>
                   ))}
                 </tbody>

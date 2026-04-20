@@ -10,8 +10,24 @@ const COLORS: Record<OrderStatus, { bg: string; color: string; border: string }>
   cancelado:    { bg: '#1a0a0a', color: '#f87171', border: '#4a1a1a' },
 };
 
-export default function StatusBadge({ status, large = false }: { status: OrderStatus; large?: boolean }) {
+function getFranchiseStatusLabel(status: OrderStatus) {
+  if (status === 'solicitado') return 'RECEBIDO';
+  if (status === 'concluido') return 'CONCLUÍDO';
+  if (status === 'cancelado') return 'CANCELADO';
+  return 'EM ANDAMENTO';
+}
+
+export default function StatusBadge({
+  status,
+  large = false,
+  mode = 'default',
+}: {
+  status: OrderStatus;
+  large?: boolean;
+  mode?: 'default' | 'franchise';
+}) {
   const { bg, color, border } = COLORS[status];
+  const label = mode === 'franchise' ? getFranchiseStatusLabel(status) : ORDER_STATUS_LABEL[status].toUpperCase();
   return (
     <span style={{
       display: 'inline-block',
@@ -22,7 +38,7 @@ export default function StatusBadge({ status, large = false }: { status: OrderSt
       letterSpacing: 0.5,
       background: bg, color, border: `1px solid ${border}`,
     }}>
-      {ORDER_STATUS_LABEL[status].toUpperCase()}
+      {label}
     </span>
   );
 }

@@ -74,6 +74,21 @@ const DownloadIcon = ({ width = 16, height = 16 }) => (
   </svg>
 );
 
+const ExternalLinkIcon = ({ width = 14, height = 14 }) => (
+  <svg width={width} height={height} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M14 3h7v7"/>
+    <path d="M10 14L21 3"/>
+    <path d="M21 14v7H3V3h7"/>
+  </svg>
+);
+
+const WhatsAppIcon = ({ width = 14, height = 14 }) => (
+  <svg width={width} height={height} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M20 11.5A8.5 8.5 0 0 1 7.5 19L3 20l1.1-4.1A8.5 8.5 0 1 1 20 11.5Z"/>
+    <path d="M9.7 8.9c-.2-.4-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.4-.2.3-.9.9-.9 2.2s.9 2.5 1 2.7c.1.2 1.8 2.9 4.4 3.9 2.2.8 2.6.6 3.1.6.5-.1 1.6-.7 1.8-1.3.2-.6.2-1.1.1-1.2-.1-.1-.4-.2-.9-.4-.5-.2-1.2-.6-1.4-.6-.2-.1-.4-.1-.6.2-.2.3-.7.8-.8.9-.2.2-.3.2-.6.1-.4-.2-1.5-.6-2.8-1.9-1.1-1-1.8-2.2-2-2.6-.2-.4 0-.5.1-.7.1-.1.2-.3.3-.4.1-.1.2-.3.2-.5.1-.2 0-.3 0-.4 0-.1-.5-1.2-.7-1.7Z"/>
+  </svg>
+);
+
 export default function AppLayout() {
   const { profile, franchisee, isAdmin, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
@@ -91,6 +106,7 @@ export default function AppLayout() {
   }, []);
 
   const isDark = theme === 'dark';
+  const isFranchiseeBlocked = !isAdmin && !!franchisee && franchisee.active === false;
 
   // Cores do tema
   const colors = {
@@ -112,13 +128,18 @@ export default function AppLayout() {
         { to: '/admin/financial', icon: <FinanceIcon width={16} height={16} />, label: 'Financeiro' },
         { to: '/admin/downloads', icon: <DownloadIcon width={16} height={16} />, label: 'Downloads' },
       ]
-    : [
-        { to: '/dashboard', icon: <DashboardIcon width={16} height={16} />, label: 'Dashboard' },
-        { to: '/orders', icon: <OrdersIcon width={16} height={16} />, label: 'Meus Pedidos' },
-        { to: '/orders/new', icon: <PlusIcon width={16} height={16} />, label: 'Novo Pedido' },
-        { to: '/financial', icon: <FinanceIcon width={16} height={16} />, label: 'Financeiro' },
-        { to: '/downloads', icon: <DownloadIcon width={16} height={16} />, label: 'Downloads' },
-      ];
+    : isFranchiseeBlocked
+      ? [
+          { to: '/dashboard', icon: <DashboardIcon width={16} height={16} />, label: 'Dashboard' },
+          { to: '/financial', icon: <FinanceIcon width={16} height={16} />, label: 'Financeiro / Extratos' },
+        ]
+      : [
+          { to: '/dashboard', icon: <DashboardIcon width={16} height={16} />, label: 'Dashboard' },
+          { to: '/orders', icon: <OrdersIcon width={16} height={16} />, label: 'Meus Pedidos' },
+          { to: '/orders/new', icon: <PlusIcon width={16} height={16} />, label: 'Novo Pedido' },
+          { to: '/financial', icon: <FinanceIcon width={16} height={16} />, label: 'Financeiro' },
+          { to: '/downloads', icon: <DownloadIcon width={16} height={16} />, label: 'Downloads' },
+        ];
 
   async function handleSignOut() {
     await signOut();
@@ -182,6 +203,11 @@ export default function AppLayout() {
           }}>
             {isAdmin ? 'ADMIN' : 'FRANQUEADO'}
           </div>
+          {!isAdmin && isFranchiseeBlocked && (
+            <div style={{ marginTop: 8, fontSize: 11, color: '#ef4444', fontWeight: 600 }}>
+              Acesso bloqueado para pedidos
+            </div>
+          )}
         </div>
 
         {/* Nav */}
@@ -210,6 +236,53 @@ export default function AppLayout() {
               {label}
             </NavLink>
           ))}
+
+          <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${colors.border}` }}>
+            <a
+              href="https://www.etorkbrasil.com.br/"
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '10px 12px',
+                borderRadius: 8,
+                marginBottom: 6,
+                textDecoration: 'none',
+                fontSize: 13,
+                fontWeight: 500,
+                color: colors.muted,
+                border: `1px solid ${colors.border}`,
+                background: 'transparent',
+              }}
+            >
+              <ExternalLinkIcon width={14} height={14} />
+              Ir para o site
+            </a>
+
+            <a
+              href="https://wa.me/5567998711313"
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '10px 12px',
+                borderRadius: 8,
+                textDecoration: 'none',
+                fontSize: 13,
+                fontWeight: 600,
+                color: '#25D366',
+                border: `1px solid ${isDark ? '#1f5f38' : '#b7eacb'}`,
+                background: isDark ? '#0f1f16' : '#f0fff5',
+              }}
+            >
+              <WhatsAppIcon width={14} height={14} />
+              Suporte
+            </a>
+          </div>
         </nav>
 
         {/* Sign out */}

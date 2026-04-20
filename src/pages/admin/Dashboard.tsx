@@ -180,19 +180,25 @@ export default function AdminDashboard() {
     setLoading(true);
     
     try {
-      // Buscar TODOS os franqueados
+      // Busca apenas os campos usados na tela para reduzir payload.
       const { data: franchisees, error: franchiseesError } = await supabase
         .from('franchisees')
-        .select('*')
+        .select('id, company_name, code, active')
         .order('company_name');
       
       if (franchiseesError) throw franchiseesError;
       
-      // Buscar TODOS os pedidos
+      // Busca apenas os campos usados na listagem e estatísticas.
       const { data: orders, error: ordersError } = await supabase
         .from('orders')
         .select(`
-          *,
+          id,
+          order_number,
+          franchisee_id,
+          status,
+          created_at,
+          vehicle_plate,
+          model,
           franchisee:franchisees(company_name, code)
         `)
         .order('created_at', { ascending: false });
@@ -202,18 +208,37 @@ export default function AdminDashboard() {
       const franchiseesList = franchisees || [];
       const ordersList = orders || [];
       
-      // Estatísticas por franqueado
+      // Agrega pedidos por franqueado em O(n), evitando filtros repetidos O(n*m).
+      const perFranchisee = new Map<string, { total_orders: number; pending_orders: number; last_order_date: string | null }>();
+      for (const order of ordersList) {
+        const current = perFranchisee.get(order.franchisee_id) || {
+          total_orders: 0,
+          pending_orders: 0,
+          last_order_date: null,
+        };
+
+        current.total_orders += 1;
+        if (['solicitado', 'em_producao'].includes(order.status)) {
+          current.pending_orders += 1;
+        }
+
+        if (!current.last_order_date) {
+          current.last_order_date = order.created_at;
+        }
+
+        perFranchisee.set(order.franchisee_id, current);
+      }
+
       const franchiseeStatsData: FranchiseeStats[] = franchiseesList.map(f => {
-        const franchiseeOrders = ordersList.filter(o => o.franchisee_id === f.id);
-        const lastOrder = franchiseeOrders[0];
-        
+        const agg = perFranchisee.get(f.id);
+
         return {
           id: f.id,
           company_name: f.company_name,
           code: f.code,
-          total_orders: franchiseeOrders.length,
-          pending_orders: franchiseeOrders.filter(o => ['solicitado', 'em_producao'].includes(o.status)).length,
-          last_order_date: lastOrder ? lastOrder.created_at : null,
+          total_orders: agg?.total_orders || 0,
+          pending_orders: agg?.pending_orders || 0,
+          last_order_date: agg?.last_order_date || null,
           active: f.active,
         };
       }).sort((a, b) => b.total_orders - a.total_orders);
