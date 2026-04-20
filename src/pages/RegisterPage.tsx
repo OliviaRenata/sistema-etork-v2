@@ -234,9 +234,9 @@ export default function RegisterPage() {
               borderRadius: 10, 
               fontSize: 13, 
               lineHeight: 1.5, 
-              background: message.type === 'error' ? '#150a0a' : '#0a1510', 
-              border: `1px solid ${message.type === 'error' ? '#4f1c1c' : '#153a22'}`, 
-              color: message.type === 'error' ? '#f87171' : '#7dd3fc' 
+              background: message.type === 'error' ? '#1a1500' : '#0a1510', 
+              border: `1px solid ${message.type === 'error' ? '#3a3000' : '#3a3000'}`, 
+              color: message.type === 'error' ? '#e6b800' : '#f5d54a' 
             }}>
               {message.text}
             </div>
@@ -270,7 +270,7 @@ export default function RegisterPage() {
       </div>
 
       <div style={{ flex: 1, background: '#000', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, transparent 0%, #cc2200 30%, #e6b800 60%, transparent 100%)' }} />
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, transparent 0%, #e6b800 30%, #e6b800 60%, transparent 100%)' }} />
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(230,184,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(230,184,0,0.04) 1px, transparent 1px)', backgroundSize: '48px 48px' }} />
         <div style={{ position: 'absolute', top: '38%', left: '50%', transform: 'translate(-50%, -50%)', width: 420, height: 420, borderRadius: '50%', background: 'radial-gradient(circle, rgba(230,184,0,0.06) 0%, transparent 68%)', pointerEvents: 'none' }} />
         <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 420, padding: 24, textAlign: 'center' }}>

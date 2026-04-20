@@ -96,8 +96,8 @@ export default function AdminDownloads() {
     textSecondary: isDark ? '#888888' : '#6b7280',
     border: isDark ? '#222222' : '#e5e7eb',
     accent: '#e6b800',
-    error: '#ef4444',
-    success: '#10b981',
+    error: '#e6b800',
+    success: '#e6b800',
   };
 
   // Verificar acesso

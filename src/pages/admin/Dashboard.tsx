@@ -428,7 +428,7 @@ export default function AdminDashboard() {
             </button>
             {noticeMessage && (
               <div style={{ 
-                color: noticeMessage.includes('Erro') ? '#ef4444' : '#10b981', 
+                color: noticeMessage.includes('Erro') ? '#e6b800' : '#e6b800', 
                 fontSize: 11,
                 display: 'flex',
                 alignItems: 'center',
@@ -444,7 +444,7 @@ export default function AdminDashboard() {
         {/* Stats Cards */}
         {stats && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 32 }}>
-            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #8b5cf6` }}>
+            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #e6b800` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <span style={{ fontSize: 10, color: colors.textMuted, fontWeight: 600 }}>FRANQUEADOS</span>
                 <IconUsers />
@@ -453,7 +453,7 @@ export default function AdminDashboard() {
               <div style={{ fontSize: 10, color: colors.textMuted, marginTop: 4 }}>{stats.active_franchisees} ativos / {stats.inactive_franchisees} inativos</div>
             </div>
             
-            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #3b82f6` }}>
+            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #e6b800` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <span style={{ fontSize: 10, color: colors.textMuted, fontWeight: 600 }}>TOTAL PEDIDOS</span>
                 <IconPackage />
@@ -469,7 +469,7 @@ export default function AdminDashboard() {
               <div style={{ fontSize: 20, fontWeight: 700, color: stats.pending > 0 ? '#f59e0b' : colors.text }}>{stats.pending}</div>
             </div>
             
-            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #06b6d4` }}>
+            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #e6b800` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <span style={{ fontSize: 10, color: colors.textMuted, fontWeight: 600 }}>EM PRODUCAO</span>
                 <IconPackage />
@@ -477,7 +477,7 @@ export default function AdminDashboard() {
               <div style={{ fontSize: 20, fontWeight: 700, color: colors.text }}>{stats.in_production}</div>
             </div>
             
-            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #10b981` }}>
+            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #e6b800` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <span style={{ fontSize: 10, color: colors.textMuted, fontWeight: 600 }}>CONCLUIDOS</span>
                 <IconCheckCircle />
@@ -561,7 +561,7 @@ export default function AdminDashboard() {
                       <td style={{ padding: '10px 12px', fontSize: 11, fontWeight: 600, color: colors.textSecondary }}>#{index + 1}</td>
                       <td style={{ padding: '10px 12px', fontSize: 12, fontWeight: 600, color: colors.text }}>
                         {f.company_name}
-                        {!f.active && <span style={{ marginLeft: 6, fontSize: 9, color: '#ef4444' }}>(INATIVO)</span>}
+                        {!f.active && <span style={{ marginLeft: 6, fontSize: 9, color: '#e6b800' }}>(INATIVO)</span>}
                       </td>
                       <td style={{ padding: '10px 12px', fontSize: 11, color: colors.textSecondary }}>{f.code}</td>
                       <td style={{ padding: '10px 12px', fontSize: 12, color: colors.text }}>{f.total_orders}</td>
@@ -573,7 +573,7 @@ export default function AdminDashboard() {
                         )}
                       </td>
                       <td style={{ padding: '10px 12px' }}>
-                        <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: f.active ? '#10b981' : '#ef4444', marginRight: 5 }} />
+                        <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: f.active ? '#e6b800' : '#e6b800', marginRight: 5 }} />
                         <span style={{ fontSize: 11, color: colors.textSecondary }}>{f.active ? 'Ativo' : 'Inativo'}</span>
                       </td>
                       <td style={{ padding: '10px 12px', fontSize: 11, color: colors.textSecondary }}>

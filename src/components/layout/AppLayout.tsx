@@ -196,15 +196,15 @@ export default function AppLayout() {
           <div style={{
             display: 'inline-block', marginTop: 6,
             fontSize: 10, fontWeight: 700, letterSpacing: 1,
-            color: isAdmin ? colors.accent : '#4ade80',
-            background: isAdmin ? '#1a1500' : (isDark ? '#0a1a0a' : '#ffffff'),
+            color: isAdmin ? colors.accent : '#e6b800',
+            background: isAdmin ? '#1a1500' : (isDark ? '#1a1500' : '#ffffff'),
             padding: '2px 8px', borderRadius: 4,
             border: `1px solid ${isAdmin ? '#3a3000' : (isDark ? '#1a3a1a' : '#dddddd')}`,
           }}>
             {isAdmin ? 'ADMIN' : 'FRANQUEADO'}
           </div>
           {!isAdmin && isFranchiseeBlocked && (
-            <div style={{ marginTop: 8, fontSize: 11, color: '#ef4444', fontWeight: 600 }}>
+            <div style={{ marginTop: 8, fontSize: 11, color: '#e6b800', fontWeight: 600 }}>
               Acesso bloqueado para pedidos
             </div>
           )}
@@ -274,9 +274,9 @@ export default function AppLayout() {
                 textDecoration: 'none',
                 fontSize: 13,
                 fontWeight: 600,
-                color: '#25D366',
-                border: `1px solid ${isDark ? '#1f5f38' : '#b7eacb'}`,
-                background: isDark ? '#0f1f16' : '#f0fff5',
+                color: '#e6b800',
+                border: `1px solid ${isDark ? '#3a3000' : '#d4c176'}`,
+                background: isDark ? '#1a1500' : '#fff8d6',
               }}
             >
               <WhatsAppIcon width={14} height={14} />
@@ -296,7 +296,7 @@ export default function AppLayout() {
             display: 'flex', alignItems: 'center', gap: 8,
             transition: 'all 0.15s',
           }}
-          onMouseEnter={e => { e.currentTarget.style.color = '#e74c3c'; e.currentTarget.style.borderColor = '#3a1a1a'; }}
+          onMouseEnter={e => { e.currentTarget.style.color = '#e6b800'; e.currentTarget.style.borderColor = '#3a1a1a'; }}
           onMouseLeave={e => { e.currentTarget.style.color = colors.muted; e.currentTarget.style.borderColor = colors.border; }}
         >
           <span>⏻</span> Sair

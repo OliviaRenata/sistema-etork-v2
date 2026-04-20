@@ -177,10 +177,10 @@ export default function FranchiseDashboard() {
     accent: '#e6b800',
     accentHover: '#f5c518',
     accentBg: isDark ? '#1a1500' : '#fffbeb',
-    green: '#22c55e',
-    blue: '#3b82f6',
-    purple: '#a855f7',
-    red: '#ef4444',
+    green: '#e6b800',
+    blue: '#e6b800',
+    purple: '#e6b800',
+    red: '#e6b800',
   };
 
   const spinKeyframes = `
@@ -336,8 +336,8 @@ export default function FranchiseDashboard() {
               marginBottom: 18,
               padding: '14px 16px',
               borderRadius: 10,
-              border: `1px solid ${isDark ? '#5a1b1b' : '#f5b5b5'}`,
-              background: isDark ? '#2b1010' : '#fff1f1',
+              border: `1px solid ${isDark ? '#3a3000' : '#d4c176'}`,
+              background: isDark ? '#1a1500' : '#fff8d6',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -346,7 +346,7 @@ export default function FranchiseDashboard() {
             }}
           >
             <div style={{ minWidth: 240 }}>
-              <div style={{ color: '#ef4444', fontSize: 12, fontWeight: 800, letterSpacing: 0.3 }}>
+              <div style={{ color: '#e6b800', fontSize: 12, fontWeight: 800, letterSpacing: 0.3 }}>
                 ACESSO DE PEDIDOS BLOQUEADO
               </div>
               <div style={{ color: colors.text, fontSize: 12, marginTop: 4, lineHeight: 1.5 }}>
@@ -365,9 +365,9 @@ export default function FranchiseDashboard() {
                 textDecoration: 'none',
                 padding: '8px 12px',
                 borderRadius: 8,
-                border: `1px solid ${isDark ? '#1f5f38' : '#b7eacb'}`,
-                color: '#25D366',
-                background: isDark ? '#0f1f16' : '#f0fff5',
+                border: `1px solid ${isDark ? '#3a3000' : '#d4c176'}`,
+                color: '#e6b800',
+                background: isDark ? '#1a1500' : '#fff8d6',
                 fontSize: 12,
                 fontWeight: 700,
               }}

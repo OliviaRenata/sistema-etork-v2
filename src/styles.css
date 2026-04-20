@@ -10,8 +10,8 @@
   --muted-strong: #9ca3af;
   --accent: #e6b800;
   --accent-strong: #fbbf24;
-  --success: #22c55e;
-  --danger: #ef4444;
+  --success: #e6b800;
+  --danger: #e6b800;
 }
 
 [data-theme="light"] {
@@ -25,8 +25,8 @@
   --muted-strong: #475569;
   --accent: #e6b800;
   --accent-strong: #d97706;
-  --success: #16a34a;
-  --danger: #dc2626;
+  --success: #e6b800;
+  --danger: #e6b800;
 }
 
 *, *::before, *::after {

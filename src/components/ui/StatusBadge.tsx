@@ -4,10 +4,10 @@ import { ORDER_STATUS_LABEL } from '../../types';
 
 const COLORS: Record<OrderStatus, { bg: string; color: string; border: string }> = {
   solicitado:   { bg: '#1a1200', color: '#f59e0b', border: '#3a2a00' },
-  em_producao:  { bg: '#0a1020', color: '#60a5fa', border: '#1a3060' },
-  enviado:      { bg: '#150a25', color: '#a78bfa', border: '#3a1a6a' },
-  concluido:    { bg: '#0a1a0a', color: '#4ade80', border: '#1a4a1a' },
-  cancelado:    { bg: '#1a0a0a', color: '#f87171', border: '#4a1a1a' },
+  em_producao:  { bg: '#0a1020', color: '#e6b800', border: '#1a3060' },
+  enviado:      { bg: '#150a25', color: '#f5d54a', border: '#3a1a6a' },
+  concluido:    { bg: '#1a1500', color: '#e6b800', border: '#1a4a1a' },
+  cancelado:    { bg: '#1a0a0a', color: '#e6b800', border: '#3a3000' },
 };
 
 function getFranchiseStatusLabel(status: OrderStatus) {

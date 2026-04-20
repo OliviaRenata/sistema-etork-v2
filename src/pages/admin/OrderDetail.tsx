@@ -75,7 +75,7 @@ export default function AdminOrderDetail() {
   }
 
   if (loading) return <div style={{ color: '#555', padding: 40, textAlign: 'center' }}>Carregando...</div>;
-  if (!order) return <div style={{ color: '#e74c3c', padding: 40 }}>Pedido não encontrado.</div>;
+  if (!order) return <div style={{ color: '#e6b800', padding: 40 }}>Pedido não encontrado.</div>;
 
   const franchiseeData = order.franchisee as unknown as { company_name: string; code: string; email: string; phone: string };
   const nextStatuses = STATUS_TRANSITIONS[order.status] || [];
@@ -200,7 +200,7 @@ export default function AdminOrderDetail() {
                 rows={2}
                 style={{ width: '100%', padding: '8px 10px', background: '#0d0d0d', border: '1px solid #2a2a2a', borderRadius: 8, color: '#ccc', fontSize: 12, outline: 'none', resize: 'vertical', marginBottom: 10, boxSizing: 'border-box' }}
               />
-              {error && <div style={{ color: '#e74c3c', fontSize: 12, marginBottom: 8 }}>{error}</div>}
+              {error && <div style={{ color: '#e6b800', fontSize: 12, marginBottom: 8 }}>{error}</div>}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {nextStatuses.map(s => (
                   <button key={s} onClick={() => updateStatus(s)} disabled={updating}
@@ -208,7 +208,7 @@ export default function AdminOrderDetail() {
                       padding: '10px', borderRadius: 8, fontSize: 12, fontWeight: 700,
                       border: '1px solid',
                       background: s === 'cancelado' ? '#1a0a0a' : '#1a1500',
-                      color: s === 'cancelado' ? '#e74c3c' : '#e6b800',
+                      color: s === 'cancelado' ? '#e6b800' : '#e6b800',
                       borderColor: s === 'cancelado' ? '#3a1a1a' : '#3a3000',
                       cursor: 'pointer', letterSpacing: 0.5,
                       display: 'inline-flex', alignItems: 'center', gap: 6,

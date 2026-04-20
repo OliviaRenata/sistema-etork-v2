@@ -58,7 +58,7 @@ export default function NotificationBell() {
           <span style={{
             position: 'absolute', top: 0, right: 0,
             width: 16, height: 16, borderRadius: '50%',
-            background: '#e74c3c', color: '#fff',
+            background: '#e6b800', color: '#fff',
             fontSize: 9, fontWeight: 700,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>

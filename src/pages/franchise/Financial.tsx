@@ -82,10 +82,10 @@ export default function FranchiseFinancial() {
     textMuted: isDark ? '#666666' : '#9ca3af',
     border: isDark ? '#222222' : '#e5e7eb',
     accent: '#e6b800',
-    debitBg: isDark ? '#1a0a0a' : '#fef2f2',
-    debitColor: '#ef4444',
-    creditBg: isDark ? '#0a1a0a' : '#f0fdf4',
-    creditColor: '#10b981',
+    debitBg: isDark ? '#1a0a0a' : '#fff8d6',
+    debitColor: '#e6b800',
+    creditBg: isDark ? '#1a1500' : '#fff8d6',
+    creditColor: '#e6b800',
     tableHeaderBg: isDark ? '#0d0d0d' : '#f9fafb',
     tableRowHover: isDark ? '#1a1a1a' : '#f9fafb',
   };
@@ -225,21 +225,21 @@ export default function FranchiseFinancial() {
             label="Total em Pedidos" 
             value={formatCurrency(totalDebit)} 
             icon={<IconTrendingDown />}
-            color="#ef4444"
+            color="#e6b800"
             isDark={isDark}
           />
           <SummaryCard 
             label="Total Pago" 
             value={formatCurrency(paidDebit)} 
             icon={<IconTrendingUp />}
-            color="#10b981"
+            color="#e6b800"
             isDark={isDark}
           />
           <SummaryCard 
             label="Total de Créditos" 
             value={formatCurrency(totalCredit)} 
             icon={<IconWallet />}
-            color="#8b5cf6"
+            color="#e6b800"
             isDark={isDark}
           />
         </div>
@@ -368,7 +368,7 @@ export default function FranchiseFinancial() {
                   }}
                   style={{
                     padding: '8px 16px',
-                    background: '#ef4444',
+                    background: '#e6b800',
                     border: 'none',
                     borderRadius: 8,
                     color: '#fff',
@@ -447,7 +447,7 @@ export default function FranchiseFinancial() {
                           fontSize: 10, fontWeight: 700, padding: '4px 10px', borderRadius: 6,
                           background: r.type === 'debit' ? colors.debitBg : colors.creditBg,
                           color: r.type === 'debit' ? colors.debitColor : colors.creditColor,
-                          border: `1px solid ${r.type === 'debit' ? '#fecaca' : '#bbf7d0'}`,
+                          border: `1px solid ${r.type === 'debit' ? '#f5d54a' : '#bbf7d0'}`,
                         }}>
                           {r.type === 'debit' ? 'DÉBITO' : r.type === 'credit' ? 'CRÉDITO' : r.type === 'payment' ? 'PAGAMENTO' : 'AJUSTE'}
                         </span>
@@ -465,8 +465,8 @@ export default function FranchiseFinancial() {
                           fontSize: 11,
                           padding: '2px 8px',
                           borderRadius: 4,
-                          background: r.payment_status === 'pago' ? '#10b98120' : r.payment_status === 'pendente' ? '#f59e0b20' : '#ef444420',
-                          color: r.payment_status === 'pago' ? '#10b981' : r.payment_status === 'pendente' ? '#f59e0b' : '#ef4444',
+                          background: r.payment_status === 'pago' ? '#e6b80020' : r.payment_status === 'pendente' ? '#f59e0b20' : '#e6b80020',
+                          color: r.payment_status === 'pago' ? '#e6b800' : r.payment_status === 'pendente' ? '#f59e0b' : '#e6b800',
                         }}>
                           {PAYMENT_STATUS_LABEL[r.payment_status as keyof typeof PAYMENT_STATUS_LABEL] || r.payment_status}
                         </span>

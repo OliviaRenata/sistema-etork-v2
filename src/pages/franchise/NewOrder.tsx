@@ -550,7 +550,7 @@ export default function FranchiseNewOrder() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {error && (
                 <div style={{ 
-                  background: '#dc2626', 
+                  background: '#e6b800', 
                   color: '#fff', 
                   padding: '10px', 
                   borderRadius: '8px', 

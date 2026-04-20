@@ -126,7 +126,7 @@ export default function AdminFranchisees() {
                           width: 8, 
                           height: 8, 
                           borderRadius: '50%', 
-                          background: f.active ? '#10b981' : '#ef4444',
+                          background: f.active ? '#e6b800' : '#e6b800',
                           marginRight: 6
                         }} />
                         <span style={{ fontSize: 12, color: colors.textSecondary }}>{f.active ? 'Ativo' : 'Inativo'}</span>
@@ -139,7 +139,7 @@ export default function AdminFranchisees() {
                             disabled={updating}
                             style={{
                               padding: '6px 12px',
-                              background: f.active ? '#ef4444' : '#10b981',
+                              background: f.active ? '#e6b800' : '#e6b800',
                               color: '#fff',
                               border: 'none',
                               borderRadius: 6,
@@ -152,7 +152,7 @@ export default function AdminFranchisees() {
                           </button>
                           <button
                             onClick={() => deleteFranchisee(f.id)}
-                            style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}
+                            style={{ background: '#e6b800', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}
                           >
                             Excluir
                           </button>

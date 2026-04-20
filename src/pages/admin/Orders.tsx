@@ -9,8 +9,8 @@ type OrderStatus = 'solicitado' | 'em_producao' | 'concluido';
 
 const statusOptions = [
   { value: 'solicitado', label: 'Recebido', color: '#f59e0b' },
-  { value: 'em_producao', label: 'Em andamento', color: '#3b82f6' },
-  { value: 'concluido', label: 'Concluído', color: '#10b981' },
+  { value: 'em_producao', label: 'Em andamento', color: '#e6b800' },
+  { value: 'concluido', label: 'Concluído', color: '#e6b800' },
 ] as const;
 
 function mapStatusForFlow(status: string): OrderStatus {
@@ -136,7 +136,7 @@ export default function AdminOrders() {
     return (
       <div style={{ background: colors.background, minHeight: '100vh', padding: 24 }}>
         <div style={{ textAlign: 'center', padding: 60, background: colors.surface, borderRadius: 12 }}>
-          <h3 style={{ color: '#ef4444' }}>Erro</h3>
+          <h3 style={{ color: '#e6b800' }}>Erro</h3>
           <p style={{ color: colors.textSecondary }}>{error}</p>
           <button 
             onClick={() => loadOrders()}

@@ -94,18 +94,18 @@ const STATUS_LABELS: Record<string, string> = {
 
 const STATUS_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
   solicitado:  { bg: '#fef3c7', text: '#92400e', dot: '#f59e0b' },
-  em_producao: { bg: '#dbeafe', text: '#1e40af', dot: '#3b82f6' },
-  enviado:     { bg: '#e9d5ff', text: '#6b21a8', dot: '#8b5cf6' },
-  concluido:   { bg: '#dcfce7', text: '#14532d', dot: '#10b981' },
-  cancelado:   { bg: '#fee2e2', text: '#7f1d1d', dot: '#ef4444' },
+  em_producao: { bg: '#fff8d6', text: '#1e40af', dot: '#e6b800' },
+  enviado:     { bg: '#fff8d6', text: '#6b21a8', dot: '#e6b800' },
+  concluido:   { bg: '#fff8d6', text: '#3a3000', dot: '#e6b800' },
+  cancelado:   { bg: '#fff8d6', text: '#3a3000', dot: '#e6b800' },
 };
 
 const STATUS_COLORS_DARK: Record<string, { bg: string; text: string; dot: string }> = {
   solicitado:  { bg: '#422006', text: '#fcd34d', dot: '#f59e0b' },
-  em_producao: { bg: '#1e3a5f', text: '#93c5fd', dot: '#3b82f6' },
-  enviado:     { bg: '#3b0764', text: '#d8b4fe', dot: '#8b5cf6' },
-  concluido:   { bg: '#052e16', text: '#86efac', dot: '#10b981' },
-  cancelado:   { bg: '#450a0a', text: '#fca5a5', dot: '#ef4444' },
+  em_producao: { bg: '#1e3a5f', text: '#93c5fd', dot: '#e6b800' },
+  enviado:     { bg: '#3b0764', text: '#d8b4fe', dot: '#e6b800' },
+  concluido:   { bg: '#052e16', text: '#86efac', dot: '#e6b800' },
+  cancelado:   { bg: '#450a0a', text: '#fca5a5', dot: '#e6b800' },
 };
 
 // ─── Componente Principal ────────────────────────────────────────────────────
@@ -308,10 +308,10 @@ export default function AdminFinancial() {
           {[
             { label: 'TOTAL', value: stats.total, color: c.accent, borderColor: c.accent },
             { label: 'SOLICITADOS', value: stats.solicitado, color: '#f59e0b', borderColor: '#f59e0b' },
-            { label: 'EM PRODUÇÃO', value: stats.em_producao, color: '#3b82f6', borderColor: '#3b82f6' },
-            { label: 'ENVIADOS', value: stats.enviado, color: '#8b5cf6', borderColor: '#8b5cf6' },
-            { label: 'CONCLUÍDOS', value: stats.concluido, color: '#10b981', borderColor: '#10b981' },
-            { label: 'CANCELADOS', value: stats.cancelado, color: '#ef4444', borderColor: '#ef4444' },
+            { label: 'EM PRODUÇÃO', value: stats.em_producao, color: '#e6b800', borderColor: '#e6b800' },
+            { label: 'ENVIADOS', value: stats.enviado, color: '#e6b800', borderColor: '#e6b800' },
+            { label: 'CONCLUÍDOS', value: stats.concluido, color: '#e6b800', borderColor: '#e6b800' },
+            { label: 'CANCELADOS', value: stats.cancelado, color: '#e6b800', borderColor: '#e6b800' },
           ].map(({ label, value, color, borderColor }) => (
             <div key={label} style={{
               background: c.surface, border: `1px solid ${c.border}`,
@@ -423,7 +423,7 @@ export default function AdminFinancial() {
                 <button
                   onClick={() => { setFilterFranchisee(''); setFilterStatus(''); setDateRange({ start: '', end: '' }); setSearchTerm(''); }}
                   style={{
-                    padding: '8px 14px', background: '#ef4444', border: 'none',
+                    padding: '8px 14px', background: '#e6b800', border: 'none',
                     borderRadius: 8, color: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 700,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                   }}

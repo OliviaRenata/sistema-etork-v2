@@ -79,10 +79,10 @@ export default function FranchiseOrders() {
     textMuted: isDark ? '#555' : '#999',
     accent: '#e6b800',
     statusAmber: isDark ? '#854d0e' : '#fef3c7',
-    statusBlue: isDark ? '#1e3a8a' : '#dbeafe',
-    statusPurple: isDark ? '#7c3aed' : '#e9d5ff',
-    statusGreen: isDark ? '#14532d' : '#dcfce7',
-    statusRed: isDark ? '#7f1d1d' : '#fee2e2',
+    statusBlue: isDark ? '#3a3000' : '#fff8d6',
+    statusPurple: isDark ? '#3a3000' : '#fff8d6',
+    statusGreen: isDark ? '#3a3000' : '#fff8d6',
+    statusRed: isDark ? '#3a3000' : '#fff8d6',
     badgeFile: isDark ? '#1a1500' : '#fff8e0',
     badgeFileColor: isDark ? '#e6b800' : '#b8860b',
   };
@@ -326,20 +326,20 @@ export default function FranchiseOrders() {
       {loadError && (
         <div style={{
           marginBottom: 16, padding: '14px 16px',
-          background: '#7f1d1d', color: '#fecaca', borderRadius: 12, fontSize: 13,
+          background: '#3a3000', color: '#f5d54a', borderRadius: 12, fontSize: 13,
         }}>
           ⚠️ {loadError}
         </div>
       )}
 
       {submitSuccess && (
-        <div style={{ marginBottom: 16, padding: '14px 16px', background: '#163a0f', color: '#d1fae5', borderRadius: 12 }}>
+        <div style={{ marginBottom: 16, padding: '14px 16px', background: '#1a1500', color: '#d1fae5', borderRadius: 12 }}>
           {submitSuccess}
         </div>
       )}
 
       {submitError && (
-        <div style={{ marginBottom: 16, padding: '14px 16px', background: '#7f1d1d', color: '#fecaca', borderRadius: 12 }}>
+        <div style={{ marginBottom: 16, padding: '14px 16px', background: '#3a3000', color: '#f5d54a', borderRadius: 12 }}>
           {submitError}
         </div>
       )}
@@ -394,7 +394,7 @@ export default function FranchiseOrders() {
                   return (
                     <button key={option} type="button"
                       onClick={() => updateField('performance', active ? formData.performance.filter(i => i !== option) : [...formData.performance, option])}
-                      style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid', borderColor: active ? '#dc2626' : isDark ? '#2d2d2d' : '#d1d5db', background: active ? '#dc2626' : isDark ? '#141414' : '#fff', color: active ? '#fff' : isDark ? '#eee' : '#111', cursor: 'pointer', textAlign: 'left', fontSize: 12 }}>
+                      style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid', borderColor: active ? '#e6b800' : isDark ? '#2d2d2d' : '#d1d5db', background: active ? '#e6b800' : isDark ? '#141414' : '#fff', color: active ? '#fff' : isDark ? '#eee' : '#111', cursor: 'pointer', textAlign: 'left', fontSize: 12 }}>
                       {option}
                     </button>
                   );
@@ -407,7 +407,7 @@ export default function FranchiseOrders() {
                   return (
                     <button key={option} type="button"
                       onClick={() => updateField('tool', active ? formData.tool.filter(i => i !== option) : [...formData.tool, option])}
-                      style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid', borderColor: active ? '#dc2626' : isDark ? '#2d2d2d' : '#d1d5db', background: active ? '#dc2626' : isDark ? '#141414' : '#fff', color: active ? '#fff' : isDark ? '#eee' : '#111', cursor: 'pointer', textAlign: 'left', fontSize: 12 }}>
+                      style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid', borderColor: active ? '#e6b800' : isDark ? '#2d2d2d' : '#d1d5db', background: active ? '#e6b800' : isDark ? '#141414' : '#fff', color: active ? '#fff' : isDark ? '#eee' : '#111', cursor: 'pointer', textAlign: 'left', fontSize: 12 }}>
                       {option}
                     </button>
                   );
@@ -421,12 +421,12 @@ export default function FranchiseOrders() {
             <label style={labelStyle}>ARQUIVOS DE MAPA (ORI, MOD, BIN) *</label>
             <div style={{ marginBottom: 18 }}>
               <input type="file" multiple accept=".bin,.ori,.mod" onChange={e => setFiles(Array.from(e.target.files || []))} style={{ ...inputStyle, padding: '14px 12px' }} />
-              {files.length > 0 && <div style={{ marginTop: 8, color: '#4ade80', fontSize: 12 }}>{files.length} arquivo(s) selecionado(s)</div>}
+              {files.length > 0 && <div style={{ marginTop: 8, color: '#e6b800', fontSize: 12 }}>{files.length} arquivo(s) selecionado(s)</div>}
             </div>
             <label style={labelStyle}>FOTO / PDF</label>
             <div style={{ marginBottom: 18 }}>
               <input type="file" multiple accept="image/*,.pdf" onChange={e => setExtraFiles(Array.from(e.target.files || []))} style={{ ...inputStyle, padding: '14px 12px' }} />
-              {extraFiles.length > 0 && <div style={{ marginTop: 8, color: '#4ade80', fontSize: 12 }}>{extraFiles.length} arquivo(s) selecionado(s)</div>}
+              {extraFiles.length > 0 && <div style={{ marginTop: 8, color: '#e6b800', fontSize: 12 }}>{extraFiles.length} arquivo(s) selecionado(s)</div>}
             </div>
             <label style={labelStyle}>OBSERVAÇÕES</label>
             <textarea value={formData.notes} onChange={e => updateField('notes', e.target.value)} rows={4} placeholder="Insira observações adicionais..." style={{ ...inputStyle, minHeight: 100, resize: 'vertical' }} />
@@ -434,7 +434,7 @@ export default function FranchiseOrders() {
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 20 }}>
             <button type="button" onClick={() => handleSubmitOrder(false)} disabled={submitting}
-              style={{ flex: 1, minWidth: 180, background: '#dc2626', color: '#fff', border: 'none', borderRadius: 12, padding: '14px 18px', cursor: submitting ? 'not-allowed' : 'pointer', fontWeight: 700, opacity: submitting ? 0.6 : 1 }}>
+              style={{ flex: 1, minWidth: 180, background: '#e6b800', color: '#fff', border: 'none', borderRadius: 12, padding: '14px 18px', cursor: submitting ? 'not-allowed' : 'pointer', fontWeight: 700, opacity: submitting ? 0.6 : 1 }}>
               {submitting ? 'ENVIANDO...' : 'ENVIAR PEDIDO'}
             </button>
             <button type="button" onClick={() => handleSubmitOrder(true)} disabled={submitting}
@@ -462,7 +462,7 @@ export default function FranchiseOrders() {
             </div>
           </div>
           {selectedOrders.size > 0 && (
-            <button style={{ padding: '6px 12px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, cursor: 'pointer' }}>
+            <button style={{ padding: '6px 12px', background: '#e6b800', color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, cursor: 'pointer' }}>
               Baixar Selecionados ({selectedOrders.size})
             </button>
           )}

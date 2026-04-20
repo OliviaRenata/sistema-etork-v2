@@ -69,8 +69,8 @@ export default function DownloadsPage() {
     border: isDark ? '#222222' : '#e0e0e0',
     accent: '#e6b800',
     inputBg: isDark ? '#0d0d0d' : '#f5f5f5',
-    error: '#f87171',
-    success: '#4ade80'
+    error: '#e6b800',
+    success: '#e6b800'
   };
 
   const categories = [
@@ -298,7 +298,7 @@ export default function DownloadsPage() {
           zIndex: 1000,
           padding: '12px 20px',
           borderRadius: 8,
-          background: message.type === 'error' ? '#dc2626' : '#10b981',
+          background: message.type === 'error' ? '#e6b800' : '#e6b800',
           color: '#fff',
           fontSize: 13,
           fontWeight: 600,
@@ -428,9 +428,9 @@ export default function DownloadsPage() {
                       onClick={() => handleToggleActive(file)}
                       title={file.is_active ? "Desativar" : "Ativar"}
                       style={{ 
-                        background: file.is_active ? '#dc262620' : '#10b98120',
-                        border: `1px solid ${file.is_active ? '#dc2626' : '#10b981'}`, 
-                        color: file.is_active ? '#dc2626' : '#10b981', 
+                        background: file.is_active ? '#e6b80020' : '#e6b80020',
+                        border: `1px solid ${file.is_active ? '#e6b800' : '#e6b800'}`, 
+                        color: file.is_active ? '#e6b800' : '#e6b800', 
                         padding: '8px', borderRadius: 6, cursor: 'pointer' 
                       }}
                     >
@@ -440,8 +440,8 @@ export default function DownloadsPage() {
                       onClick={() => handleDelete(file)}
                       title="Excluir arquivo"
                       style={{ 
-                        background: 'transparent', border: `1px solid #dc262650`, 
-                        color: '#dc2626', padding: '8px', borderRadius: 6, cursor: 'pointer' 
+                        background: 'transparent', border: `1px solid #e6b80050`, 
+                        color: '#e6b800', padding: '8px', borderRadius: 6, cursor: 'pointer' 
                       }}
                     >
                       <TrashIcon size={16} />
