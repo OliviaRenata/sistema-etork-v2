@@ -16,6 +16,7 @@ import AdminOrders from './pages/admin/Orders';
 import AdminFranchisees from './pages/admin/Franchisees';
 import AdminFinancial from './pages/admin/Financial';
 import AdminDownloads from './pages/admin/Downloads';
+import AdminOrderDetail from './pages/admin/OrderDetail';
 
 // Layout
 import AppLayout from './components/layout/AppLayout';
@@ -98,7 +99,7 @@ export default function App() {
           <>
             <Route path="admin/dashboard" element={<AdminDashboard />} />
             <Route path="admin/orders" element={<AdminOrders />} />
-            <Route path="admin/orders/:id" element={<AdminOrders />} />
+            <Route path="admin/orders/:id" element={<AdminOrderDetail />} />
             <Route path="admin/franchisees" element={<AdminFranchisees />} />
             <Route path="admin/financial" element={<AdminFinancial />} />
             <Route path="admin/downloads" element={<AdminDownloads />} />
