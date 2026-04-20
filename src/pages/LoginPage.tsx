@@ -183,7 +183,7 @@ async function handleForgotPassword() {
           </div>
 
           <div style={{ textAlign: 'right', marginBottom: 22 }}>
-// No JSX, você pode manter o botão mas agora ele envia Magic Link
+
 <button 
   type="button" 
   onClick={handleForgotPassword}
