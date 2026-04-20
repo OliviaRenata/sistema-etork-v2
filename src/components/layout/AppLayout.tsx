@@ -150,7 +150,7 @@ export default function AppLayout() {
       : [
           { to: '/dashboard', icon: <DashboardIcon width={16} height={16} />, label: 'Dashboard' },
           { to: '/orders', icon: <OrdersIcon width={16} height={16} />, label: 'Meus Pedidos' },
-          { to: '/orders/new', icon: <PlusIcon width={16} height={16} />, label: 'Novo Pedido' },
+          { to: '/orders/new', icon: <PlusIcon width={16} height={16} />, label: 'New Orders' },
           { to: '/financial', icon: <FinanceIcon width={16} height={16} />, label: 'Financeiro' },
           { to: '/downloads', icon: <DownloadIcon width={16} height={16} />, label: 'Downloads' },
         ];

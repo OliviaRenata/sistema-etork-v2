@@ -376,7 +376,7 @@ export default function FranchiseNewOrder() {
               flexWrap: 'wrap',
             }}>
               <IconCar />
-              NOVO PEDIDO DE REMAP
+              NEW ORDERS
             </h1>
             <p style={{
               fontSize: '12px',
@@ -409,7 +409,7 @@ export default function FranchiseNewOrder() {
             }}
           >
             <IconArrowLeft />
-            Voltar
+            Meus Pedidos
           </button>
         </div>
 
