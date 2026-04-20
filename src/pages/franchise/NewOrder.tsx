@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, callFunction, storage } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { fetchVehicleByPlate } from '../../lib/vehicleService';
 
@@ -126,6 +127,7 @@ const IconLoader = () => (
 
 export default function FranchiseNewOrder() {
   const navigate = useNavigate();
+  const { user, franchisee } = useAuth();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
@@ -177,6 +179,10 @@ export default function FranchiseNewOrder() {
       setError('Placa e Arquivo de Mapa são obrigatórios.');
       return;
     }
+    if (!franchisee?.id || !user?.id) {
+      setError('Nao foi possivel identificar seu cadastro de franqueado. Faça login novamente.');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -185,6 +191,8 @@ export default function FranchiseNewOrder() {
         .join(', ');
 
       const result = await callFunction<{ order: { id: string } }>('create-order', {
+        franchisee_id: franchisee.id,
+        created_by: user.id,
         vehicle_plate: formData.plate.toUpperCase(),
         chassi: formData.chassi,
         model: formData.model,

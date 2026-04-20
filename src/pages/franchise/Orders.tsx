@@ -23,7 +23,7 @@ type FranchiseOrder = {
 };
 
 export default function FranchiseOrders() {
-  const { franchisee, loading: authLoading } = useAuth();
+  const { user, franchisee, loading: authLoading } = useAuth();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
@@ -52,21 +52,25 @@ export default function FranchiseOrders() {
   useEffect(() => {
     if (authLoading) return;
 
-    if (franchisee?.id) {
+    if (user?.id) {
       loadOrders();
     } else {
       setLoadingOrders(false);
     }
-  }, [franchisee?.id, authLoading]);
+  }, [user?.id, franchisee?.id, authLoading]);
 
   async function loadOrders() {
-    if (!franchisee?.id) return;
+    if (!user?.id) return;
 
     setLoadingOrders(true);
     setLoadError('');
 
     try {
-      const { data, error } = await supabase
+      const ownershipFilter = franchisee?.id
+        ? `franchisee_id.eq.${franchisee.id},created_by.eq.${user.id}`
+        : `created_by.eq.${user.id}`;
+
+      const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select(`
           id,
@@ -76,19 +80,43 @@ export default function FranchiseOrders() {
           total_amount,
           vehicle_plate,
           model,
-          notes,
-          order_files(id, file_name, file_path)
+          notes
         `)
-        .eq('franchisee_id', franchisee.id)
+        .or(ownershipFilter)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        throw new Error(`Erro ao carregar pedidos: ${error.message}`);
+      if (ordersError) {
+        throw new Error(`Erro ao carregar pedidos: ${ordersError.message}`);
       }
 
-      setOrders((data || []).map((order) => ({
+      const orderIds = (ordersData || []).map((order) => order.id);
+      const filesByOrder = new Map<string, Array<{ id: string; file_name: string; file_path: string }>>();
+
+      if (orderIds.length > 0) {
+        const { data: filesData, error: filesError } = await supabase
+          .from('order_files')
+          .select('id, order_id, file_name, file_path')
+          .in('order_id', orderIds);
+
+        if (filesError) {
+          throw new Error(`Erro ao carregar arquivos dos pedidos: ${filesError.message}`);
+        }
+
+        for (const file of filesData || []) {
+          if (!filesByOrder.has(file.order_id)) {
+            filesByOrder.set(file.order_id, []);
+          }
+          filesByOrder.get(file.order_id)?.push({
+            id: file.id,
+            file_name: file.file_name,
+            file_path: file.file_path,
+          });
+        }
+      }
+
+      setOrders((ordersData || []).map((order) => ({
         ...order,
-        order_files: order.order_files || [],
+        order_files: filesByOrder.get(order.id) || [],
       })) as FranchiseOrder[]);
     } catch (err: unknown) {
       setLoadError((err as Error).message || 'Erro desconhecido ao carregar pedidos.');
