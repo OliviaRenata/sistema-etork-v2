@@ -4,7 +4,7 @@
 // LAYOUT CORRIGIDO: LOGO RESPONSIVA OCUPANDO TODA PARTE BRANCA
 // ════════════════════════════════════════════════════════════
 
-import logoImg from '../assets/logoetork.png';
+import logoImg from '../assets/logoetorkbrasil.png';
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
