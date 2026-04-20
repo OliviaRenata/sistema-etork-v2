@@ -103,6 +103,10 @@ supabase login
 supabase link --project-ref SEU_PROJECT_ID
 supabase functions deploy create-order
 supabase functions deploy update-order-status
+supabase functions deploy lookup-vehicle
+
+# Defina o token da API de placa como secret (não colocar no frontend)
+supabase secrets set WDAPI_TOKEN=SEU_TOKEN_DA_API_DE_PLACA
 ```
 
 #### 3.5 — Criar usuário admin

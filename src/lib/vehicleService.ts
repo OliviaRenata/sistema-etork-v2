@@ -1,6 +1,8 @@
 // src/lib/vehicleService.ts
 // Serviço de consulta de placa - Com fallback para mock
 
+import { callFunction } from './supabase';
+
 export interface VehicleData {
   plate: string;
   model: string;
@@ -10,10 +12,6 @@ export interface VehicleData {
   chassi: string;
   cv: string;
 }
-
-// Token da API de placas - VOCÊ PRECISA COLOCAR SEU TOKEN REAL AQUI
-const API_TOKEN = "SEU_TOKEN_AQUI"; // Substitua pelo seu token real
-const API_URL = "https://wdapi2.com.br/consulta";
 
 // Dados mock para fallback
 const getMockData = (plate: string): VehicleData => {
@@ -60,45 +58,25 @@ export async function fetchVehicleByPlate(plate: string): Promise<VehicleData | 
 
   console.log(`🔍 Buscando dados para placa: ${cleanPlate}`);
 
-  // Verifica se o token foi configurado
-  if (API_TOKEN === "SEU_TOKEN_AQUI") {
-    console.warn("⚠️ Token da API não configurado. Usando dados mock.");
-    return getMockData(cleanPlate);
-  }
-
   try {
-    // Tenta buscar da API real
-    const response = await fetch(`${API_URL}/${cleanPlate}/${API_TOKEN}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    const data = await callFunction<VehicleData>('lookup-vehicle', { plate: cleanPlate });
 
-    if (!response.ok) {
-      console.warn(`⚠️ API retornou erro ${response.status}. Usando dados mock.`);
-      return getMockData(cleanPlate);
-    }
-
-    const data = await response.json();
-    
-    // Verifica se a API retornou dados válidos
-    if (data && data.modelo) {
+    if (data && (data.model || data.plate)) {
       return {
         plate: cleanPlate,
-        model: data.modelo || data.model || "Modelo não encontrado",
-        year: data.ano || new Date().getFullYear().toString(),
-        engine: data.motor || "Motor não especificado",
-        fuel: data.combustivel || "Não informado",
+        model: data.model || "Modelo não encontrado",
+        year: data.year || new Date().getFullYear().toString(),
+        engine: data.engine || "Motor não especificado",
+        fuel: data.fuel || "Não informado",
         chassi: data.chassi || `CHASSI${cleanPlate}`,
-        cv: data.potencia || "0"
+        cv: data.cv || "0"
       };
     } else {
-      console.warn("⚠️ API não retornou dados válidos. Usando dados mock.");
+      console.warn('⚠️ Edge Function não retornou dados válidos. Usando dados mock.');
       return getMockData(cleanPlate);
     }
   } catch (error) {
-    console.error("❌ Erro ao consultar API de placas:", error);
+    console.error('❌ Erro ao consultar API de placas via Edge Function:', error);
     console.log("📦 Usando dados mock como fallback.");
     return getMockData(cleanPlate);
   }

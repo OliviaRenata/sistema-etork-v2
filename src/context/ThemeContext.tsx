@@ -12,13 +12,8 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  // Verificar se há tema salvo no localStorage
-  const [theme, setTheme] = useState<Theme>(() => {
-    const saved = localStorage.getItem('theme');
-    if (saved === 'light' || saved === 'dark') return saved;
-    // Verificar preferência do sistema
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  });
+  // Padrão global da aplicação: iniciar sempre em modo escuro
+  const [theme, setTheme] = useState<Theme>('dark');
 
   useEffect(() => {
     console.log('Theme changed to:', theme);
