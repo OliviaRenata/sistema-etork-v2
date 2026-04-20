@@ -39,21 +39,41 @@ export default function LoginPage() {
     }
   }
 
-  async function handleForgotPassword() {
-    if (!email) {
-      setMessage({ type: 'error', text: 'Digite seu e-mail primeiro.' });
-      return;
-    }
-    setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+// src/pages/LoginPage.tsx
+// Substitua a função handleForgotPassword inteira por:
+
+async function handleForgotPassword() {
+  if (!email) {
+    setMessage({ type: 'error', text: 'Digite seu e-mail primeiro.' });
+    return;
+  }
+  
+  setLoading(true);
+  try {
+    // Usar Magic Link - NÃO precisa de SMTP configurado
+    const { error } = await supabase.auth.signInWithOtp({
+      email: email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/dashboard`,
+      }
     });
-    setMessage(error
-      ? { type: 'error', text: error.message }
-      : { type: 'success', text: 'E-mail de recuperação enviado! Verifique sua caixa.' }
-    );
+    
+    if (error) throw error;
+    
+    setMessage({ 
+      type: 'success', 
+      text: 'Link de acesso enviado! Verifique seu e-mail para fazer login.' 
+    });
+  } catch (err: unknown) {
+    console.error('Erro no magic link:', err);
+    setMessage({ 
+      type: 'error', 
+      text: (err as Error).message || 'Erro ao enviar link. Tente novamente.' 
+    });
+  } finally {
     setLoading(false);
   }
+}
 
   return (
     <div style={{ 
@@ -163,10 +183,14 @@ export default function LoginPage() {
           </div>
 
           <div style={{ textAlign: 'right', marginBottom: 22 }}>
-            <button type="button" onClick={handleForgotPassword}
-              style={{ background: 'none', border: 'none', color: '#e6b800', fontSize: 11, fontWeight: 700, cursor: 'pointer', letterSpacing: 0.5 }}>
-              ESQUECEU A SENHA?
-            </button>
+// No JSX, você pode manter o botão mas agora ele envia Magic Link
+<button 
+  type="button" 
+  onClick={handleForgotPassword}
+  style={{ background: 'none', border: 'none', color: '#e6b800', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+>
+  ESQUECEU A SENHA?
+</button>
           </div>
 
           {message.text && (
