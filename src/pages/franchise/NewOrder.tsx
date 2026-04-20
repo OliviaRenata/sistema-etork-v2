@@ -371,13 +371,49 @@ export default function FranchiseNewOrder() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div style={{ gridColumn: 'span 2', ...formGroup }}>
                   <label style={label}>Placa / Frota *</label>
-                  <input 
-                    style={{...input, borderColor: fetchingPlate ? '#e6b800' : isDark ? '#333' : '#d1d5db'}} 
-                    value={formData.plate} 
-                    onChange={e => updateField('plate', e.target.value.toUpperCase())} 
-                    onBlur={handlePlateLookup}
-                    placeholder="BRA2E19" 
-                  />
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      style={{
+                        ...input,
+                        paddingRight: '44px',
+                        borderColor: fetchingPlate ? '#e6b800' : isDark ? '#333' : '#d1d5db'
+                      }}
+                      value={formData.plate}
+                      onChange={e => updateField('plate', e.target.value.toUpperCase())}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handlePlateLookup();
+                        }
+                      }}
+                      placeholder="BRA2E19"
+                    />
+                    <button
+                      type="button"
+                      onClick={handlePlateLookup}
+                      disabled={fetchingPlate || formData.plate.replace(/[^a-zA-Z0-9]/g, '').length < 7}
+                      title="Buscar dados da placa"
+                      style={{
+                        position: 'absolute',
+                        right: 6,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        width: 30,
+                        height: 30,
+                        borderRadius: 8,
+                        border: `1px solid ${isDark ? '#333' : '#d1d5db'}`,
+                        background: isDark ? '#111' : '#fff',
+                        color: '#e6b800',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: fetchingPlate ? 'wait' : 'pointer',
+                        opacity: fetchingPlate || formData.plate.replace(/[^a-zA-Z0-9]/g, '').length < 7 ? 0.5 : 1,
+                      }}
+                    >
+                      {fetchingPlate ? <IconLoader /> : <IconSearch />}
+                    </button>
+                  </div>
                 </div>
                 <div style={{ gridColumn: 'span 2', ...formGroup }}>
                   <label style={label}>Modelo *</label>
