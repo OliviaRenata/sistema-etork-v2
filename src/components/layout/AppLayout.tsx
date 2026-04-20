@@ -189,9 +189,6 @@ export default function AppLayout() {
             justifyContent: 'center',
             width: 170,
             height: 'auto',
-            background: !isDark ? '#fff' : '#222',
-            borderRadius: 12,
-            padding: 12,
           }}>
             <img src={logoImg} alt="ETORK Brasil" style={{ width: 150, height: 'auto', display: 'block', background: 'transparent', borderRadius: 8 }} />
           </div>

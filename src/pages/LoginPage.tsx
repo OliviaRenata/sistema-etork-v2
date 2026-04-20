@@ -114,14 +114,14 @@ async function handleForgotPassword() {
             src={logoImg}
             alt="Etork Brasil"
             style={{ 
-              height: isMobile ? 100 : 140,
+              height: isMobile ? 120 : 180,
               width: 'auto', 
               objectFit: 'contain', 
               display: 'block',
               margin: '0 auto',
               borderRadius: 12,
-              background: '#fff',
-              padding: 12
+              background: 'transparent',
+              padding: 0
             }}
           />
         </div>
@@ -305,30 +305,21 @@ async function handleForgotPassword() {
         }}>
           
           {/* LOGO RESPONSIVA - ocupa toda largura disponível */}
-          <div style={{
-            background: '#fff',
-            borderRadius: 16,
-            padding: '24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '100%',
-            maxWidth: 600,
-            margin: '0 auto 40px auto',
-          }}>
-            <img
-              src={logoImg}
-              alt="Etork Brasil"
-              style={{
-                width: '100%',
-                height: 'auto',
-                objectFit: 'contain',
-                display: 'block',
-                borderRadius: 12,
-                background: 'transparent',
-              }}
-            />
-          </div>
+          <img
+            src={logoImg}
+            alt="Etork Brasil"
+            style={{
+              width: '100%',
+              maxWidth: 700,
+              minWidth: 220,
+              height: 'auto',
+              objectFit: 'contain',
+              display: 'block',
+              margin: '0 auto 48px auto',
+              borderRadius: 12,
+              background: 'transparent',
+            }}
+          />
 
           {/* Badge/tagline */}
           <div style={{
