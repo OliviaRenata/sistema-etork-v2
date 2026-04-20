@@ -93,7 +93,7 @@ async function handleForgotPassword() {
         display: 'flex', 
         flexDirection: 'column', 
         justifyContent: 'center',
-        padding: isMobile ? '28px 18px 22px' : '48px 44px',
+        padding: isMobile ? '28px 18px 22px' : '4px 4px',
         position: 'relative',
       }}>
         {/* Borda direita dourada */}
@@ -114,7 +114,7 @@ async function handleForgotPassword() {
             src={logoImg}
             alt="Etork Brasil"
             style={{ 
-              height: isMobile ? 78 : 112,
+              height: isMobile ? 78 : 165,
               width: 'auto', 
               objectFit: 'contain', 
               display: 'block',
