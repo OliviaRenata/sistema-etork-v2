@@ -15,12 +15,10 @@ type FormData = {
   fuel: string;
   transmission: 'Manual' | 'Automático' | 'DSG/Dualogic' | '';
   ecuType: string;
-  system: string;
   readingMode: 'OBD' | 'BENCH' | 'BOOT' | 'CUMMINS' | '';
   dtc: string;
   performance: string[];
   tool: string[];
-  toolOther: string;
   notes: string;
 };
 
@@ -35,8 +33,6 @@ const performanceOptions = [
 const toolOptions = [
   'PCM', 'BITBOX', 'CALTERM', 'NEW GENIUS', 'KESS CHINA',
 ];
-
-const ecuOptions = ['EDC17C46', 'ME17', 'EDC17CP20', 'Bosch', 'Siemens', 'Delphi', 'Outra'];
 
 const IconArrowLeft = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -124,8 +120,8 @@ export default function FranchiseNewOrder() {
   const [formData, setFormData] = useState<FormData>({
     plate: '', chassi: '', model: '', year: '', cv: '', km: '',
     fuel: fuelOptions[0], transmission: '', ecuType: '',
-    system: '', readingMode: '',
-    dtc: '', performance: [], tool: [], toolOther: '', notes: '',
+    readingMode: '',
+    dtc: '', performance: [], tool: [], notes: '',
   });
 
   const [mapFiles, setMapFiles] = useState<File[]>([]);
@@ -175,9 +171,7 @@ export default function FranchiseNewOrder() {
     setLoading(true);
     setError('');
     try {
-      const toolsFinal = formData.tool
-        .map(t => (t === 'Outra' ? `Outra (${formData.toolOther})` : t))
-        .join(', ');
+      const toolsFinal = formData.tool.join(', ');
 
       const result = await callFunction<{ order: { id: string } }>('create-order', {
         franchisee_id: franchisee.id,
@@ -188,7 +182,7 @@ export default function FranchiseNewOrder() {
         year: formData.year,
         cv: formData.cv,
         fuel: formData.fuel,
-        notes: `KM: ${formData.km} | Câmbio: ${formData.transmission} | System: ${formData.system} | Modo: ${formData.readingMode} | Ferramentas: ${toolsFinal} | Perf: ${formData.performance.join(', ')} | DTCs: ${formData.dtc} | Obs: ${formData.notes}`,
+        notes: `KM: ${formData.km} | Câmbio: ${formData.transmission} | Modo: ${formData.readingMode} | Tipo ECU: ${formData.ecuType} | Ferramentas: ${toolsFinal} | Perf: ${formData.performance.join(', ')} | DTCs: ${formData.dtc} | Obs: ${formData.notes}`,
       });
 
       for (const file of mapFiles) {
@@ -487,6 +481,11 @@ export default function FranchiseNewOrder() {
                 </div>
 
                 <div style={{ ...formGroup, marginBottom: 0 }}>
+                  <label style={label}>Chassi</label>
+                  <input style={input} value={formData.chassi} onChange={e => updateField('chassi', e.target.value)} placeholder="Opcional" />
+                </div>
+
+                <div style={{ ...formGroup, marginBottom: 0 }}>
                   <label style={label}>Potência (CV)</label>
                   <input style={input} value={formData.cv} onChange={e => updateField('cv', e.target.value)} placeholder="Ex: 180" />
                 </div>
@@ -496,12 +495,6 @@ export default function FranchiseNewOrder() {
                   <select style={input} value={formData.fuel} onChange={e => updateField('fuel', e.target.value)}>
                     {fuelOptions.map(f => <option key={f} value={f}>{f}</option>)}
                   </select>
-                </div>
-
-                {/* Chassi — span 2 */}
-                <div className="span2" style={{ ...formGroup, marginBottom: 0 }}>
-                  <label style={label}>Chassi</label>
-                  <input style={input} value={formData.chassi} onChange={e => updateField('chassi', e.target.value)} placeholder="Opcional" />
                 </div>
 
                 <div style={{ ...formGroup, marginBottom: 0 }}>
@@ -518,34 +511,12 @@ export default function FranchiseNewOrder() {
                     <option value="DSG/Dualogic">DSG/Dualogic</option>
                   </select>
                 </div>
-
-                <div className="span2" style={{ ...formGroup, marginBottom: 0 }}>
-                  <label style={label}>Tipo de ECU</label>
-                  <select style={input} value={formData.ecuType} onChange={e => updateField('ecuType', e.target.value)}>
-                    <option value="">Selecione</option>
-                    {ecuOptions.map(ecu => <option key={ecu} value={ecu}>{ecu}</option>)}
-                  </select>
-                </div>
               </div>
             </div>
 
             {/* Card 2 — Ferramenta */}
             <div style={card}>
               <div style={sectionTitle}><IconTool />2. Ferramenta *</div>
-              
-              <div style={{ marginBottom: '12px' }}>
-                <label style={label}>Modo de Leitura</label>
-                <div
-                  className="reading-mode-grid"
-                  style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}
-                >
-                  {(['OBD', 'BENCH', 'BOOT', 'CUMMINS'] as const).map(m => (
-                    <button key={m} type="button" onClick={() => updateField('readingMode', m)} style={badge(formData.readingMode === m)}>
-                      {m}
-                    </button>
-                  ))}
-                </div>
-              </div>
 
               <div
                 className="tool-grid"
@@ -562,11 +533,30 @@ export default function FranchiseNewOrder() {
                   </button>
                 ))}
               </div>
-              {formData.tool.includes('Outra') && (
-                <div style={{ marginTop: '12px' }}>
-                  <input style={input} value={formData.toolOther} onChange={e => updateField('toolOther', e.target.value)} placeholder="Qual ferramenta?" />
+
+              <div style={{ marginTop: '12px', marginBottom: '12px' }}>
+                <label style={label}>Modo de Leitura</label>
+                <div
+                  className="reading-mode-grid"
+                  style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}
+                >
+                  {(['OBD', 'BENCH', 'BOOT', 'CUMMINS'] as const).map(m => (
+                    <button key={m} type="button" onClick={() => updateField('readingMode', m)} style={badge(formData.readingMode === m)}>
+                      {m}
+                    </button>
+                  ))}
                 </div>
-              )}
+              </div>
+
+              <div>
+                <label style={label}>Tipo de ECU</label>
+                <input
+                  style={input}
+                  value={formData.ecuType}
+                  onChange={e => updateField('ecuType', e.target.value)}
+                  placeholder="Digite o tipo de ECU"
+                />
+              </div>
             </div>
           </div>
 
