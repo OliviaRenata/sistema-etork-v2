@@ -10,18 +10,12 @@ type FormData = {
   chassi: string;
   model: string;
   year: string;
-  engine: string;
   cv: string;
   km: string;
   fuel: string;
   transmission: 'Manual' | 'Automático' | 'DSG/Dualogic' | '';
-  hw_number: string;
-  sw_number: string;
-  sw_upgrade: string;
-  spare_part: string;
   system: string;
-  protocol: string;
-  readingMode: 'OBD' | 'BANCADA' | 'BOOT' | 'VR' | '';
+  readingMode: 'OBD' | 'BENCH' | 'BOOT' | 'CUMMINS' | '';
   dtc: string;
   performance: string[];
   tool: string[];
@@ -33,19 +27,12 @@ const fuelOptions = ['Flex', 'Diesel', 'Gasolina', 'Álcool', 'Híbrido', 'Elét
 const yearOptions = Array.from({ length: 40 }, (_, i) => `${new Date().getFullYear() - i}`);
 
 const performanceOptions = [
-  'DPF & EGR (OFF)', 'DPF (OFF)', 'EGR (OFF)', 'SCR/AdBlue OFF',
-  'Combo 3 OFF', 'Sonda/O2 (OFF)', 'MAF (OFF)', 'Eolis Renault',
-  'STG1 Potência', 'STG2 Potência', 'STG1 + DPF/EGR', 'Agri STG1 + EGR',
-  'Pop & Bangs', 'VMAX OFF', 'Hard Cut', 'DTC P0420',
-  'DTC OFF (OBD)', 'Start Stop', 'TVA (OFF)', 'Bomba Água OFF',
-  'Heliçe JD', 'Torque SCR', 'Decode MR/FR', 'Checksum',
-  'Original', 'Verificação', 'Especial',
+  'STAGE 1', 'STAGE 2', 'DPF/EGR OFF', 'CAT OFF',
+  'ADBLUE/DEF/SCR OFF', 'LIMITADOR OFF', 'DTC ESPECÍFICO', 'RAM - CODING\'S',
 ];
 
 const toolOptions = [
-  'KTAG ORIGINAL', 'KTAG PIRATA', 'KESS V2 ORIGINAL', 'KESS PIRATA',
-  'KESS3 ORIGINAL', 'NEW GENIUS', 'NEW TRANSDATA', 'KZ PROG',
-  'DFOX', 'KT200', 'Outra',
+  'PCM', 'BITBOX', 'CALTERM', 'NEW GENIUS', 'KESS CHINA',
 ];
 
 const IconArrowLeft = () => (
@@ -132,10 +119,10 @@ export default function FranchiseNewOrder() {
   const isDark = theme === 'dark';
 
   const [formData, setFormData] = useState<FormData>({
-    plate: '', chassi: '', model: '', year: '', engine: '', cv: '', km: '',
-    fuel: fuelOptions[0], transmission: '', hw_number: '', sw_number: '',
-    sw_upgrade: '', spare_part: '', system: '', protocol: '',
-    readingMode: '', dtc: '', performance: [], tool: [], toolOther: '', notes: '',
+    plate: '', chassi: '', model: '', year: '', cv: '', km: '',
+    fuel: fuelOptions[0], transmission: '',
+    system: '', readingMode: '',
+    dtc: '', performance: [], tool: [], toolOther: '', notes: '',
   });
 
   const [mapFiles, setMapFiles] = useState<File[]>([]);
@@ -160,7 +147,6 @@ export default function FranchiseNewOrder() {
             ...prev,
             model: data.model || prev.model,
             year: data.year || prev.year,
-            engine: data.engine || prev.engine,
             fuel: data.fuel || prev.fuel,
             chassi: data.chassi || prev.chassi,
             cv: data.cv || prev.cv,
@@ -197,10 +183,9 @@ export default function FranchiseNewOrder() {
         chassi: formData.chassi,
         model: formData.model,
         year: formData.year,
-        engine: formData.engine,
         cv: formData.cv,
         fuel: formData.fuel,
-        notes: `KM: ${formData.km} | Câmbio: ${formData.transmission} | HW: ${formData.hw_number} | SW: ${formData.sw_number} | SW Up: ${formData.sw_upgrade} | System: ${formData.system} | Modo: ${formData.readingMode} | Prot: ${formData.protocol} | Ferramentas: ${toolsFinal} | Perf: ${formData.performance.join(', ')} | DTCs: ${formData.dtc} | Obs: ${formData.notes}`,
+        notes: `KM: ${formData.km} | Câmbio: ${formData.transmission} | System: ${formData.system} | Modo: ${formData.readingMode} | Ferramentas: ${toolsFinal} | Perf: ${formData.performance.join(', ')} | DTCs: ${formData.dtc} | Obs: ${formData.notes}`,
       });
 
       for (const file of mapFiles) {
@@ -499,11 +484,6 @@ export default function FranchiseNewOrder() {
                 </div>
 
                 <div style={{ ...formGroup, marginBottom: 0 }}>
-                  <label style={label}>Motor *</label>
-                  <input style={input} value={formData.engine} onChange={e => updateField('engine', e.target.value)} placeholder="Ex: 2.0 TDI" />
-                </div>
-
-                <div style={{ ...formGroup, marginBottom: 0 }}>
                   <label style={label}>Potência (CV)</label>
                   <input style={input} value={formData.cv} onChange={e => updateField('cv', e.target.value)} placeholder="Ex: 180" />
                 </div>
@@ -543,18 +523,8 @@ export default function FranchiseNewOrder() {
               <div style={sectionTitle}><IconCpu />2. ECU & Sistema</div>
               <div
                 className="ecu-grid"
-                style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}
+                style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px' }}
               >
-                <div style={{ ...formGroup, marginBottom: 0 }}>
-                  <label style={label}>Nº HW</label>
-                  <input style={input} value={formData.hw_number} onChange={e => updateField('hw_number', e.target.value)} placeholder="Hardware" />
-                </div>
-
-                <div style={{ ...formGroup, marginBottom: 0 }}>
-                  <label style={label}>Nº SW</label>
-                  <input style={input} value={formData.sw_number} onChange={e => updateField('sw_number', e.target.value)} placeholder="Software" />
-                </div>
-
                 <div className="span2" style={{ ...formGroup, marginBottom: 0 }}>
                   <label style={label}>Módulo / Sistema</label>
                   <input style={input} value={formData.system} onChange={e => updateField('system', e.target.value)} placeholder="Ex: EDC17C46" />
@@ -566,7 +536,7 @@ export default function FranchiseNewOrder() {
                     className="reading-mode-grid"
                     style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}
                   >
-                    {(['OBD', 'BANCADA', 'BOOT', 'VR'] as const).map(m => (
+                    {(['OBD', 'BENCH', 'BOOT', 'CUMMINS'] as const).map(m => (
                       <button key={m} type="button" onClick={() => updateField('readingMode', m)} style={badge(formData.readingMode === m)}>
                         {m}
                       </button>

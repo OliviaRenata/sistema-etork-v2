@@ -393,12 +393,26 @@ export default function FranchiseDashboard() {
             </p>
           </div>
           {!isFranchiseeBlocked && (
-            <Link
-              to="/orders/new"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 18px', background: colors.accent, color: '#000', borderRadius: 8, fontSize: 12, fontWeight: 700, textDecoration: 'none' }}
-            >
-              <PlusIcon width={14} height={14} /> NOVO PEDIDO
-            </Link>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <Link
+                to="/orders/new"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 18px', background: colors.accent, color: '#000', borderRadius: 8, fontSize: 12, fontWeight: 700, textDecoration: 'none' }}
+              >
+                <PlusIcon width={14} height={14} /> NOVO PEDIDO
+              </Link>
+              <Link
+                to="/orders"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 18px', background: isDark ? '#2a2a2a' : '#f0f0f0', color: colors.text, borderRadius: 8, fontSize: 12, fontWeight: 700, textDecoration: 'none' }}
+              >
+                <IconClipboard /> MEUS PEDIDOS
+              </Link>
+              <button
+                onClick={() => alert('Lista de Veículos em desenvolvimento')}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 18px', background: isDark ? '#2a2a2a' : '#f0f0f0', color: colors.text, border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+              >
+                <IconCar /> LISTA DE VEÍCULOS
+              </button>
+            </div>
           )}
         </div>
 
