@@ -571,11 +571,8 @@ export default function FranchiseNewOrder() {
                 className="perf-grid"
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
+                  gridTemplateColumns: 'repeat(6, 1fr)',
                   gap: '4px',
-                  maxHeight: '320px',
-                  overflowY: 'auto',
-                  paddingRight: '2px',
                 }}
               >
                 {performanceOptions.map(opt => (
@@ -585,7 +582,7 @@ export default function FranchiseNewOrder() {
                     onClick={() => updateField('performance', toggleSelection(formData.performance, opt))}
                     style={{
                       ...badge(formData.performance.includes(opt)),
-                      ...(opt === 'ADBLUE / SCR OFF' ? { gridColumn: 'span 2' } : {}),
+                      ...(opt === 'ADBLUE / SCR OFF' ? { gridColumn: 'span 3' } : {}),
                     }}
                   >
                     {opt}
