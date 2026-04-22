@@ -27,7 +27,8 @@ const yearOptions = Array.from({ length: 40 }, (_, i) => `${new Date().getFullYe
 
 const performanceOptions = [
   'STAGE 1', 'STAGE 2', 'DPF/EGR OFF', 'CAT OFF',
-  'ADBLUE/DEF/SCR OFF', 'LIMITADOR OFF', 'DTC ESPECÍFICO', 'RAM - CODING\'S',
+  'LIMITADOR OFF', 'DTC ESPECÍFICO', 'RAM - CODING\'S', 'VOLTAR ORI', 'IMMO OFF',
+  'ADBLUE / SCR OFF',
 ];
 
 const toolOptions = [
@@ -582,7 +583,10 @@ export default function FranchiseNewOrder() {
                     key={opt}
                     type="button"
                     onClick={() => updateField('performance', toggleSelection(formData.performance, opt))}
-                    style={badge(formData.performance.includes(opt))}
+                    style={{
+                      ...badge(formData.performance.includes(opt)),
+                      ...(opt === 'ADBLUE / SCR OFF' ? { gridColumn: 'span 2' } : {}),
+                    }}
                   >
                     {opt}
                   </button>
