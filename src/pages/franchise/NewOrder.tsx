@@ -14,6 +14,7 @@ type FormData = {
   km: string;
   fuel: string;
   transmission: 'Manual' | 'Automático' | 'DSG/Dualogic' | '';
+  ecuType: string;
   system: string;
   readingMode: 'OBD' | 'BENCH' | 'BOOT' | 'CUMMINS' | '';
   dtc: string;
@@ -34,6 +35,8 @@ const performanceOptions = [
 const toolOptions = [
   'PCM', 'BITBOX', 'CALTERM', 'NEW GENIUS', 'KESS CHINA',
 ];
+
+const ecuOptions = ['EDC17C46', 'ME17', 'EDC17CP20', 'Bosch', 'Siemens', 'Delphi', 'Outra'];
 
 const IconArrowLeft = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -120,7 +123,7 @@ export default function FranchiseNewOrder() {
 
   const [formData, setFormData] = useState<FormData>({
     plate: '', chassi: '', model: '', year: '', cv: '', km: '',
-    fuel: fuelOptions[0], transmission: '',
+    fuel: fuelOptions[0], transmission: '', ecuType: '',
     system: '', readingMode: '',
     dtc: '', performance: [], tool: [], toolOther: '', notes: '',
   });
@@ -515,40 +518,35 @@ export default function FranchiseNewOrder() {
                     <option value="DSG/Dualogic">DSG/Dualogic</option>
                   </select>
                 </div>
-              </div>
-            </div>
 
-            {/* Card 2 — ECU */}
-            <div style={card}>
-              <div style={sectionTitle}><IconCpu />2. ECU & Sistema</div>
-              <div
-                className="ecu-grid"
-                style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px' }}
-              >
                 <div className="span2" style={{ ...formGroup, marginBottom: 0 }}>
-                  <label style={label}>Módulo / Sistema</label>
-                  <input style={input} value={formData.system} onChange={e => updateField('system', e.target.value)} placeholder="Ex: EDC17C46" />
-                </div>
-
-                <div className="span2" style={{ marginBottom: 0 }}>
-                  <label style={label}>Modo de Leitura</label>
-                  <div
-                    className="reading-mode-grid"
-                    style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}
-                  >
-                    {(['OBD', 'BENCH', 'BOOT', 'CUMMINS'] as const).map(m => (
-                      <button key={m} type="button" onClick={() => updateField('readingMode', m)} style={badge(formData.readingMode === m)}>
-                        {m}
-                      </button>
-                    ))}
-                  </div>
+                  <label style={label}>Tipo de ECU</label>
+                  <select style={input} value={formData.ecuType} onChange={e => updateField('ecuType', e.target.value)}>
+                    <option value="">Selecione</option>
+                    {ecuOptions.map(ecu => <option key={ecu} value={ecu}>{ecu}</option>)}
+                  </select>
                 </div>
               </div>
             </div>
 
-            {/* Card 3 — Ferramenta */}
+            {/* Card 2 — Ferramenta */}
             <div style={card}>
-              <div style={sectionTitle}><IconTool />3. Ferramenta *</div>
+              <div style={sectionTitle}><IconTool />2. Ferramenta *</div>
+              
+              <div style={{ marginBottom: '12px' }}>
+                <label style={label}>Modo de Leitura</label>
+                <div
+                  className="reading-mode-grid"
+                  style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}
+                >
+                  {(['OBD', 'BENCH', 'BOOT', 'CUMMINS'] as const).map(m => (
+                    <button key={m} type="button" onClick={() => updateField('readingMode', m)} style={badge(formData.readingMode === m)}>
+                      {m}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div
                 className="tool-grid"
                 style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: '6px' }}
@@ -575,9 +573,9 @@ export default function FranchiseNewOrder() {
           {/* ═══ COLUNA DIREITA ═══ */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
-            {/* Card 4 — Performance */}
+            {/* Card 3 — Performance */}
             <div style={card}>
-              <div style={sectionTitle}><IconZap />4. Soluções Requeridas</div>
+              <div style={sectionTitle}><IconZap />3. Soluções Requeridas</div>
               <div
                 className="perf-grid"
                 style={{
@@ -602,9 +600,9 @@ export default function FranchiseNewOrder() {
               </div>
             </div>
 
-            {/* Card 5 — Arquivo */}
+            {/* Card 4 — Arquivo */}
             <div style={card}>
-              <div style={sectionTitle}><IconUpload />5. Arquivo Original *</div>
+              <div style={sectionTitle}><IconUpload />4. Arquivo Original *</div>
               <div
                 onClick={() => document.getElementById('map-upload')?.click()}
                 style={{
@@ -650,7 +648,7 @@ export default function FranchiseNewOrder() {
 
             {/* Card 6 — Notas */}
             <div style={card}>
-              <div style={sectionTitle}><IconNote />6. Notas e DTCs</div>
+              <div style={sectionTitle}><IconNote />5. Notas e DTCs</div>
               <textarea
                 style={{
                   ...input,
