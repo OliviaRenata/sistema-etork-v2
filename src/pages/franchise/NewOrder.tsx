@@ -585,7 +585,17 @@ export default function FranchiseNewOrder() {
                     onClick={() => updateField('performance', toggleSelection(formData.performance, opt))}
                     style={{
                       ...badge(formData.performance.includes(opt)),
-                      ...(opt === 'ADBLUE / SCR OFF' ? { gridColumn: 'span 2' } : {}),
+                      ...(opt === 'ADBLUE / SCR OFF'
+                        ? {
+                            gridColumn: 'span 2',
+                            whiteSpace: 'normal',
+                            textOverflow: 'clip',
+                            fontSize: '10px',
+                            lineHeight: '1.2',
+                            minHeight: '42px',
+                            padding: '6px 10px',
+                          }
+                        : {}),
                     }}
                   >
                     {opt}
