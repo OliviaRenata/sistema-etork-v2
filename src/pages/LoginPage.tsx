@@ -39,41 +39,35 @@ export default function LoginPage() {
     }
   }
 
-// src/pages/LoginPage.tsx
-// Substitua a função handleForgotPassword inteira por:
+  async function handleForgotPassword() {
+    if (!email) {
+      setMessage({ type: 'error', text: 'Digite seu e-mail primeiro.' });
+      return;
+    }
 
-async function handleForgotPassword() {
-  if (!email) {
-    setMessage({ type: 'error', text: 'Digite seu e-mail primeiro.' });
-    return;
+    setLoading(true);
+    setMessage({ type: '', text: '' });
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) throw error;
+
+      setMessage({
+        type: 'success',
+        text: 'E-mail enviado! Verifique sua caixa de entrada para redefinir sua senha.',
+      });
+    } catch (err: unknown) {
+      setMessage({
+        type: 'error',
+        text: (err as Error).message || 'Erro ao enviar e-mail. Tente novamente.',
+      });
+    } finally {
+      setLoading(false);
+    }
   }
-  
-  setLoading(true);
-  try {
-    // Usar Magic Link - NÃO precisa de SMTP configurado
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
-      }
-    });
-    
-    if (error) throw error;
-    
-    setMessage({ 
-      type: 'success', 
-      text: 'Link de acesso enviado! Verifique seu e-mail para fazer login.' 
-    });
-  } catch (err: unknown) {
-    console.error('Erro no magic link:', err);
-    setMessage({ 
-      type: 'error', 
-      text: (err as Error).message || 'Erro ao enviar link. Tente novamente.' 
-    });
-  } finally {
-    setLoading(false);
-  }
-}
 
   return (
     <div style={{ 
