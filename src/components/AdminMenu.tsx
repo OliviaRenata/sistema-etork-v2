@@ -1,4 +1,4 @@
-// src/components/AdminMenu.tsx
+﻿// src/components/AdminMenu.tsx
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -14,9 +14,9 @@ export default function AdminMenu() {
   const colors = {
     background: isDark ? '#141414' : '#ffffff',
     text: isDark ? '#e5e5e5' : '#1a1a1a',
-    textSecondary: isDark ? '#888888' : '#6b7280',
+    textSecondary: isDark ? '#888888' : '#777777',
     border: isDark ? '#222222' : '#e5e7eb',
-    accent: '#e6b800',
+    accent: '#c8c8c8',
   };
 
   const menuItems = [

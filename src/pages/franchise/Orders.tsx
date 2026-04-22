@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -40,13 +40,13 @@ export default function FranchiseOrders() {
     textPrimary: isDark ? '#fff' : '#1a1a1a',
     textSecondary: isDark ? '#888' : '#666',
     textMuted: isDark ? '#555' : '#999',
-    accent: '#e6b800',
-    statusAmber: isDark ? '#854d0e' : '#fef3c7',
-    statusBlue: isDark ? '#3a3000' : '#fff8d6',
-    statusGreen: isDark ? '#3a3000' : '#fff8d6',
-    statusRed: isDark ? '#3a3000' : '#fff8d6',
-    badgeFile: isDark ? '#1a1500' : '#fff8e0',
-    badgeFileColor: isDark ? '#e6b800' : '#b8860b',
+    accent: '#c8c8c8',
+    statusAmber: isDark ? '#777777' : '#f0f0f0',
+    statusBlue: isDark ? '#444333' : '#f0f0f0',
+    statusGreen: isDark ? '#444333' : '#f0f0f0',
+    statusRed: isDark ? '#444333' : '#f0f0f0',
+    badgeFile: isDark ? '#1e1e1e' : '#f0f0f0',
+    badgeFileColor: isDark ? '#c8c8c8' : '#b0b0b0',
   };
 
   useEffect(() => {
@@ -180,7 +180,7 @@ export default function FranchiseOrders() {
           to="/orders/new"
           style={{
             padding: '10px 24px',
-            background: '#e6b800',
+            background: '#c8c8c8',
             borderRadius: 8,
             color: '#000',
             textDecoration: 'none',
@@ -197,8 +197,8 @@ export default function FranchiseOrders() {
           style={{
             marginBottom: 16,
             padding: '14px 16px',
-            background: '#3a3000',
-            color: '#f5d54a',
+            background: '#444333',
+            color: '#d4d4d4',
             borderRadius: 12,
             fontSize: 13,
           }}
@@ -310,10 +310,10 @@ export default function FranchiseOrders() {
                               alignItems: 'center',
                               gap: 6,
                               padding: '6px 12px',
-                              background: isDark ? '#1a1a1a' : '#f5f5f5',
+                              background: isDark ? '#1a1a1a' : '#f0f0f0',
                               borderRadius: 6,
                               fontSize: 12,
-                              color: '#e6b800',
+                              color: '#c8c8c8',
                               textDecoration: 'none',
                             }}
                           >

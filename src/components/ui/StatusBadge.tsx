@@ -3,11 +3,11 @@ import type { OrderStatus } from '../../types';
 import { ORDER_STATUS_LABEL } from '../../types';
 
 const COLORS: Record<OrderStatus, { bg: string; color: string; border: string }> = {
-  solicitado:   { bg: '#1a1200', color: '#f59e0b', border: '#3a2a00' },
-  em_producao:  { bg: '#0a1020', color: '#e6b800', border: '#1a3060' },
-  enviado:      { bg: '#150a25', color: '#f5d54a', border: '#3a1a6a' },
-  concluido:    { bg: '#1a1500', color: '#e6b800', border: '#1a4a1a' },
-  cancelado:    { bg: '#1a0a0a', color: '#e6b800', border: '#3a3000' },
+  solicitado:   { bg: '#1c1c1c', color: '#c8c8c8', border: '#2d2d2d' },
+  em_producao:  { bg: '#151515', color: '#c8c8c8', border: '#252525' },
+  enviado:      { bg: '#1a1a1a', color: '#d4d4d4', border: '#252525' },
+  concluido:    { bg: '#1e1e1e', color: '#c8c8c8', border: '#252525' },
+  cancelado:    { bg: '#1c1c1c', color: '#c8c8c8', border: '#444333' },
 };
 
 function getFranchiseStatusLabel(status: OrderStatus) {

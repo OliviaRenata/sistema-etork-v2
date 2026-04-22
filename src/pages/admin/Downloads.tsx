@@ -1,4 +1,4 @@
-// src/pages/admin/Downloads.tsx
+﻿// src/pages/admin/Downloads.tsx
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -95,11 +95,11 @@ export default function AdminDownloads() {
     background: isDark ? '#0d0d0d' : '#f3f4f6',
     surface: isDark ? '#141414' : '#ffffff',
     text: isDark ? '#e5e5e5' : '#1a1a1a',
-    textSecondary: isDark ? '#888888' : '#6b7280',
+    textSecondary: isDark ? '#888888' : '#777777',
     border: isDark ? '#222222' : '#e5e7eb',
-    accent: '#e6b800',
-    error: '#e6b800',
-    success: '#e6b800',
+    accent: '#c8c8c8',
+    error: '#c8c8c8',
+    success: '#c8c8c8',
   };
 
   // Verificar acesso

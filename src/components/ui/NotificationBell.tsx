@@ -50,7 +50,7 @@ export default function NotificationBell() {
         onClick={() => setOpen(!open)}
         style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, position: 'relative' }}
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={open ? '#e6b800' : '#888'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={open ? '#c8c8c8' : '#888'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
           <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
           <path d="M13.73 21a2 2 0 0 1-3.46 0" />
         </svg>
@@ -58,7 +58,7 @@ export default function NotificationBell() {
           <span style={{
             position: 'absolute', top: 0, right: 0,
             width: 16, height: 16, borderRadius: '50%',
-            background: '#e6b800', color: '#fff',
+            background: '#c8c8c8', color: '#fff',
             fontSize: 9, fontWeight: 700,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
@@ -79,7 +79,7 @@ export default function NotificationBell() {
             <div style={{ padding: '12px 16px', borderBottom: '1px solid #1e1e1e', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>Notificações</span>
               {unread > 0 && (
-                <button onClick={markAllRead} style={{ background: 'none', border: 'none', color: '#e6b800', fontSize: 11, cursor: 'pointer' }}>
+                <button onClick={markAllRead} style={{ background: 'none', border: 'none', color: '#c8c8c8', fontSize: 11, cursor: 'pointer' }}>
                   Marcar lidas
                 </button>
               )}
@@ -94,7 +94,7 @@ export default function NotificationBell() {
                 }}>
                   <div style={{ fontSize: 12, color: n.read ? '#888' : '#fff', fontWeight: n.read ? 400 : 600 }}>{n.title}</div>
                   <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>{n.body}</div>
-                  <div style={{ fontSize: 10, color: '#333', marginTop: 4 }}>
+                  <div style={{ fontSize: 10, color: '#444', marginTop: 4 }}>
                     {new Date(n.created_at).toLocaleString('pt-BR')}
                   </div>
                 </div>
@@ -116,8 +116,8 @@ export function LoadingScreen() {
       fontFamily: '"Inter", sans-serif',
     }}>
       <div style={{ fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: -1 }}>ETORK</div>
-      <div style={{ fontSize: 9, color: '#e6b800', letterSpacing: 4, marginTop: 4 }}>BRASIL</div>
-      <div style={{ marginTop: 24, width: 32, height: 32, border: '2px solid #333', borderTop: '2px solid #e6b800', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+      <div style={{ fontSize: 9, color: '#c8c8c8', letterSpacing: 4, marginTop: 4 }}>BRASIL</div>
+      <div style={{ marginTop: 24, width: 32, height: 32, border: '2px solid #444', borderTop: '2px solid #c8c8c8', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );

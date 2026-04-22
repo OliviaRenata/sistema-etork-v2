@@ -51,7 +51,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           user_id: userId,
           company_name: companyName,
           code: companyCode,
-          active: true,
+          active: false,
+          approved: false,
           balance: 0,
           credit_limit: 1000,
           created_at: new Date().toISOString(),
@@ -75,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { data: existingFranchisee, error: fetchError } = await supabase
         .from('franchisees')
-        .select('id, user_id, company_name, code, active')
+        .select('id, user_id, company_name, code, active, approved')
         .eq('user_id', userId)
         .maybeSingle();
 

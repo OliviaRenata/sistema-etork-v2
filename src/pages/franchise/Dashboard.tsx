@@ -1,4 +1,4 @@
-// src/pages/franchise/Dashboard.tsx
+﻿// src/pages/franchise/Dashboard.tsx
 
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
@@ -174,16 +174,16 @@ export default function FranchiseDashboard() {
     surface: isDark ? '#141414' : '#ffffff',
     surfaceHover: isDark ? '#1c1c1c' : '#f9fafb',
     text: isDark ? '#e5e5e5' : '#1a1a1a',
-    textSecondary: isDark ? '#888888' : '#6b7280',
+    textSecondary: isDark ? '#888888' : '#777777',
     textMuted: isDark ? '#555' : '#aaa',
     border: isDark ? '#222222' : '#e5e7eb',
-    accent: '#e6b800',
-    accentHover: '#f5c518',
-    accentBg: isDark ? '#1a1500' : '#fffbeb',
-    green: '#e6b800',
-    blue: '#e6b800',
-    purple: '#e6b800',
-    red: '#e6b800',
+    accent: '#c8c8c8',
+    accentHover: '#e0e0e0',
+    accentBg: isDark ? '#1e1e1e' : '#f0f0f0',
+    green: '#c8c8c8',
+    blue: '#c8c8c8',
+    purple: '#c8c8c8',
+    red: '#c8c8c8',
   };
 
   const spinKeyframes = `
@@ -408,8 +408,8 @@ export default function FranchiseDashboard() {
               marginBottom: 18,
               padding: '14px 16px',
               borderRadius: 10,
-              border: `1px solid ${isDark ? '#3a3000' : '#d4c176'}`,
-              background: isDark ? '#1a1500' : '#fff8d6',
+              border: `1px solid ${isDark ? '#444333' : '#b0b0b0'}`,
+              background: isDark ? '#1e1e1e' : '#f0f0f0',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -418,7 +418,7 @@ export default function FranchiseDashboard() {
             }}
           >
             <div style={{ minWidth: 240 }}>
-              <div style={{ color: '#e6b800', fontSize: 12, fontWeight: 800, letterSpacing: 0.3 }}>
+              <div style={{ color: '#c8c8c8', fontSize: 12, fontWeight: 800, letterSpacing: 0.3 }}>
                 ACESSO DE PEDIDOS BLOQUEADO
               </div>
               <div style={{ color: colors.text, fontSize: 12, marginTop: 4, lineHeight: 1.5 }}>
@@ -437,9 +437,9 @@ export default function FranchiseDashboard() {
                 textDecoration: 'none',
                 padding: '8px 12px',
                 borderRadius: 8,
-                border: `1px solid ${isDark ? '#3a3000' : '#d4c176'}`,
-                color: '#e6b800',
-                background: isDark ? '#1a1500' : '#fff8d6',
+                border: `1px solid ${isDark ? '#444333' : '#b0b0b0'}`,
+                color: '#c8c8c8',
+                background: isDark ? '#1e1e1e' : '#f0f0f0',
                 fontSize: 12,
                 fontWeight: 700,
               }}

@@ -1,4 +1,4 @@
-// src/pages/RegisterPage.tsx
+﻿// src/pages/RegisterPage.tsx
 
 import logoImg from '../assets/logoetork.png';
 import { useState, FormEvent, useEffect } from 'react';
@@ -91,7 +91,8 @@ export default function RegisterPage() {
             user_id: data.user.id,
             company_name: companyName,
             code: companyCode,
-            active: true,
+            active: false,
+            approved: false,
             balance: 0,
             credit_limit: 1000,
             created_at: new Date().toISOString(),
@@ -102,7 +103,7 @@ export default function RegisterPage() {
 
         setMessage({
           type: 'success',
-          text: `Cadastro realizado! Agora você pode entrar com seu e-mail e senha. Código: ${companyCode}`,
+          text: `Cadastro realizado! Seu acesso será liberado após aprovação do administrador. Fique atento ao seu e-mail.`,
         });
         
         // Limpar formulário
@@ -111,10 +112,10 @@ export default function RegisterPage() {
         setPassword('');
         setConfirmPassword('');
         
-        // Redirecionar para login após 3 segundos
+        // Redirecionar para login após 4 segundos
         setTimeout(() => {
           window.location.href = '/login';
-        }, 3000);
+        }, 4000);
       }
     } catch (err: unknown) {
       const error = err as { message?: string };
@@ -131,7 +132,7 @@ export default function RegisterPage() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: isMobile ? 'column' : 'row', background: '#000', fontFamily: '"Inter", sans-serif' }}>
       <div style={{ width: isMobile ? '100%' : 460, minHeight: '100vh', flexShrink: 0, background: '#0a0a0a', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: isMobile ? '28px 18px 22px' : '48px 44px', position: 'relative' }}>
-        <div style={{ display: isMobile ? 'none' : 'block', position: 'absolute', right: 0, top: '10%', bottom: '10%', width: 1, background: 'linear-gradient(to bottom, transparent, rgba(230,184,0,0.4) 40%, rgba(230,184,0,0.4) 60%, transparent)' }} />
+        <div style={{ display: isMobile ? 'none' : 'block', position: 'absolute', right: 0, top: '10%', bottom: '10%', width: 1, background: 'linear-gradient(to bottom, transparent, rgba(200,200,200,0.4) 40%, rgba(200,200,200,0.4) 60%, transparent)' }} />
 
         <div style={{ marginBottom: 44, textAlign: 'center' }}>
           <img
@@ -156,7 +157,7 @@ export default function RegisterPage() {
               required
               placeholder="Ex: ETORK RJ"
               style={inputStyle}
-              onFocus={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = '#e6b800'}
+              onFocus={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = '#c8c8c8'}
               onBlur={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = '#2a2a2a'}
             />
           </div>
@@ -170,7 +171,7 @@ export default function RegisterPage() {
               required
               placeholder="seu@email.com"
               style={inputStyle}
-              onFocus={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = '#e6b800'}
+              onFocus={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = '#c8c8c8'}
               onBlur={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = '#2a2a2a'}
             />
           </div>
@@ -184,7 +185,7 @@ export default function RegisterPage() {
               required
               placeholder="••••••••"
               style={{ ...inputStyle, paddingRight: 42 }}
-              onFocus={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = '#e6b800'}
+              onFocus={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = '#c8c8c8'}
               onBlur={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = '#2a2a2a'}
             />
             <button 
@@ -230,7 +231,7 @@ export default function RegisterPage() {
               required
               placeholder="••••••••"
               style={{ ...inputStyle, paddingRight: 42 }}
-              onFocus={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = '#e6b800'}
+              onFocus={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = '#c8c8c8'}
               onBlur={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = '#2a2a2a'}
             />
           </div>
@@ -242,9 +243,9 @@ export default function RegisterPage() {
               borderRadius: 10, 
               fontSize: 13, 
               lineHeight: 1.5, 
-              background: message.type === 'error' ? '#1a1500' : '#0a1510', 
-              border: `1px solid ${message.type === 'error' ? '#3a3000' : '#3a3000'}`, 
-              color: message.type === 'error' ? '#e6b800' : '#f5d54a' 
+              background: message.type === 'error' ? '#1e1e1e' : '#0a1510', 
+              border: `1px solid ${message.type === 'error' ? '#444333' : '#444333'}`, 
+              color: message.type === 'error' ? '#c8c8c8' : '#d4d4d4' 
             }}>
               {message.text}
             </div>
@@ -253,7 +254,7 @@ export default function RegisterPage() {
           <button type="submit" disabled={loading} style={{ 
             width: '100%', 
             padding: '14px', 
-            background: loading ? '#2a2500' : '#e6b800', 
+            background: loading ? '#222222' : '#c8c8c8', 
             color: '#000', 
             border: 'none', 
             borderRadius: 10, 
@@ -269,7 +270,7 @@ export default function RegisterPage() {
 
         <div style={{ marginTop: 24, textAlign: 'center' }}>
           <span style={{ color: '#555', fontSize: 12 }}>Já tem conta? </span>
-          <a href="/login" style={{ color: '#e6b800', fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>Fazer Login</a>
+          <a href="/login" style={{ color: '#c8c8c8', fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>Fazer Login</a>
         </div>
 
         <div style={{ position: isMobile ? 'static' : 'absolute', marginTop: isMobile ? 18 : 0, bottom: 0, left: 0, right: 0, textAlign: 'center', background: '#000', padding: '14px 0' }}>
@@ -278,7 +279,7 @@ export default function RegisterPage() {
       </div>
 
       <div style={{ display: isMobile ? 'none' : 'flex', flex: 1, background: '#000', position: 'relative', overflow: 'hidden', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, transparent 0%, #e6b800 30%, #e6b800 60%, transparent 100%)' }} />
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, transparent 0%, #c8c8c8 30%, #c8c8c8 60%, transparent 100%)' }} />
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(230,184,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(230,184,0,0.04) 1px, transparent 1px)', backgroundSize: '48px 48px' }} />
         <div style={{ position: 'absolute', top: '38%', left: '50%', transform: 'translate(-50%, -50%)', width: 420, height: 420, borderRadius: '50%', background: 'radial-gradient(circle, rgba(230,184,0,0.06) 0%, transparent 68%)', pointerEvents: 'none' }} />
         <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 420, padding: 24, textAlign: 'center' }}>

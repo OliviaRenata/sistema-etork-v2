@@ -23,7 +23,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       document.body.style.background = '#0a0a0a';
       document.body.style.color = '#e0e0e0';
     } else {
-      document.body.style.background = '#f5f5f5';
+      document.body.style.background = '#f0f0f0';
       document.body.style.color = '#1a1a1a';
     }
   }, [theme]);

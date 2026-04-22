@@ -1,4 +1,4 @@
-// src/pages/admin/OrderDetail.tsx
+﻿// src/pages/admin/OrderDetail.tsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase, callFunction, storage } from '../../lib/supabase';
@@ -75,7 +75,7 @@ export default function AdminOrderDetail() {
   }
 
   if (loading) return <div style={{ color: '#555', padding: 40, textAlign: 'center' }}>Carregando...</div>;
-  if (!order) return <div style={{ color: '#e6b800', padding: 40 }}>Pedido não encontrado.</div>;
+  if (!order) return <div style={{ color: '#c8c8c8', padding: 40 }}>Pedido não encontrado.</div>;
 
   const franchiseeData = order.franchisee as unknown as { company_name: string; code: string; email: string; phone: string };
   const nextStatuses = STATUS_TRANSITIONS[order.status] || [];
@@ -89,7 +89,7 @@ export default function AdminOrderDetail() {
         </button>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <h1 style={{ color: '#e6b800', fontSize: 22, fontWeight: 700, margin: 0 }}>{order.order_number}</h1>
+            <h1 style={{ color: '#c8c8c8', fontSize: 22, fontWeight: 700, margin: 0 }}>{order.order_number}</h1>
             <StatusBadge status={order.status} large />
           </div>
           <p style={{ color: '#666', fontSize: 13, margin: '4px 0 0' }}>Criado em {formatDate(order.created_at)}</p>
@@ -121,7 +121,7 @@ export default function AdminOrderDetail() {
                       </td>
                       <td style={{ padding: '10px 12px', fontSize: 13, color: '#888' }}>{item.quantity}</td>
                       <td style={{ padding: '10px 12px', fontSize: 13, color: '#888' }}>{formatCurrency(item.unit_price)}</td>
-                      <td style={{ padding: '10px 12px', fontSize: 13, color: '#e6b800', fontWeight: 600 }}>{formatCurrency(item.subtotal)}</td>
+                      <td style={{ padding: '10px 12px', fontSize: 13, color: '#c8c8c8', fontWeight: 600 }}>{formatCurrency(item.subtotal)}</td>
                     </tr>
                   );
                 })}
@@ -129,7 +129,7 @@ export default function AdminOrderDetail() {
               <tfoot>
                 <tr>
                   <td colSpan={4} style={{ padding: '12px', textAlign: 'right', color: '#888', fontSize: 13 }}>Total</td>
-                  <td style={{ padding: '12px', color: '#e6b800', fontSize: 16, fontWeight: 700 }}>{formatCurrency(order.total_amount)}</td>
+                  <td style={{ padding: '12px', color: '#c8c8c8', fontSize: 16, fontWeight: 700 }}>{formatCurrency(order.total_amount)}</td>
                 </tr>
               </tfoot>
             </table>
@@ -152,7 +152,7 @@ export default function AdminOrderDetail() {
                     </div>
                   </div>
                   <button onClick={() => downloadFile(file)}
-                    style={{ padding: '6px 14px', background: 'transparent', border: '1px solid #333', borderRadius: 6, color: '#e6b800', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
+                    style={{ padding: '6px 14px', background: 'transparent', border: '1px solid #444', borderRadius: 6, color: '#c8c8c8', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
                     Baixar
                   </button>
                 </div>
@@ -164,7 +164,7 @@ export default function AdminOrderDetail() {
           <Section title="Histórico de Status">
             {history.map((h, i) => (
               <div key={h.id} style={{ display: 'flex', gap: 12, marginBottom: 12, position: 'relative' }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#e6b800', marginTop: 4, flexShrink: 0 }} />
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#c8c8c8', marginTop: 4, flexShrink: 0 }} />
                 {i < history.length - 1 && (
                   <div style={{ position: 'absolute', left: 3.5, top: 14, bottom: -8, width: 1, background: '#222' }} />
                 )}
@@ -176,7 +176,7 @@ export default function AdminOrderDetail() {
                         <ArrowRightIcon width={12} height={12} />
                       </>
                     )}
-                    <strong style={{ color: '#e6b800' }}>{ORDER_STATUS_LABEL[h.to_status]}</strong>
+                    <strong style={{ color: '#c8c8c8' }}>{ORDER_STATUS_LABEL[h.to_status]}</strong>
                   </div>
                   {h.notes && <div style={{ fontSize: 11, color: '#666', marginTop: 2 }}>{h.notes}</div>}
                   <div style={{ fontSize: 10, color: '#444', marginTop: 2 }}>
@@ -200,16 +200,16 @@ export default function AdminOrderDetail() {
                 rows={2}
                 style={{ width: '100%', padding: '8px 10px', background: '#0d0d0d', border: '1px solid #2a2a2a', borderRadius: 8, color: '#ccc', fontSize: 12, outline: 'none', resize: 'vertical', marginBottom: 10, boxSizing: 'border-box' }}
               />
-              {error && <div style={{ color: '#e6b800', fontSize: 12, marginBottom: 8 }}>{error}</div>}
+              {error && <div style={{ color: '#c8c8c8', fontSize: 12, marginBottom: 8 }}>{error}</div>}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {nextStatuses.map(s => (
                   <button key={s} onClick={() => updateStatus(s)} disabled={updating}
                     style={{
                       padding: '10px', borderRadius: 8, fontSize: 12, fontWeight: 700,
                       border: '1px solid',
-                      background: s === 'cancelado' ? '#1a0a0a' : '#1a1500',
-                      color: s === 'cancelado' ? '#e6b800' : '#e6b800',
-                      borderColor: s === 'cancelado' ? '#3a1a1a' : '#3a3000',
+                      background: s === 'cancelado' ? '#1c1c1c' : '#1e1e1e',
+                      color: s === 'cancelado' ? '#c8c8c8' : '#c8c8c8',
+                      borderColor: s === 'cancelado' ? '#252525' : '#444333',
                       cursor: 'pointer', letterSpacing: 0.5,
                       display: 'inline-flex', alignItems: 'center', gap: 6,
                     }}>

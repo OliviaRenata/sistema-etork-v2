@@ -104,7 +104,7 @@ async function handleForgotPassword() {
           top: '10%', 
           bottom: '10%', 
           width: 1,
-          background: 'linear-gradient(to bottom, transparent, rgba(230,184,0,0.4) 40%, rgba(230,184,0,0.4) 60%, transparent)',
+          background: 'linear-gradient(to bottom, transparent, rgba(200,200,200,0.4) 40%, rgba(200,200,200,0.4) 60%, transparent)',
           zIndex: 2,
         }} />
 
@@ -143,7 +143,7 @@ async function handleForgotPassword() {
               required 
               placeholder="seu@email.com"
               style={inputStyle}
-              onFocus={e => e.target.style.borderColor = '#e6b800'}
+              onFocus={e => e.target.style.borderColor = '#c8c8c8'}
               onBlur={e => e.target.style.borderColor = '#1e1e1e'}
             />
           </div>
@@ -158,7 +158,7 @@ async function handleForgotPassword() {
                 required 
                 placeholder="••••••••"
                 style={{ ...inputStyle, paddingRight: 42 }}
-                onFocus={e => e.target.style.borderColor = '#e6b800'}
+                onFocus={e => e.target.style.borderColor = '#c8c8c8'}
                 onBlur={e => e.target.style.borderColor = '#1e1e1e'}
               />
               <button 
@@ -190,7 +190,7 @@ async function handleForgotPassword() {
 <button 
   type="button" 
   onClick={handleForgotPassword}
-  style={{ background: 'none', border: 'none', color: '#e6b800', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+  style={{ background: 'none', border: 'none', color: '#c8c8c8', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
 >
   ESQUECEU A SENHA?
 </button>
@@ -203,9 +203,9 @@ async function handleForgotPassword() {
               borderRadius: 8, 
               fontSize: 12, 
               lineHeight: 1.5,
-              background: message.type === 'error' ? '#1a1500' : '#1a1500',
-              border: `1px solid ${message.type === 'error' ? '#3a3000' : '#3a3000'}`,
-              color: message.type === 'error' ? '#e6b800' : '#e6b800',
+              background: message.type === 'error' ? '#1e1e1e' : '#1e1e1e',
+              border: `1px solid ${message.type === 'error' ? '#444333' : '#444333'}`,
+              color: message.type === 'error' ? '#c8c8c8' : '#c8c8c8',
               display: 'flex', 
               alignItems: 'center', 
               gap: 8,
@@ -228,7 +228,7 @@ async function handleForgotPassword() {
             style={{
               width: '100%', 
               padding: '14px',
-              background: loading ? '#1a1600' : '#e6b800',
+              background: loading ? '#1e1e1e' : '#c8c8c8',
               color: '#000', 
               border: 'none', 
               borderRadius: 8,
@@ -237,14 +237,14 @@ async function handleForgotPassword() {
               letterSpacing: 1.5,
               cursor: loading ? 'not-allowed' : 'pointer',
               transition: 'background 0.15s, box-shadow 0.15s',
-              boxShadow: loading ? 'none' : '0 4px 24px rgba(230,184,0,0.18)',
+              boxShadow: loading ? 'none' : '0 4px 24px rgba(200,200,200,0.18)',
               display: 'inline-flex', 
               alignItems: 'center', 
               justifyContent: 'center', 
               gap: 8,
             }}
-            onMouseEnter={e => { if (!loading) { (e.currentTarget).style.background = '#ffd000'; } }}
-            onMouseLeave={e => { if (!loading) { (e.currentTarget).style.background = '#e6b800'; } }}
+            onMouseEnter={e => { if (!loading) { (e.currentTarget).style.background = '#e0e0e0'; } }}
+            onMouseLeave={e => { if (!loading) { (e.currentTarget).style.background = '#c8c8c8'; } }}
           >
             {loading ? 'ENTRANDO...' : (
               <>
@@ -260,7 +260,7 @@ async function handleForgotPassword() {
 
         {/* Rodapé */}
         <div style={{ marginTop: 28, paddingTop: 22, borderTop: '1px solid #181818', textAlign: 'center' }}>
-          <a href="/register" style={{ color: '#e6b800', fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>
+          <a href="/register" style={{ color: '#c8c8c8', fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>
             Novo Cadastro
           </a>
         </div>
@@ -325,7 +325,7 @@ async function handleForgotPassword() {
             display: 'inline-flex',
             alignItems: 'center',
             gap: 8,
-            background: '#f5f5f5',
+            background: '#f0f0f0',
             border: '1px solid #e0e0e0',
             borderRadius: 30,
             padding: '8px 24px',
@@ -335,10 +335,10 @@ async function handleForgotPassword() {
               width: 8,
               height: 8,
               borderRadius: '50%',
-              background: '#e6b800',
+              background: '#c8c8c8',
               display: 'inline-block',
             }} />
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#333', letterSpacing: 2 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#444', letterSpacing: 2 }}>
               PORTAL · SLAVE 
             </span>
           </div>
@@ -371,15 +371,15 @@ async function handleForgotPassword() {
           background: '#000000',
         }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 20, fontWeight: 800, color: '#e6b800' }}>2017</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#c8c8c8' }}>2017</div>
             <div style={{ fontSize: 10, color: '#999', letterSpacing: 1 }}>FUNDAÇÃO</div>
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 20, fontWeight: 800, color: '#e6b800' }}>MS</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#c8c8c8' }}>MS</div>
             <div style={{ fontSize: 10, color: '#999', letterSpacing: 1 }}>CAMPO GRANDE</div>
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 20, fontWeight: 800, color: '#e6b800' }}>100%</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#c8c8c8' }}>100%</div>
             <div style={{ fontSize: 10, color: '#999', letterSpacing: 1 }}>PRÓPRIO</div>
           </div>
         </div>

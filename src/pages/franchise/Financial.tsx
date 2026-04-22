@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { formatDateShort } from '../../lib/utils';
 import { useTheme } from '../../context/ThemeContext';
@@ -88,19 +88,19 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
-  solicitado:  { bg: '#fef3c7', text: '#92400e', dot: '#f59e0b' },
-  em_producao: { bg: '#fff8d6', text: '#7c5f00', dot: '#e6b800' },
-  enviado:     { bg: '#fff8d6', text: '#7c5f00', dot: '#e6b800' },
-  concluido:   { bg: '#fff8d6', text: '#3a3000', dot: '#b38f00' },
-  cancelado:   { bg: '#fff8d6', text: '#3a3000', dot: '#e6b800' },
+  solicitado:  { bg: '#f0f0f0', text: '#888888', dot: '#c8c8c8' },
+  em_producao: { bg: '#f0f0f0', text: '#909090', dot: '#c8c8c8' },
+  enviado:     { bg: '#f0f0f0', text: '#909090', dot: '#c8c8c8' },
+  concluido:   { bg: '#f0f0f0', text: '#444333', dot: '#b0b0b0' },
+  cancelado:   { bg: '#f0f0f0', text: '#444333', dot: '#c8c8c8' },
 };
 
 const STATUS_COLORS_DARK: Record<string, { bg: string; text: string; dot: string }> = {
-  solicitado:  { bg: '#422006', text: '#fcd34d', dot: '#f59e0b' },
-  em_producao: { bg: '#2f2600', text: '#f5d54a', dot: '#e6b800' },
-  enviado:     { bg: '#2f2600', text: '#f5d54a', dot: '#e6b800' },
-  concluido:   { bg: '#1f1900', text: '#f5d54a', dot: '#b38f00' },
-  cancelado:   { bg: '#1f1900', text: '#f5d54a', dot: '#e6b800' },
+  solicitado:  { bg: '#2a2a2a', text: '#c8c8c8', dot: '#c8c8c8' },
+  em_producao: { bg: '#222222', text: '#d4d4d4', dot: '#c8c8c8' },
+  enviado:     { bg: '#222222', text: '#d4d4d4', dot: '#c8c8c8' },
+  concluido:   { bg: '#1a1a1a', text: '#d4d4d4', dot: '#b0b0b0' },
+  cancelado:   { bg: '#1a1a1a', text: '#d4d4d4', dot: '#c8c8c8' },
 };
 
 export default function FranchiseFinancial() {
@@ -125,11 +125,11 @@ export default function FranchiseFinancial() {
     surfaceAlt:    isDark ? '#0f0f0f' : '#f9fafb',
     surfaceHover:  isDark ? '#1c1c1c' : '#f0f9ff',
     text:          isDark ? '#e5e5e5' : '#1a1a1a',
-    textSec:       isDark ? '#888' : '#6b7280',
+    textSec:       isDark ? '#888' : '#777777',
     textMuted:     isDark ? '#555' : '#9ca3af',
     border:        isDark ? '#222' : '#e5e7eb',
-    accent:        '#e6b800',
-    accentBg:      isDark ? '#1a1500' : '#fffbeb',
+    accent:        '#c8c8c8',
+    accentBg:      isDark ? '#1e1e1e' : '#f0f0f0',
   };
 
   const statusStyle = (status: string) => {
@@ -310,10 +310,10 @@ export default function FranchiseFinancial() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12, marginBottom: 24 }}>
           {[
             { label: 'TOTAL', value: stats.total, color: c.accent, borderColor: c.accent },
-            { label: 'RECEBIDOS', value: stats.solicitado, color: '#f59e0b', borderColor: '#f59e0b' },
-            { label: 'EM ANDAMENTO', value: stats.em_producao, color: '#e6b800', borderColor: '#e6b800' },
-            { label: 'CONCLUÍDOS', value: stats.concluido, color: '#b38f00', borderColor: '#b38f00' },
-            { label: 'CANCELADOS', value: stats.cancelado, color: '#e6b800', borderColor: '#e6b800' },
+            { label: 'RECEBIDOS', value: stats.solicitado, color: '#c8c8c8', borderColor: '#c8c8c8' },
+            { label: 'EM ANDAMENTO', value: stats.em_producao, color: '#c8c8c8', borderColor: '#c8c8c8' },
+            { label: 'CONCLUÍDOS', value: stats.concluido, color: '#b0b0b0', borderColor: '#b0b0b0' },
+            { label: 'CANCELADOS', value: stats.cancelado, color: '#c8c8c8', borderColor: '#c8c8c8' },
           ].map(({ label, value, color, borderColor }) => (
             <div key={label} style={{
               background: c.surface, border: `1px solid ${c.border}`,
@@ -380,7 +380,7 @@ export default function FranchiseFinancial() {
               onClick={exportCSV}
               style={{
                 display: 'flex', alignItems: 'center', gap: 8,
-                background: isDark ? '#1a1a00' : '#fffbeb',
+                background: isDark ? '#1c1c1c' : '#f0f0f0',
                 border: `1px solid ${c.accent}`,
                 borderRadius: 8, padding: '8px 16px',
                 color: c.accent, cursor: 'pointer', fontSize: 12, fontWeight: 700,
@@ -414,7 +414,7 @@ export default function FranchiseFinancial() {
                 <button
                   onClick={() => { setFilterStatus(''); setDateRange({ start: '', end: '' }); setSearchTerm(''); }}
                   style={{
-                    padding: '8px 14px', background: '#e6b800', border: 'none',
+                    padding: '8px 14px', background: '#c8c8c8', border: 'none',
                     borderRadius: 8, color: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 700,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                   }}

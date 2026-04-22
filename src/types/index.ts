@@ -29,6 +29,7 @@ export interface Franchisee {
   state?: string;
   zip_code?: string;
   active: boolean;
+  approved: boolean;
   credit_limit: number;
   balance: number;
   created_at: string;

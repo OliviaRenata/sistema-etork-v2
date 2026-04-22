@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, callFunction, storage } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -59,7 +59,7 @@ const IconSearch = () => (
   </svg>
 );
 const IconCheck = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e6b800" strokeWidth="2.5" strokeLinecap="round">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c8c8c8" strokeWidth="2.5" strokeLinecap="round">
     <polyline points="20 6 9 17 4 12"/>
   </svg>
 );
@@ -238,7 +238,7 @@ export default function FranchiseNewOrder() {
     padding: '10px 12px',
     borderRadius: '8px',
     background: isDark ? '#1c1c1c' : '#f9fafb',
-    border: `1px solid ${isDark ? '#333' : '#d1d5db'}`,
+    border: `1px solid ${isDark ? '#444' : '#d1d5db'}`,
     color: isDark ? '#fff' : '#111',
     fontSize: '14px',
     outline: 'none',
@@ -261,9 +261,9 @@ export default function FranchiseNewOrder() {
   const sectionTitle: React.CSSProperties = {
     fontSize: '12px',
     fontWeight: 900,
-    color: '#e6b800',
+    color: '#c8c8c8',
     marginBottom: '16px',
-    borderLeft: '3px solid #e6b800',
+    borderLeft: '3px solid #c8c8c8',
     paddingLeft: '10px',
     textTransform: 'uppercase',
     display: 'flex',
@@ -276,8 +276,8 @@ export default function FranchiseNewOrder() {
     fontSize: '11px',
     borderRadius: '6px',
     cursor: 'pointer',
-    border: `1px solid ${active ? '#e6b800' : isDark ? '#2a2a2a' : '#e5e7eb'}`,
-    background: active ? '#e6b800' : isDark ? '#111' : '#fafafa',
+    border: `1px solid ${active ? '#c8c8c8' : isDark ? '#2a2a2a' : '#e5e7eb'}`,
+    background: active ? '#c8c8c8' : isDark ? '#111' : '#fafafa',
     color: active ? '#000' : isDark ? '#ccc' : '#666',
     fontWeight: active ? 700 : 400,
     transition: 'all 0.15s',
@@ -402,7 +402,7 @@ export default function FranchiseNewOrder() {
             onClick={() => navigate('/orders')}
             style={{
               background: isDark ? '#2a2a2a' : '#f0f0f0',
-              color: isDark ? '#fff' : '#333',
+              color: isDark ? '#fff' : '#444',
               border: 'none',
               padding: '10px 16px',
               borderRadius: '8px',
@@ -449,7 +449,7 @@ export default function FranchiseNewOrder() {
                       style={{
                         ...input,
                         paddingRight: '48px',
-                        borderColor: fetchingPlate ? '#e6b800' : isDark ? '#333' : '#d1d5db',
+                        borderColor: fetchingPlate ? '#c8c8c8' : isDark ? '#444' : '#d1d5db',
                       }}
                       value={formData.plate}
                       onChange={e => updateField('plate', e.target.value.toUpperCase())}
@@ -469,9 +469,9 @@ export default function FranchiseNewOrder() {
                         width: 34,
                         height: 34,
                         borderRadius: 8,
-                        border: `1px solid ${isDark ? '#333' : '#d1d5db'}`,
+                        border: `1px solid ${isDark ? '#444' : '#d1d5db'}`,
                         background: isDark ? '#111' : '#fff',
-                        color: '#e6b800',
+                        color: '#c8c8c8',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -638,7 +638,7 @@ export default function FranchiseNewOrder() {
               <div
                 onClick={() => document.getElementById('map-upload')?.click()}
                 style={{
-                  border: `2px dashed ${isDark ? '#333' : '#d1d5db'}`,
+                  border: `2px dashed ${isDark ? '#444' : '#d1d5db'}`,
                   borderRadius: '8px',
                   padding: '24px 16px',
                   textAlign: 'center',
@@ -657,7 +657,7 @@ export default function FranchiseNewOrder() {
                 {mapFiles.length > 0 ? (
                   <>
                     <IconCheck />
-                    <div style={{ fontWeight: 600, color: '#e6b800', fontSize: '13px' }}>
+                    <div style={{ fontWeight: 600, color: '#c8c8c8', fontSize: '13px' }}>
                       {mapFiles.length} arquivo(s) selecionado(s)
                     </div>
                     <div style={{ fontSize: '11px', color: '#888', wordBreak: 'break-all' }}>
@@ -699,8 +699,8 @@ export default function FranchiseNewOrder() {
               {error && (
                 <div style={{
                   background: 'rgba(230,184,0,0.12)',
-                  border: '1px solid #e6b800',
-                  color: isDark ? '#e6b800' : '#a07c00',
+                  border: '1px solid #c8c8c8',
+                  color: isDark ? '#c8c8c8' : '#a0a0a0',
                   padding: '12px',
                   borderRadius: '8px',
                   fontSize: '13px',
@@ -717,7 +717,7 @@ export default function FranchiseNewOrder() {
                 onClick={submitOrder}
                 disabled={loading}
                 style={{
-                  background: loading ? '#555' : '#e6b800',
+                  background: loading ? '#555' : '#c8c8c8',
                   color: '#000',
                   border: 'none',
                   borderRadius: '10px',

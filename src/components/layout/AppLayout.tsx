@@ -1,4 +1,4 @@
-// src/components/layout/AppLayout.tsx
+﻿// src/components/layout/AppLayout.tsx
 
 import { useState, useEffect } from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
@@ -124,14 +124,14 @@ export default function AppLayout() {
 
   // Cores do tema
   const colors = {
-    bg: isDark ? '#0a0a0a' : '#f5f5f5',
+    bg: isDark ? '#0a0a0a' : '#f0f0f0',
     surface: isDark ? '#111111' : '#ffffff',
     sidebar: isDark ? '#111111' : 'rgb(245, 245, 245)',
     topbar: isDark ? '#111111' : 'rgb(245, 245, 245)',
     border: isDark ? '#222222' : '#e0e0e0',
     text: isDark ? '#e0e0e0' : '#1a1a1a',
     muted: isDark ? '#888888' : '#666666',
-    accent: '#e6b800',
+    accent: '#c8c8c8',
   };
 
   const navItems = isAdmin
@@ -218,15 +218,15 @@ export default function AppLayout() {
           <div style={{
             display: 'inline-block', marginTop: 6,
             fontSize: 10, fontWeight: 700, letterSpacing: 1,
-            color: isAdmin ? colors.accent : '#e6b800',
-            background: isAdmin ? '#1a1500' : (isDark ? '#1a1500' : '#ffffff'),
+            color: isAdmin ? colors.accent : '#c8c8c8',
+            background: isAdmin ? '#1e1e1e' : (isDark ? '#1e1e1e' : '#ffffff'),
             padding: '2px 8px', borderRadius: 4,
-            border: `1px solid ${isAdmin ? '#3a3000' : (isDark ? '#1a3a1a' : '#dddddd')}`,
+            border: `1px solid ${isAdmin ? '#444333' : (isDark ? '#252525' : '#dddddd')}`,
           }}>
             {isAdmin ? 'ADMIN' : 'FRANQUEADO'}
           </div>
           {!isAdmin && isFranchiseeBlocked && (
-            <div style={{ marginTop: 8, fontSize: 11, color: '#e6b800', fontWeight: 600 }}>
+            <div style={{ marginTop: 8, fontSize: 11, color: '#c8c8c8', fontWeight: 600 }}>
               Acesso bloqueado para pedidos
             </div>
           )}
@@ -252,7 +252,7 @@ export default function AppLayout() {
                 fontSize: 13,
                 fontWeight: 500,
                 color: isActive ? colors.accent : colors.muted,
-                background: isActive ? 'rgba(230, 184, 0, 0.08)' : 'transparent',
+                background: isActive ? 'rgba(200,200,200,0.08)' : 'transparent',
                 borderLeft: isActive ? `2px solid ${colors.accent}` : '2px solid transparent',
                 transition: 'all 0.15s',
               })}
@@ -299,9 +299,9 @@ export default function AppLayout() {
                 textDecoration: 'none',
                 fontSize: 13,
                 fontWeight: 600,
-                color: '#e6b800',
-                border: `1px solid ${isDark ? '#3a3000' : '#d4c176'}`,
-                background: isDark ? '#1a1500' : '#fff8d6',
+                color: '#c8c8c8',
+                border: `1px solid ${isDark ? '#444333' : '#b0b0b0'}`,
+                background: isDark ? '#1e1e1e' : '#f0f0f0',
               }}
             >
               <WhatsAppIcon width={14} height={14} />
@@ -321,7 +321,7 @@ export default function AppLayout() {
             display: 'flex', alignItems: 'center', gap: 8,
             transition: 'all 0.15s',
           }}
-          onMouseEnter={e => { e.currentTarget.style.color = '#e6b800'; e.currentTarget.style.borderColor = '#3a1a1a'; }}
+          onMouseEnter={e => { e.currentTarget.style.color = '#c8c8c8'; e.currentTarget.style.borderColor = '#252525'; }}
           onMouseLeave={e => { e.currentTarget.style.color = colors.muted; e.currentTarget.style.borderColor = colors.border; }}
         >
           <span>⏻</span> Sair

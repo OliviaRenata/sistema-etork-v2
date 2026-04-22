@@ -1,4 +1,4 @@
-// src/pages/admin/AdminOrders.tsx
+﻿// src/pages/admin/AdminOrders.tsx
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -8,9 +8,9 @@ import { formatDate } from '../../lib/utils';
 type OrderStatus = 'solicitado' | 'em_producao' | 'concluido';
 
 const statusOptions = [
-  { value: 'solicitado', label: 'Recebido', color: '#f5d54a' },
-  { value: 'em_producao', label: 'Em andamento', color: '#e6b800' },
-  { value: 'concluido', label: 'Concluído', color: '#b38f00' },
+  { value: 'solicitado', label: 'Recebido', color: '#d4d4d4' },
+  { value: 'em_producao', label: 'Em andamento', color: '#c8c8c8' },
+  { value: 'concluido', label: 'Concluído', color: '#b0b0b0' },
 ] as const;
 
 function mapStatusForFlow(status: string): OrderStatus {
@@ -35,9 +35,9 @@ export default function AdminOrders() {
     background: isDark ? '#0d0d0d' : '#f3f4f6',
     surface: isDark ? '#141414' : '#ffffff',
     text: isDark ? '#e5e5e5' : '#1a1a1a',
-    textSecondary: isDark ? '#888888' : '#6b7280',
+    textSecondary: isDark ? '#888888' : '#777777',
     border: isDark ? '#222222' : '#e5e7eb',
-    accent: '#e6b800',
+    accent: '#c8c8c8',
   };
 
   const detailFieldPriority = [
@@ -167,7 +167,7 @@ export default function AdminOrders() {
     return (
       <div style={{ background: colors.background, minHeight: '100vh', padding: 24 }}>
         <div style={{ textAlign: 'center', padding: 60, background: colors.surface, borderRadius: 12 }}>
-          <h3 style={{ color: '#e6b800' }}>Erro</h3>
+          <h3 style={{ color: '#c8c8c8' }}>Erro</h3>
           <p style={{ color: colors.textSecondary }}>{error}</p>
           <button 
             onClick={() => loadOrders()}

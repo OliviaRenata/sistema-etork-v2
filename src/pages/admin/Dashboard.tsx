@@ -1,4 +1,4 @@
-// src/pages/admin/Dashboard.tsx
+﻿// src/pages/admin/Dashboard.tsx
 import { useState, useEffect, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -124,11 +124,11 @@ export default function AdminDashboard() {
     surface: isDark ? '#141414' : '#ffffff',
     surfaceHover: isDark ? '#1c1c1c' : '#fafafa',
     text: isDark ? '#e5e5e5' : '#1a1a1a',
-    textSecondary: isDark ? '#888888' : '#6b7280',
+    textSecondary: isDark ? '#888888' : '#777777',
     textMuted: isDark ? '#666666' : '#9ca3af',
     border: isDark ? '#222222' : '#e5e7eb',
-    accent: '#e6b800',
-    accentHover: '#f5c518',
+    accent: '#c8c8c8',
+    accentHover: '#e0e0e0',
     tableHeaderBg: isDark ? '#0d0d0d' : '#f9fafb',
     tableRowHover: isDark ? '#1a1a1a' : '#f9fafb',
   };
@@ -433,7 +433,7 @@ export default function AdminDashboard() {
             </button>
             {noticeMessage && (
               <div style={{ 
-                color: noticeMessage.includes('Erro') ? '#e6b800' : '#e6b800', 
+                color: noticeMessage.includes('Erro') ? '#c8c8c8' : '#c8c8c8', 
                 fontSize: 11,
                 display: 'flex',
                 alignItems: 'center',
@@ -449,7 +449,7 @@ export default function AdminDashboard() {
         {/* Stats Cards */}
         {stats && (
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: isMobile ? 20 : 32 }}>
-            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #e6b800` }}>
+            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #c8c8c8` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <span style={{ fontSize: 10, color: colors.textMuted, fontWeight: 600 }}>FRANQUEADOS</span>
                 <IconUsers />
@@ -458,7 +458,7 @@ export default function AdminDashboard() {
               <div style={{ fontSize: 10, color: colors.textMuted, marginTop: 4 }}>{stats.active_franchisees} ativos / {stats.inactive_franchisees} inativos</div>
             </div>
             
-            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #e6b800` }}>
+            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #c8c8c8` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <span style={{ fontSize: 10, color: colors.textMuted, fontWeight: 600 }}>TOTAL PEDIDOS</span>
                 <IconPackage />
@@ -466,15 +466,15 @@ export default function AdminDashboard() {
               <div style={{ fontSize: 20, fontWeight: 700, color: colors.text }}>{stats.total_orders}</div>
             </div>
             
-            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #f59e0b` }}>
+            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #c8c8c8` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <span style={{ fontSize: 10, color: colors.textMuted, fontWeight: 600 }}>AGUARDANDO</span>
                 <IconClock />
               </div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: stats.pending > 0 ? '#f59e0b' : colors.text }}>{stats.pending}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: stats.pending > 0 ? '#c8c8c8' : colors.text }}>{stats.pending}</div>
             </div>
             
-            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #e6b800` }}>
+            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #c8c8c8` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <span style={{ fontSize: 10, color: colors.textMuted, fontWeight: 600 }}>EM PRODUCAO</span>
                 <IconPackage />
@@ -482,7 +482,7 @@ export default function AdminDashboard() {
               <div style={{ fontSize: 20, fontWeight: 700, color: colors.text }}>{stats.in_production}</div>
             </div>
             
-            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #e6b800` }}>
+            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid #c8c8c8` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <span style={{ fontSize: 10, color: colors.textMuted, fontWeight: 600 }}>CONCLUIDOS</span>
                 <IconCheckCircle />
@@ -497,8 +497,8 @@ export default function AdminDashboard() {
           <div style={{
             padding: '12px 16px',
             marginBottom: isMobile ? 20 : 32,
-            background: isDark ? '#1a1200' : '#fef3c7',
-            border: `1px solid ${isDark ? '#3a2a00' : '#fde68a'}`,
+            background: isDark ? '#1c1c1c' : '#f0f0f0',
+            border: `1px solid ${isDark ? '#2d2d2d' : '#d4d4d4'}`,
             borderRadius: 8,
             display: 'flex',
             alignItems: 'center',
@@ -507,7 +507,7 @@ export default function AdminDashboard() {
           }}>
             <IconAlertTriangle />
             <div style={{ flex: 1 }}>
-              <span style={{ color: '#f59e0b', fontSize: 12, fontWeight: 700 }}>{stats.pending} pedido(s) aguardando processamento</span>
+              <span style={{ color: '#c8c8c8', fontSize: 12, fontWeight: 700 }}>{stats.pending} pedido(s) aguardando processamento</span>
             </div>
             <Link to="/admin/orders?status=solicitado" style={{
               padding: '6px 12px',
@@ -578,19 +578,19 @@ export default function AdminDashboard() {
                         <td style={{ padding: '10px 12px', fontSize: 11, fontWeight: 600, color: colors.textSecondary }}>#{index + 1}</td>
                         <td style={{ padding: '10px 12px', fontSize: 12, fontWeight: 600, color: colors.text }}>
                           {f.company_name}
-                          {!f.active && <span style={{ marginLeft: 6, fontSize: 9, color: '#e6b800' }}>(INATIVO)</span>}
+                          {!f.active && <span style={{ marginLeft: 6, fontSize: 9, color: '#c8c8c8' }}>(INATIVO)</span>}
                         </td>
                         <td style={{ padding: '10px 12px', fontSize: 11, color: colors.textSecondary }}>{f.code}</td>
                         <td style={{ padding: '10px 12px', fontSize: 12, color: colors.text }}>{f.total_orders}</td>
                         <td style={{ padding: '10px 12px' }}>
                           {f.pending_orders > 0 ? (
-                            <span style={{ color: '#f59e0b', fontSize: 11, fontWeight: 600 }}>{f.pending_orders}</span>
+                            <span style={{ color: '#c8c8c8', fontSize: 11, fontWeight: 600 }}>{f.pending_orders}</span>
                           ) : (
                             <IconCheckCircle />
                           )}
                         </td>
                         <td style={{ padding: '10px 12px' }}>
-                          <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: f.active ? '#e6b800' : '#e6b800', marginRight: 5 }} />
+                          <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: f.active ? '#c8c8c8' : '#c8c8c8', marginRight: 5 }} />
                           <span style={{ fontSize: 11, color: colors.textSecondary }}>{f.active ? 'Ativo' : 'Inativo'}</span>
                         </td>
                         <td style={{ padding: '10px 12px', fontSize: 11, color: colors.textSecondary }}>
