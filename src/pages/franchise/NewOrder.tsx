@@ -571,8 +571,8 @@ export default function FranchiseNewOrder() {
                 className="perf-grid"
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
-                  gap: '6px',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
+                  gap: '4px',
                   maxHeight: '320px',
                   overflowY: 'auto',
                   paddingRight: '2px',
@@ -590,10 +590,9 @@ export default function FranchiseNewOrder() {
                             gridColumn: 'span 2',
                             whiteSpace: 'normal',
                             textOverflow: 'clip',
-                            fontSize: '10px',
-                            lineHeight: '1.2',
-                            minHeight: '42px',
-                            padding: '6px 10px',
+                            lineHeight: '1.15',
+                            minHeight: '38px',
+                            padding: '6px 8px',
                           }
                         : {}),
                     }}
