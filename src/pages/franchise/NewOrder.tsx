@@ -384,7 +384,7 @@ export default function FranchiseNewOrder() {
               flexWrap: 'wrap',
             }}>
               <IconCar />
-              NEW ORDERS
+              NOVO PEDIDO
             </h1>
             <p style={{
               fontSize: '12px',

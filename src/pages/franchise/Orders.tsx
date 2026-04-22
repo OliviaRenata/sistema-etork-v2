@@ -173,7 +173,7 @@ export default function FranchiseOrders() {
         <div>
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: colors.textPrimary }}>Meus Pedidos</h1>
           <p style={{ margin: '4px 0 0', color: colors.textSecondary, fontSize: 13 }}>
-            Historico dos pedidos enviados, com arquivos e status atualizados pelo admin
+            Histórico dos pedidos enviados, com arquivos e status atualizados pelo administrador
           </p>
         </div>
         <Link
@@ -188,7 +188,7 @@ export default function FranchiseOrders() {
             fontWeight: 700,
           }}
         >
-          Ir para New Orders
+          Ir para Novo Pedido
         </Link>
       </div>
 
@@ -232,7 +232,7 @@ export default function FranchiseOrders() {
 
         {sortedOrders.length === 0 ? (
           <div style={{ padding: 60, textAlign: 'center', color: colors.textSecondary }}>
-            Nenhum pedido encontrado. Use New Orders para enviar seu primeiro pedido.
+            Nenhum pedido encontrado. Use Novo Pedido para enviar sua primeira solicitação.
           </div>
         ) : (
           sortedOrders.map((order) => (

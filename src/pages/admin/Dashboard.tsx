@@ -144,7 +144,7 @@ export default function AdminDashboard() {
             onClick={() => window.location.href = '/dashboard'}
             style={{ marginTop: 16, padding: '8px 16px', background: colors.accent, border: 'none', borderRadius: 6, cursor: 'pointer', color: '#000' }}
           >
-            Voltar para o Dashboard
+            Voltar para o Painel
           </button>
         </div>
       </div>

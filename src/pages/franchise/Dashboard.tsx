@@ -397,7 +397,7 @@ export default function FranchiseDashboard() {
               to="/orders/new"
               style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 18px', background: colors.accent, color: '#000', borderRadius: 8, fontSize: 12, fontWeight: 700, textDecoration: 'none' }}
             >
-              <PlusIcon width={14} height={14} /> NEW ORDERS
+              <PlusIcon width={14} height={14} /> NOVO PEDIDO
             </Link>
           )}
         </div>

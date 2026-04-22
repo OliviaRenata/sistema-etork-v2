@@ -400,7 +400,7 @@ export default function AdminDownloads() {
                   <div style={{ fontSize: 13, fontWeight: 700, color: colors.text }}>{file.file_name}</div>
                   {file.description && <div style={{ fontSize: 11, color: colors.textSecondary, marginTop: 4 }}>{file.description}</div>}
                   <div style={{ fontSize: 11, color: colors.textSecondary, marginTop: 6 }}>Categoria: {file.category} · Versão: {file.version}</div>
-                  <div style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>Downloads: {file.downloads_count || 0} · {formatDate(file.created_at)}</div>
+                  <div style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>Baixado: {file.downloads_count || 0} · {formatDate(file.created_at)}</div>
                   <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                     <button
                       onClick={() => openEditModal(file)}

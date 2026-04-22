@@ -311,7 +311,7 @@ export default function DownloadsPage() {
       {/* Topo com botão de Adicionar para Admin */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 30 }}>
         <div>
-          <h1 style={{ color: colors.text, margin: 0, fontSize: 24 }}>Downloads e Instaladores</h1>
+          <h1 style={{ color: colors.text, margin: 0, fontSize: 24 }}>Arquivos e Instaladores</h1>
           <p style={{ color: colors.textMuted }}>Arquivos oficiais para franqueados Etork</p>
         </div>
         
@@ -390,7 +390,7 @@ export default function DownloadsPage() {
                   <div style={{ fontSize: 12, color: colors.textMuted, display: 'flex', gap: 15, flexWrap: 'wrap' }}>
                     <span>Versão: {file.version}</span>
                     <span>Tamanho: {(file.file_size / 1024 / 1024).toFixed(2)} MB</span>
-                    <span>Downloads: {file.downloads_count || 0}</span>
+                    <span>Baixado: {file.downloads_count || 0}</span>
                     <span>Categoria: {file.category}</span>
                   </div>
                   {file.description && (

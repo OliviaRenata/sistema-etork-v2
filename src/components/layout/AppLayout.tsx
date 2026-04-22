@@ -136,23 +136,23 @@ export default function AppLayout() {
 
   const navItems = isAdmin
     ? [
-        { to: '/admin/dashboard', icon: <DashboardIcon width={16} height={16} />, label: 'Dashboard' },
+        { to: '/admin/dashboard', icon: <DashboardIcon width={16} height={16} />, label: 'Painel' },
         { to: '/admin/orders', icon: <OrdersIcon width={16} height={16} />, label: 'Pedidos' },
         { to: '/admin/franchisees', icon: <FranchiseesIcon width={16} height={16} />, label: 'Franqueados' },
         { to: '/admin/financial', icon: <FinanceIcon width={16} height={16} />, label: 'Financeiro' },
-        { to: '/admin/downloads', icon: <DownloadIcon width={16} height={16} />, label: 'Downloads' },
+        { to: '/admin/downloads', icon: <DownloadIcon width={16} height={16} />, label: 'Arquivos' },
       ]
     : isFranchiseeBlocked
       ? [
-          { to: '/dashboard', icon: <DashboardIcon width={16} height={16} />, label: 'Dashboard' },
+          { to: '/dashboard', icon: <DashboardIcon width={16} height={16} />, label: 'Painel' },
           { to: '/financial', icon: <FinanceIcon width={16} height={16} />, label: 'Financeiro / Extratos' },
         ]
       : [
-          { to: '/dashboard', icon: <DashboardIcon width={16} height={16} />, label: 'Dashboard' },
+          { to: '/dashboard', icon: <DashboardIcon width={16} height={16} />, label: 'Painel' },
           { to: '/orders', icon: <OrdersIcon width={16} height={16} />, label: 'Meus Pedidos' },
-          { to: '/orders/new', icon: <PlusIcon width={16} height={16} />, label: 'New Orders' },
+          { to: '/orders/new', icon: <PlusIcon width={16} height={16} />, label: 'Novo Pedido' },
           { to: '/financial', icon: <FinanceIcon width={16} height={16} />, label: 'Financeiro' },
-          { to: '/downloads', icon: <DownloadIcon width={16} height={16} />, label: 'Downloads' },
+          { to: '/downloads', icon: <DownloadIcon width={16} height={16} />, label: 'Arquivos' },
         ];
 
   async function handleSignOut() {
@@ -193,7 +193,7 @@ export default function AppLayout() {
             <img src={logoImg} alt="ETORK Brasil" style={{ width: 150, height: 'auto', display: 'block', background: 'transparent', filter: 'drop-shadow(0 6px 14px rgba(0,0,0,0.82))' }} />
           </div>
           <div style={{ fontSize: 9, color: '#c0c0c0', letterSpacing: 1.2 }}>
-            PORTAL  · SLAVE 
+            PORTAL · FRANQUIA
           </div>
         </div>
 
@@ -223,7 +223,7 @@ export default function AppLayout() {
             padding: '2px 8px', borderRadius: 4,
             border: `1px solid ${isAdmin ? '#444333' : (isDark ? '#252525' : '#dddddd')}`,
           }}>
-            {isAdmin ? 'ADMIN' : 'FRANQUEADO'}
+            {isAdmin ? 'ADMINISTRADOR' : 'FRANQUEADO'}
           </div>
           {!isAdmin && isFranchiseeBlocked && (
             <div style={{ marginTop: 8, fontSize: 11, color: '#c8c8c8', fontWeight: 600 }}>
@@ -283,7 +283,7 @@ export default function AppLayout() {
               }}
             >
               <ExternalLinkIcon width={14} height={14} />
-              Ir para o site
+              Site oficial
             </a>
 
             <a

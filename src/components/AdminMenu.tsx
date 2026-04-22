@@ -20,10 +20,10 @@ export default function AdminMenu() {
   };
 
   const menuItems = [
-    { path: '/admin', label: 'Dashboard', icon: '📊' },
+    { path: '/admin', label: 'Painel', icon: '📊' },
     { path: '/admin/orders', label: 'Pedidos', icon: '📦' },
     { path: '/admin/franchisees', label: 'Franqueados', icon: '👥' },
-    { path: '/admin/downloads', label: 'Downloads', icon: '📁' },
+    { path: '/admin/downloads', label: 'Arquivos', icon: '📁' },
   ];
 
   const isActive = (path: string) => location.pathname === path;

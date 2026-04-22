@@ -339,7 +339,7 @@ async function handleForgotPassword() {
               display: 'inline-block',
             }} />
             <span style={{ fontSize: 11, fontWeight: 700, color: '#444', letterSpacing: 2 }}>
-              PORTAL · SLAVE 
+              PORTAL · FRANQUIA
             </span>
           </div>
 
