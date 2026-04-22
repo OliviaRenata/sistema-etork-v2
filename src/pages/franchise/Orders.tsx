@@ -4,14 +4,13 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import type { OrderStatus } from '../../types';
-import { formatCurrency, formatDate } from '../../lib/utils';
+import { formatDate } from '../../lib/utils';
 
 type FranchiseOrder = {
   id: string;
   order_number?: string;
   status: OrderStatus;
   created_at: string;
-  total_amount: number;
   vehicle_plate?: string;
   model?: string;
   notes?: string;
@@ -77,7 +76,6 @@ export default function FranchiseOrders() {
           order_number,
           status,
           created_at,
-          total_amount,
           vehicle_plate,
           model,
           notes
@@ -240,7 +238,7 @@ export default function FranchiseOrders() {
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '120px 1fr 140px 120px 80px',
+                  gridTemplateColumns: '120px 1fr 140px 120px',
                   alignItems: 'center',
                   padding: '14px 20px',
                   cursor: 'pointer',
@@ -267,9 +265,7 @@ export default function FranchiseOrders() {
                     </span>
                   )}
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  <span style={{ fontWeight: 600, color: colors.accent }}>{formatCurrency(order.total_amount)}</span>
-                </div>
+
               </div>
 
               {expandedOrderId === order.id && (
