@@ -262,6 +262,51 @@ export default function FranchiseFinancial() {
   const spinKeyframes = `
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media (max-width: 640px) {
+      .fin-page-pad { padding: 12px !important; }
+      .fin-stats { grid-template-columns: repeat(2, 1fr) !important; }
+      .fin-header { flex-direction: column !important; align-items: flex-start !important; }
+      .fin-toolbar { flex-direction: column !important; align-items: stretch !important; }
+      .fin-toolbar-left { flex-direction: column !important; width: 100% !important; }
+      .fin-search { max-width: 100% !important; }
+      .fin-export { width: 100% !important; justify-content: center !important; }
+      .fin-overflow { overflow-x: visible !important; padding: 8px !important; }
+      .fin-table thead { display: none !important; }
+      .fin-table tbody tr.fin-row {
+        display: block !important;
+        border-radius: 8px !important;
+        margin-bottom: 8px !important;
+        padding: 12px 14px !important;
+        border: 1px solid rgba(128,128,128,0.15) !important;
+      }
+      .fin-table tbody tr.fin-row-expanded {
+        display: block !important;
+        padding: 12px 14px !important;
+      }
+      .fin-row td {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 5px 0 !important;
+        border-bottom: 1px solid rgba(128,128,128,0.08) !important;
+        font-size: 12px !important;
+        white-space: normal !important;
+        max-width: 100% !important;
+        text-overflow: clip !important;
+        overflow: visible !important;
+      }
+      .fin-row td:last-child { border-bottom: none !important; }
+      .fin-row td::before {
+        content: attr(data-label);
+        font-size: 10px !important;
+        font-weight: 700 !important;
+        color: #888 !important;
+        flex-shrink: 0 !important;
+        margin-right: 8px !important;
+        min-width: 70px !important;
+      }
+    }
   `;
 
   if (!franchisee?.id) {
@@ -282,8 +327,8 @@ export default function FranchiseFinancial() {
   return (
     <div style={{ background: c.bg, minHeight: '100vh' }}>
       <style>{spinKeyframes}</style>
-      <div style={{ maxWidth: 1400, margin: '0 auto', padding: 24, animation: 'fadeIn 0.3s ease' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28, flexWrap: 'wrap', gap: 16 }}>
+      <div className="fin-page-pad" style={{ maxWidth: 1400, margin: '0 auto', padding: 24, animation: 'fadeIn 0.3s ease' }}>
+        <div className="fin-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28, flexWrap: 'wrap', gap: 16 }}>
           <div>
             <h1 style={{ color: c.text, fontSize: 24, fontWeight: 800, margin: '0 0 4px' }}>
               Extrato de Pedidos
@@ -307,7 +352,7 @@ export default function FranchiseFinancial() {
           </button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12, marginBottom: 24 }}>
+        <div className="fin-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12, marginBottom: 24 }}>
           {[
             { label: 'TOTAL', value: stats.total, color: c.accent, borderColor: c.accent },
             { label: 'RECEBIDOS', value: stats.solicitado, color: '#c8c8c8', borderColor: '#c8c8c8' },
@@ -330,9 +375,9 @@ export default function FranchiseFinancial() {
           background: c.surface, border: `1px solid ${c.border}`,
           borderRadius: 12, padding: '14px 18px', marginBottom: 20,
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', flex: 1 }}>
-              <div style={{ position: 'relative', flex: 1, maxWidth: 300 }}>
+          <div className="fin-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+              <div className="fin-toolbar-left" style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', flex: 1 }}>
+              <div className="fin-search" style={{ position: 'relative', flex: 1, maxWidth: 300 }}>
                 <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: c.textMuted }}>
                   <IconSearch />
                 </span>
@@ -378,6 +423,7 @@ export default function FranchiseFinancial() {
 
             <button
               onClick={exportCSV}
+              className="fin-export"
               style={{
                 display: 'flex', alignItems: 'center', gap: 8,
                 background: isDark ? '#1c1c1c' : '#f0f0f0',
@@ -458,8 +504,8 @@ export default function FranchiseFinancial() {
               Nenhum pedido encontrado{hasFilters ? ' com os filtros aplicados.' : '.'}
             </div>
           ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div className="fin-overflow" style={{ overflowX: 'auto' }}>
+              <table className="fin-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: `1px solid ${c.border}` }}>
                     <th style={thSt('order_number')} onClick={() => toggleSort('order_number')}>
@@ -488,6 +534,7 @@ export default function FranchiseFinancial() {
                       <>
                         <tr
                           key={order.id}
+                          className="fin-row"
                           onClick={() => setExpandedId(isExpanded ? null : order.id)}
                           style={{
                             borderBottom: isLast && !isExpanded ? 'none' : `1px solid ${c.border}`,
@@ -497,19 +544,19 @@ export default function FranchiseFinancial() {
                           onMouseEnter={(e) => { if (!isExpanded) e.currentTarget.style.background = c.surfaceAlt; }}
                           onMouseLeave={(e) => { if (!isExpanded) e.currentTarget.style.background = 'transparent'; }}
                         >
-                          <td style={{ padding: '11px 14px', fontSize: 13, fontWeight: 700, color: c.accent, whiteSpace: 'nowrap' }}>
+                          <td data-label="PEDIDO" style={{ padding: '11px 14px', fontSize: 13, fontWeight: 700, color: c.accent, whiteSpace: 'nowrap' }}>
                             {order.order_number}
                           </td>
-                          <td style={{ padding: '11px 14px', fontSize: 12, color: c.textSec, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+                          <td data-label="PLACA" style={{ padding: '11px 14px', fontSize: 12, color: c.textSec, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
                             {order.vehicle_plate}
                           </td>
-                          <td style={{ padding: '11px 14px', fontSize: 12, color: c.textSec, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <td data-label="MODELO" style={{ padding: '11px 14px', fontSize: 12, color: c.textSec, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {order.model}
                           </td>
-                          <td style={{ padding: '11px 14px', fontSize: 12, color: c.textSec, whiteSpace: 'nowrap' }}>
+                          <td data-label="DATA" style={{ padding: '11px 14px', fontSize: 12, color: c.textSec, whiteSpace: 'nowrap' }}>
                             {formatDateShort(order.created_at)}
                           </td>
-                          <td style={{ padding: '11px 14px' }}>
+                          <td data-label="STATUS" style={{ padding: '11px 14px' }}>
                             <span style={{
                               display: 'inline-flex', alignItems: 'center', gap: 5,
                               padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
@@ -519,13 +566,13 @@ export default function FranchiseFinancial() {
                               {STATUS_LABELS[order.status] ?? order.status}
                             </span>
                           </td>
-                          <td style={{ padding: '11px 14px', fontSize: 11, color: c.textSec, maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <td data-label="OBS" style={{ padding: '11px 14px', fontSize: 11, color: c.textSec, maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {order.notes || '—'}
                           </td>
                         </tr>
 
                         {isExpanded && (
-                          <tr key={`${order.id}-expanded`} style={{ borderBottom: isLast ? 'none' : `1px solid ${c.border}` }}>
+                          <tr key={`${order.id}-expanded`} className="fin-row-expanded" style={{ borderBottom: isLast ? 'none' : `1px solid ${c.border}` }}>
                             <td colSpan={6} style={{ padding: '12px 20px 16px 20px', background: c.surfaceHover }}>
                               <div style={{ fontSize: 11, color: c.textMuted, fontWeight: 700, marginBottom: 6 }}>OBSERVAÇÕES COMPLETAS</div>
                               <div style={{ fontSize: 12, color: c.text, lineHeight: 1.6, whiteSpace: 'pre-wrap', maxWidth: 900 }}>
