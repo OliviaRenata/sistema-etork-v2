@@ -18,17 +18,77 @@ export default function ResetPasswordPage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);   // token validado pelo Supabase?
+  const [checkingLink, setCheckingLink] = useState(true);
   const [done, setDone] = useState(false);      // senha salva com sucesso?
   const [message, setMessage] = useState({ type: '', text: '' });
 
-  // O Supabase lê o token da URL automaticamente e dispara PASSWORD_RECOVERY
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') {
+    let isMounted = true;
+
+    const validateRecoveryLink = async () => {
+      try {
+        const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
+        const queryParams = new URLSearchParams(window.location.search);
+
+        const code = queryParams.get('code');
+        const type = hashParams.get('type');
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+          if (isMounted) {
+            setReady(true);
+            window.history.replaceState({}, document.title, '/reset-password');
+          }
+          return;
+        }
+
+        if (type === 'recovery' && accessToken && refreshToken) {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (error) throw error;
+          if (isMounted) {
+            setReady(true);
+            window.history.replaceState({}, document.title, '/reset-password');
+          }
+          return;
+        }
+
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          if (isMounted) setReady(true);
+        } else if (isMounted) {
+          setMessage({ type: 'error', text: 'Link inválido ou expirado. Solicite um novo e-mail de redefinição.' });
+        }
+      } catch (err: unknown) {
+        if (isMounted) {
+          setMessage({
+            type: 'error',
+            text: (err as Error).message || 'Não foi possível validar o link de redefinição.',
+          });
+        }
+      } finally {
+        if (isMounted) setCheckingLink(false);
+      }
+    };
+
+    void validateRecoveryLink();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY' || ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user)) {
         setReady(true);
+        setCheckingLink(false);
       }
     });
-    return () => subscription.unsubscribe();
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -133,7 +193,7 @@ export default function ResetPasswordPage() {
         }}>
 
           {/* ── Aguardando token ── */}
-          {!ready && !done && (
+          {checkingLink && !done && (
             <div style={{ textAlign: 'center', padding: '16px 0' }}>
               <div style={{
                 width: 40, height: 40, borderRadius: '50%',
@@ -150,6 +210,20 @@ export default function ResetPasswordPage() {
                   Solicitar novo link
                 </a>
               </p>
+            </div>
+          )}
+
+          {!checkingLink && !ready && !done && (
+            <div style={{ textAlign: 'center', padding: '16px 0' }}>
+              <h2 style={{ color: '#fff', fontSize: 18, fontWeight: 700, marginBottom: 8 }}>
+                Link inválido ou expirado
+              </h2>
+              <p style={{ color: '#777', fontSize: 13, lineHeight: 1.7, marginBottom: 16 }}>
+                Solicite um novo e-mail para redefinir sua senha.
+              </p>
+              <a href="/login" style={{ color: '#c8c8c8', textDecoration: 'none', fontWeight: 700, fontSize: 13 }}>
+                Voltar para o login
+              </a>
             </div>
           )}
 

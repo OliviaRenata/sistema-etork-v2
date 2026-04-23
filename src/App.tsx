@@ -133,6 +133,7 @@ export default function App() {
 
   return (
     <Routes>
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/" element={<AppLayout />}>
         {/* Rotas COMUNS - ambos acessam */}
         <Route
