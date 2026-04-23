@@ -156,11 +156,12 @@ SUPORTE TECNICO: (67) 99254-9181
 Atendimento: Seg-Sex 8h as 18h`;
 
 export default function FranchiseDashboard() {
-  const { franchisee, profile } = useAuth();
+  const { user, franchisee, profile } = useAuth();
   const { theme: currentTheme } = useTheme();
   const isDark = currentTheme === 'dark';
   const isFranchiseeBlocked = !!franchisee && franchisee.active === false;
   const refreshTimerRef = useRef<number | null>(null);
+  const displayFirstName = (profile?.full_name?.trim() || user?.email?.split('@')[0] || 'Usuario').split(' ')[0];
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
@@ -385,7 +386,7 @@ export default function FranchiseDashboard() {
         <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
           <div>
             <h1 style={{ color: colors.text, fontSize: 22, fontWeight: 800, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 8 }}>
-              {greeting()}, {profile?.full_name?.split(' ')[0] || 'Franqueado'}
+              {greeting()}, {displayFirstName}
               <WaveIcon width={18} height={18} />
             </h1>
             <p style={{ color: colors.textSecondary, fontSize: 12, margin: 0 }}>

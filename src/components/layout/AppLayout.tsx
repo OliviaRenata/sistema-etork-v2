@@ -90,7 +90,7 @@ const WhatsAppIcon = ({ width = 14, height = 14 }) => (
 );
 
 export default function AppLayout() {
-  const { profile, franchisee, isAdmin, signOut } = useAuth();
+  const { user, profile, franchisee, isAdmin, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
@@ -121,6 +121,7 @@ export default function AppLayout() {
 
   const isDark = theme === 'dark';
   const isFranchiseeBlocked = !isAdmin && !!franchisee && franchisee.active === false;
+  const displayName = profile?.full_name?.trim() || user?.email?.split('@')[0] || 'Usuario';
 
   // Cores do tema
   const colors = {
@@ -223,7 +224,7 @@ export default function AppLayout() {
             padding: '2px 8px', borderRadius: 4,
             border: `1px solid ${isAdmin ? '#444333' : (isDark ? '#252525' : '#dddddd')}`,
           }}>
-            {isAdmin ? 'ADMINISTRADOR' : 'FRANQUEADO'}
+            {isAdmin ? 'ADMINISTRADOR' : displayName.toUpperCase()}
           </div>
           {!isAdmin && isFranchiseeBlocked && (
             <div style={{ marginTop: 8, fontSize: 11, color: '#c8c8c8', fontWeight: 600 }}>
