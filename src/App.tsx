@@ -6,6 +6,10 @@ import { isSupabaseConfigured, supabase } from './lib/supabase';
 type Screen =
   | 'intro-brand'
   | 'intro-system'
+  | 'auth-login'
+  | 'auth-register'
+  | 'auth-forgot'
+  | 'auth-reset'
   | 'dashboard'
   | 'new-quote'
   | 'new-appointment'
@@ -133,7 +137,7 @@ function cloneItems(items: ServiceItem[]) {
   return items.map((item) => ({ ...item }));
 }
 
-function AppHeader({ now }: { now: Date }) {
+function AppHeader({ now, onLogout }: { now: Date; onLogout: () => void }) {
   const time = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false });
   const day = now.toLocaleDateString('pt-BR');
 
@@ -147,6 +151,7 @@ function AppHeader({ now }: { now: Date }) {
         <div className="et-clock">{time}</div>
         <div className="et-day">{day}</div>
       </div>
+      <button className="et-logout" onClick={onLogout}>SAIR</button>
     </header>
   );
 }
@@ -168,6 +173,18 @@ function ServiceRows({ items }: { items: ServiceItem[] }) {
 function App() {
   const [screen, setScreen] = useState<Screen>('intro-brand');
   const [now, setNow] = useState(() => new Date());
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authMessage, setAuthMessage] = useState('');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [registerName, setRegisterName] = useState('');
+  const [registerEmail, setRegisterEmail] = useState('');
+  const [registerPassword, setRegisterPassword] = useState('');
+  const [registerPasswordConfirm, setRegisterPasswordConfirm] = useState('');
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [resetPassword, setResetPassword] = useState('');
+  const [resetPasswordConfirm, setResetPasswordConfirm] = useState('');
   const [serviceCatalogData, setServiceCatalogData] = useState(defaultServiceCatalog);
   const [isSaving, setIsSaving] = useState(false);
   const [quoteData, setQuoteData] = useState({
@@ -216,30 +233,97 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (screen !== 'intro-brand') return;
+    if (screen === 'intro-brand') {
+      const timer = window.setTimeout(() => setScreen('intro-system'), 1800);
+      return () => window.clearTimeout(timer);
+    }
 
-    const firstStep = window.setTimeout(() => setScreen('intro-system'), 1800);
-    const secondStep = window.setTimeout(() => setScreen('dashboard'), 3600);
-
-    return () => {
-      window.clearTimeout(firstStep);
-      window.clearTimeout(secondStep);
-    };
+    if (screen === 'intro-system') {
+      const timer = window.setTimeout(() => setScreen('auth-login'), 1600);
+      return () => window.clearTimeout(timer);
+    }
   }, [screen]);
+
+  useEffect(() => {
+    const path = window.location.pathname.toLowerCase();
+    const hash = window.location.hash.toLowerCase();
+    if (path.includes('/reset-password') || hash.includes('type=recovery')) {
+      setScreen('auth-reset');
+    }
+  }, []);
 
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) return;
 
+    const sb = supabase;
+    let active = true;
+
+    sb.auth.getSession().then(({ data }) => {
+      if (!active) return;
+
+      const hasSession = Boolean(data.session);
+      setIsAuthenticated(hasSession);
+      if (hasSession) {
+        setScreen((prev) =>
+          prev === 'intro-brand' || prev === 'intro-system' || prev.startsWith('auth-') ? 'dashboard' : prev
+        );
+      }
+    });
+
+    const { data: authListener } = sb.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setAuthMessage('Defina sua nova senha para concluir a recuperacao.');
+        setScreen('auth-reset');
+        return;
+      }
+
+      const hasSession = Boolean(session);
+      setIsAuthenticated(hasSession);
+      if (hasSession) {
+        setScreen((prev) => (prev === 'auth-login' || prev === 'auth-register' || prev === 'auth-forgot' ? 'dashboard' : prev));
+      } else {
+        setScreen((prev) =>
+          prev === 'dashboard' || prev === 'new-quote' || prev === 'new-appointment' || prev === 'new-sale' || prev === 'print-receipt'
+            ? 'auth-login'
+            : prev
+        );
+      }
+    });
+
+    return () => {
+      active = false;
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) return;
+
+    if (
+      screen === 'dashboard' ||
+      screen === 'new-quote' ||
+      screen === 'new-appointment' ||
+      screen === 'new-sale' ||
+      screen === 'print-receipt'
+    ) {
+      setScreen('auth-login');
+    }
+  }, [isAuthenticated, screen]);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) return;
+
+    const sb = supabase;
     let active = true;
 
     async function loadFromDatabase() {
       const [catalogResult, receiptResult] = await Promise.all([
-        supabase
+        sb
           .from('service_catalog_v2')
           .select('name, default_price, is_active')
           .eq('is_active', true)
           .order('name', { ascending: true }),
-        supabase
+        sb
           .from('v_receipts_list_v2')
           .select('sale_date, customer_name, vehicle_desc, plate, total_amount')
           .limit(150),
@@ -402,11 +486,12 @@ function App() {
   ) {
     if (!isSupabaseConfigured || !supabase) return { ok: false as const, error: 'Supabase nao configurado' };
 
+    const sb = supabase;
     const scheduledForIso = payload.scheduledFor ? parseBrDateTime(payload.scheduledFor)?.toISOString() ?? null : null;
     const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
     const total = Math.max(subtotal - payload.discount, 0);
 
-    const { data: documentRow, error: documentError } = await supabase
+    const { data: documentRow, error: documentError } = await sb
       .from('documents_v2')
       .insert({
         doc_type: docType,
@@ -438,7 +523,7 @@ function App() {
         unit_price: item.price,
       }));
 
-      const { error: itemsError } = await supabase.from('document_items_v2').insert(itemRows);
+      const { error: itemsError } = await sb.from('document_items_v2').insert(itemRows);
       if (itemsError) {
         return { ok: false as const, error: itemsError.message };
       }
@@ -450,7 +535,8 @@ function App() {
   async function fetchLatestDocumentWithItems(docType: 'orcamento' | 'agendamento') {
     if (!isSupabaseConfigured || !supabase) return null;
 
-    const { data: doc, error: docError } = await supabase
+    const sb = supabase;
+    const { data: doc, error: docError } = await sb
       .from('documents_v2')
       .select('id, customer_name_snapshot, phone_snapshot, plate_snapshot, vehicle_snapshot, notes, discount_amount, service_time_days, scheduled_for')
       .eq('doc_type', docType)
@@ -460,7 +546,7 @@ function App() {
 
     if (docError || !doc) return null;
 
-    const { data: items } = await supabase
+    const { data: items } = await sb
       .from('document_items_v2')
       .select('description, quantity, unit_price')
       .eq('document_id', doc.id)
@@ -654,6 +740,156 @@ function App() {
     setScreen('print-receipt');
   }
 
+  async function handleLogin() {
+    setAuthMessage('');
+
+    if (!loginEmail.trim() || !loginPassword.trim()) {
+      setAuthMessage('Informe email e senha.');
+      return;
+    }
+
+    if (!isSupabaseConfigured || !supabase) {
+      setIsAuthenticated(true);
+      setAuthMessage('Supabase nao configurado. Entrando em modo local.');
+      setScreen('dashboard');
+      return;
+    }
+
+    const sb = supabase;
+    setAuthLoading(true);
+    const { error } = await sb.auth.signInWithPassword({
+      email: loginEmail.trim(),
+      password: loginPassword,
+    });
+    setAuthLoading(false);
+
+    if (error) {
+      setAuthMessage(error.message);
+      return;
+    }
+
+    setIsAuthenticated(true);
+    setScreen('dashboard');
+  }
+
+  async function handleRegister() {
+    setAuthMessage('');
+
+    if (!registerName.trim() || !registerEmail.trim() || !registerPassword.trim() || !registerPasswordConfirm.trim()) {
+      setAuthMessage('Preencha todos os campos.');
+      return;
+    }
+
+    if (registerPassword !== registerPasswordConfirm) {
+      setAuthMessage('As senhas nao conferem.');
+      return;
+    }
+
+    if (!isSupabaseConfigured || !supabase) {
+      setAuthMessage('Cadastro requer configuracao do Supabase.');
+      return;
+    }
+
+    const sb = supabase;
+    setAuthLoading(true);
+    const { error } = await sb.auth.signUp({
+      email: registerEmail.trim(),
+      password: registerPassword,
+      options: {
+        data: {
+          full_name: registerName.trim(),
+        },
+      },
+    });
+    setAuthLoading(false);
+
+    if (error) {
+      setAuthMessage(error.message);
+      return;
+    }
+
+    setAuthMessage('Cadastro realizado. Verifique seu email para confirmar a conta.');
+    setScreen('auth-login');
+  }
+
+  async function handleForgotPassword() {
+    setAuthMessage('');
+
+    if (!forgotEmail.trim()) {
+      setAuthMessage('Informe o email para recuperacao.');
+      return;
+    }
+
+    if (!isSupabaseConfigured || !supabase) {
+      setAuthMessage('Recuperacao de senha requer configuracao do Supabase.');
+      return;
+    }
+
+    const sb = supabase;
+    setAuthLoading(true);
+    const { error } = await sb.auth.resetPasswordForEmail(forgotEmail.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setAuthLoading(false);
+
+    if (error) {
+      setAuthMessage(error.message);
+      return;
+    }
+
+    setAuthMessage('Email de recuperacao enviado com sucesso.');
+  }
+
+  async function handleResetPassword() {
+    setAuthMessage('');
+
+    if (!resetPassword.trim() || !resetPasswordConfirm.trim()) {
+      setAuthMessage('Preencha os dois campos de senha.');
+      return;
+    }
+
+    if (resetPassword !== resetPasswordConfirm) {
+      setAuthMessage('As senhas nao conferem.');
+      return;
+    }
+
+    if (resetPassword.length < 6) {
+      setAuthMessage('Use pelo menos 6 caracteres.');
+      return;
+    }
+
+    if (!isSupabaseConfigured || !supabase) {
+      setAuthMessage('Redefinicao requer configuracao do Supabase.');
+      return;
+    }
+
+    const sb = supabase;
+    setAuthLoading(true);
+    const { error } = await sb.auth.updateUser({
+      password: resetPassword,
+    });
+    setAuthLoading(false);
+
+    if (error) {
+      setAuthMessage(error.message);
+      return;
+    }
+
+    setResetPassword('');
+    setResetPasswordConfirm('');
+    setAuthMessage('Senha atualizada com sucesso. Faca login novamente.');
+    setScreen('auth-login');
+  }
+
+  async function handleLogout() {
+    if (isSupabaseConfigured && supabase) {
+      const sb = supabase;
+      await sb.auth.signOut();
+    }
+    setIsAuthenticated(false);
+    setScreen('auth-login');
+  }
+
   function exportReceiptCSV() {
     const header = 'Data,Cliente,Veiculo,Placa,Total\n';
     const body = filteredReceipts
@@ -684,9 +920,172 @@ function App() {
     );
   }
 
+  if (screen === 'auth-login') {
+    return (
+      <main className="auth-screen">
+        <section className="auth-card">
+          <img className="auth-logo" src={logoEtorkBrasil} alt="Etork Brasil" />
+          <h1>Login</h1>
+          <label>
+            Email
+            <input
+              type="email"
+              value={loginEmail}
+              onChange={(event) => setLoginEmail(event.target.value)}
+              placeholder="seu@email.com"
+              autoComplete="email"
+            />
+          </label>
+          <label>
+            Senha
+            <input
+              type="password"
+              value={loginPassword}
+              onChange={(event) => setLoginPassword(event.target.value)}
+              placeholder="********"
+              autoComplete="current-password"
+            />
+          </label>
+          <button className="auth-primary" onClick={() => void handleLogin()} disabled={authLoading}>
+            {authLoading ? 'Entrando...' : 'Entrar'}
+          </button>
+          <div className="auth-links">
+            <button onClick={() => setScreen('auth-register')}>Criar conta</button>
+            <button onClick={() => setScreen('auth-forgot')}>Esqueci a senha</button>
+          </div>
+          {authMessage && <p className="auth-message">{authMessage}</p>}
+        </section>
+      </main>
+    );
+  }
+
+  if (screen === 'auth-register') {
+    return (
+      <main className="auth-screen">
+        <section className="auth-card">
+          <img className="auth-logo" src={logoEtorkBrasil} alt="Etork Brasil" />
+          <h1>Cadastro</h1>
+          <label>
+            Nome
+            <input
+              type="text"
+              value={registerName}
+              onChange={(event) => setRegisterName(event.target.value)}
+              placeholder="Seu nome"
+              autoComplete="name"
+            />
+          </label>
+          <label>
+            Email
+            <input
+              type="email"
+              value={registerEmail}
+              onChange={(event) => setRegisterEmail(event.target.value)}
+              placeholder="seu@email.com"
+              autoComplete="email"
+            />
+          </label>
+          <label>
+            Senha
+            <input
+              type="password"
+              value={registerPassword}
+              onChange={(event) => setRegisterPassword(event.target.value)}
+              placeholder="********"
+              autoComplete="new-password"
+            />
+          </label>
+          <label>
+            Confirmar senha
+            <input
+              type="password"
+              value={registerPasswordConfirm}
+              onChange={(event) => setRegisterPasswordConfirm(event.target.value)}
+              placeholder="********"
+              autoComplete="new-password"
+            />
+          </label>
+          <button className="auth-primary" onClick={() => void handleRegister()} disabled={authLoading}>
+            {authLoading ? 'Cadastrando...' : 'Cadastrar'}
+          </button>
+          <div className="auth-links">
+            <button onClick={() => setScreen('auth-login')}>Voltar para login</button>
+          </div>
+          {authMessage && <p className="auth-message">{authMessage}</p>}
+        </section>
+      </main>
+    );
+  }
+
+  if (screen === 'auth-forgot') {
+    return (
+      <main className="auth-screen">
+        <section className="auth-card">
+          <img className="auth-logo" src={logoEtorkBrasil} alt="Etork Brasil" />
+          <h1>Esqueci a senha</h1>
+          <label>
+            Email
+            <input
+              type="email"
+              value={forgotEmail}
+              onChange={(event) => setForgotEmail(event.target.value)}
+              placeholder="seu@email.com"
+              autoComplete="email"
+            />
+          </label>
+          <button className="auth-primary" onClick={() => void handleForgotPassword()} disabled={authLoading}>
+            {authLoading ? 'Enviando...' : 'Enviar recuperacao'}
+          </button>
+          <div className="auth-links">
+            <button onClick={() => setScreen('auth-login')}>Voltar para login</button>
+          </div>
+          {authMessage && <p className="auth-message">{authMessage}</p>}
+        </section>
+      </main>
+    );
+  }
+
+  if (screen === 'auth-reset') {
+    return (
+      <main className="auth-screen">
+        <section className="auth-card">
+          <img className="auth-logo" src={logoEtorkBrasil} alt="Etork Brasil" />
+          <h1>Redefinir senha</h1>
+          <label>
+            Nova senha
+            <input
+              type="password"
+              value={resetPassword}
+              onChange={(event) => setResetPassword(event.target.value)}
+              placeholder="********"
+              autoComplete="new-password"
+            />
+          </label>
+          <label>
+            Confirmar nova senha
+            <input
+              type="password"
+              value={resetPasswordConfirm}
+              onChange={(event) => setResetPasswordConfirm(event.target.value)}
+              placeholder="********"
+              autoComplete="new-password"
+            />
+          </label>
+          <button className="auth-primary" onClick={() => void handleResetPassword()} disabled={authLoading}>
+            {authLoading ? 'Atualizando...' : 'Salvar nova senha'}
+          </button>
+          <div className="auth-links">
+            <button onClick={() => setScreen('auth-login')}>Voltar para login</button>
+          </div>
+          {authMessage && <p className="auth-message">{authMessage}</p>}
+        </section>
+      </main>
+    );
+  }
+
   return (
     <div className="et-shell">
-      <AppHeader now={now} />
+      <AppHeader now={now} onLogout={() => void handleLogout()} />
 
       {screen === 'dashboard' && (
         <main className="panel panel-dashboard">
