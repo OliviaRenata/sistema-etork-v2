@@ -275,6 +275,26 @@ button {
   background: #000;
 }
 
+.line-mini button {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-size: 28px;
+  background: #000;
+  color: #fff;
+  border: 0;
+  padding: 0;
+}
+
+.note-box {
+  margin-top: 8px;
+  padding: 6px 8px;
+  font-size: 22px;
+  background: rgba(232, 232, 232, 0.12);
+}
+
 .badge {
   font-size: 28px;
   color: #000;
@@ -426,6 +446,15 @@ button {
   height: 36px;
   width: 100%;
   max-width: 720px;
+  border: 0;
+  background: rgba(232, 232, 232, 0.12);
+  color: #fff;
+  font: inherit;
+  padding: 0 8px;
+}
+
+.input-look:focus {
+  outline: 1px solid rgba(122, 212, 80, 0.6);
 }
 
 .input-look.small {
@@ -455,6 +484,13 @@ button {
 
 .btn-yellow.lg {
   min-width: 140px;
+}
+
+.receipt-empty {
+  margin-top: 12px;
+  padding: 8px;
+  background: rgba(232, 232, 232, 0.12);
+  font-size: 22px;
 }
 
 .skip-intro {
