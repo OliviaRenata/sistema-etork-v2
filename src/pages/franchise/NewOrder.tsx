@@ -32,7 +32,8 @@ const performanceOptions = [
 ];
 
 const toolOptions = [
-  'PCM', 'BITBOX', 'CALTERM', 'NEW GENIUS', 'KESS CHINA',
+  'PCM FLASH', 'BITBOX', 'CALTERM', 'NEW GENIUS', 'KESS CHINA',
+  'FLEX - MAGIC', 'KT200', 'OUTRO',
 ];
 
 const IconArrowLeft = () => (
