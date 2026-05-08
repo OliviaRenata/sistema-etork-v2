@@ -1,17 +1,15 @@
 :root {
   box-sizing: border-box;
-  --bg-0: #06090e;
-  --bg-1: #111720;
-  --bg-2: #1e2027;
-  --panel-dark: #252525;
-  --row-dark: #3a3a3a;
-  --white: #f5f5f5;
-  --green: #79d34f;
-  --blue: #41aef0;
-  --yellow: #efdb58;
-  --cyan: #94d9db;
-  --orange: #f7904a;
-  --red: #f03a45;
+  --bg-0: #070707;
+  --bg-1: #121212;
+  --bg-2: #1f1f1f;
+  --panel-dark: #242424;
+  --row-dark: #353535;
+  --white: #f2f2f2;
+  --gray-1: #cfcfcf;
+  --gray-2: #9f9f9f;
+  --gray-3: #5a5a5a;
+  --gray-4: #2f2f2f;
 }
 
 *,
@@ -32,7 +30,7 @@ body {
   font-weight: 700;
   letter-spacing: 0.2px;
   color: var(--white);
-  background: radial-gradient(circle at 52% 0%, #5d5d5d 0%, var(--bg-2) 28%, var(--bg-1) 62%, #040608 100%);
+  background: radial-gradient(circle at 52% 0%, #4a4a4a 0%, var(--bg-2) 28%, var(--bg-1) 62%, #040404 100%);
 }
 
 button {
@@ -71,7 +69,7 @@ button {
   justify-content: space-between;
   align-items: center;
   padding: 8px 20px;
-  background: linear-gradient(90deg, rgba(8, 11, 18, 0.95) 0%, rgba(75, 75, 75, 0.7) 55%, rgba(32, 34, 42, 0.95) 100%);
+  background: linear-gradient(90deg, rgba(12, 12, 12, 0.95) 0%, rgba(62, 62, 62, 0.7) 55%, rgba(28, 28, 28, 0.95) 100%);
   border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 }
 
@@ -92,9 +90,9 @@ button {
 }
 
 .et-clock {
-  background: #cad0cf;
+  background: #d0d0d0;
   color: #101010;
-  border: 3px solid #7dd0cc;
+  border: 3px solid #8f8f8f;
   border-radius: 10px;
   font-size: 54px;
   line-height: 0.95;
@@ -124,9 +122,9 @@ button {
   display: grid;
   place-items: center;
   background:
-    radial-gradient(circle at 15% 20%, rgba(65, 174, 240, 0.28) 0%, transparent 45%),
-    radial-gradient(circle at 85% 10%, rgba(121, 211, 79, 0.2) 0%, transparent 40%),
-    linear-gradient(150deg, #070b11 0%, #0f1721 45%, #05090f 100%);
+    radial-gradient(circle at 15% 20%, rgba(170, 170, 170, 0.22) 0%, transparent 45%),
+    radial-gradient(circle at 85% 10%, rgba(100, 100, 100, 0.16) 0%, transparent 40%),
+    linear-gradient(150deg, #0a0a0a 0%, #161616 45%, #080808 100%);
   padding: 20px;
 }
 .auth-card {
@@ -165,16 +163,16 @@ button {
   font-size: 24px;
 }
 .auth-card input:focus {
-  outline: 2px solid rgba(65, 174, 240, 0.5);
-  border-color: rgba(65, 174, 240, 0.8);
+  outline: 2px solid rgba(180, 180, 180, 0.5);
+  border-color: rgba(180, 180, 180, 0.8);
 }
 .auth-primary {
   margin-top: 6px;
   min-height: 56px;
   border-radius: 12px;
   border: 0;
-  background: linear-gradient(140deg, #41aef0 0%, #2f86cc 100%);
-  color: #07111a;
+  background: linear-gradient(140deg, #d0d0d0 0%, #8f8f8f 100%);
+  color: #111;
   font-size: 30px;
   font-weight: 700;
 }
@@ -284,10 +282,11 @@ button {
 }
 
 .tone-warning { background: #ccab13; }
-.tone-danger { background: #f03a45; }
-.tone-success { background: var(--green); }
+.tone-warning { background: #8f8f8f; }
+.tone-danger { background: #6f6f6f; }
+.tone-success { background: #b5b5b5; }
 .tone-neutral { background: #d7d7d7; }
-.tone-info { background: #72d8df; }
+.tone-info { background: #9f9f9f; }
 
 .next-title {
   margin-top: 24px;
@@ -320,7 +319,7 @@ button {
 
 .next-card small {
   margin-top: 10px;
-  background: #efdb58;
+  background: #8f8f8f;
   font-size: 30px;
   padding: 4px 0;
 }
@@ -332,10 +331,12 @@ button {
   font-size: 32px;
 }
 
-.action-green { background: var(--green); }
-.action-yellow { background: var(--yellow); }
-.action-blue { background: var(--blue); }
-.action-orange { background: var(--orange); }
+.action-green,
+.action-yellow,
+.action-blue,
+.action-orange {
+  background: linear-gradient(145deg, #b9b9b9, #7f7f7f);
+}
 
 .form-grid {
   display: grid;
@@ -396,7 +397,7 @@ button {
 .badge {
   font-size: 28px;
   color: #000;
-  background: var(--green);
+  background: #b7b7b7;
   padding: 0 8px;
 }
 
@@ -456,8 +457,8 @@ button {
   font-size: 24px;
 }
 
-.btn-yellow { background: var(--yellow); color: #101010; }
-.btn-cyan { background: var(--cyan); color: #101010; }
+.btn-yellow { background: #c8c8c8; color: #101010; }
+.btn-cyan { background: #ababab; color: #101010; }
 .btn-dark {
   background: linear-gradient(145deg, #404040, #222);
   color: #fff;
@@ -473,7 +474,7 @@ button {
 }
 
 .total span {
-  background: var(--green);
+  background: #c0c0c0;
   color: #000;
   padding: 0 10px;
 }
@@ -489,7 +490,7 @@ button {
   height: 56px;
   border: 0;
   border-radius: 50%;
-  background: #ff3a3a;
+  background: #9a9a9a;
   color: #000;
   font-size: 38px;
   line-height: 1;
@@ -501,7 +502,7 @@ button {
   min-height: 84px;
   min-width: 220px;
   background: linear-gradient(145deg, #3d3d3d, #232323);
-  color: #36d832;
+  color: #e0e0e0;
   font-size: 24px;
 }
 
@@ -521,8 +522,8 @@ button {
   color: #111;
 }
 
-.tool-blue { background: var(--blue); }
-.tool-yellow { background: var(--yellow); }
+.tool-blue { background: #b0b0b0; }
+.tool-yellow { background: #909090; }
 
 .receipt-filters {
   display: grid;
@@ -552,7 +553,7 @@ button {
 }
 
 .input-look:focus {
-  outline: 1px solid rgba(122, 212, 80, 0.6);
+  outline: 1px solid rgba(185, 185, 185, 0.6);
 }
 
 .input-look.small {
@@ -610,6 +611,69 @@ button {
   width: 96px;
   opacity: 0.12;
   pointer-events: none;
+}
+
+.item-delete {
+  border: 1px solid #555;
+  background: #202020;
+  color: #f2f2f2;
+  border-radius: 6px;
+  min-width: 36px;
+  min-height: 36px;
+}
+
+.item-delete:hover {
+  background: #353535;
+}
+
+.vehicle-input {
+  width: 100%;
+  min-height: 150px;
+  border: 0;
+  resize: vertical;
+  font: inherit;
+}
+
+.line-check input {
+  width: 24px;
+  height: 24px;
+}
+
+.receipt-row.editable {
+  grid-template-columns: 120px 1fr 220px 140px 160px 48px;
+  align-items: center;
+}
+
+.receipt-actions {
+  margin-bottom: 8px;
+}
+
+.menu-single {
+  grid-template-columns: 1fr;
+}
+
+.menu-block {
+  margin-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  padding-top: 10px;
+}
+
+.menu-row {
+  display: grid;
+  grid-template-columns: 1fr 220px 180px;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.menu-row span {
+  background: rgba(232, 232, 232, 0.12);
+  padding: 6px 8px;
+  font-size: 22px;
+}
+
+.menu-row.editable {
+  grid-template-columns: 1fr 220px 180px 50px;
+  align-items: center;
 }
 
 @keyframes fadeIn {

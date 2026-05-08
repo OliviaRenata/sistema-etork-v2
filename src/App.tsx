@@ -10,6 +10,11 @@ type Screen =
   | 'auth-register'
   | 'auth-forgot'
   | 'auth-reset'
+  | 'menu-search'
+  | 'menu-clients'
+  | 'menu-financial'
+  | 'menu-products'
+  | 'menu-reports'
   | 'dashboard'
   | 'new-quote'
   | 'new-appointment'
@@ -42,11 +47,32 @@ type SavedAppointment = {
 };
 
 type ReceiptRow = {
+  id: number;
   date: string;
   customer: string;
   car: string;
   plate: string;
   total: number;
+};
+
+type ClientRow = {
+  id: number;
+  name: string;
+  phone: string;
+  plate: string;
+};
+
+type FinancialEntry = {
+  id: number;
+  date: string;
+  description: string;
+  amount: number;
+};
+
+type CatalogRow = {
+  id: number | null;
+  description: string;
+  price: number;
 };
 
 const dashboardServices = [
@@ -75,24 +101,36 @@ const saleItems: ServiceItem[] = [
 ];
 
 const receiptRows: ReceiptRow[] = [
-  { date: '25/04/2026', customer: 'JOAO HENRIQUE DE ALMEIDA', car: 'AMAROK V6', plate: 'QAN-2H95', total: 4300 },
-  { date: '25/04/2026', customer: 'CLEBER ANTUNES RICARDO FREITAS', car: 'RAM 3500 NIGHT', plate: 'QAU-1V55', total: 12100 },
-  { date: '25/04/2026', customer: 'LEANDRO RODRIGUES QUEIROZ', car: 'S10 LTZ', plate: 'QAN-2H95', total: 4300 },
-  { date: '25/04/2026', customer: 'CLEBER ANTUNES RICARDO FREITAS', car: 'RAM 3500 NIGHT', plate: 'QAU-1V55', total: 12100 },
-  { date: '24/04/2026', customer: 'JOAO HENRIQUE DE ALMEIDA', car: 'AMAROK V6', plate: 'QAN-2H95', total: 4300 },
-  { date: '24/04/2026', customer: 'CLEBER ANTUNES RICARDO FREITAS', car: 'RAM 3500 NIGHT', plate: 'QAU-1V55', total: 12100 },
-  { date: '24/04/2026', customer: 'JOAO HENRIQUE DE ALMEIDA', car: 'AMAROK V6', plate: 'QAN-2H95', total: 4300 },
-  { date: '23/04/2026', customer: 'CLEBER ANTUNES RICARDO FREITAS', car: 'RAM 3500 NIGHT', plate: 'QAU-1V55', total: 12100 },
+  { id: 1, date: '25/04/2026', customer: 'JOAO HENRIQUE DE ALMEIDA', car: 'AMAROK V6', plate: 'QAN-2H95', total: 4300 },
+  { id: 2, date: '25/04/2026', customer: 'CLEBER ANTUNES RICARDO FREITAS', car: 'RAM 3500 NIGHT', plate: 'QAU-1V55', total: 12100 },
+  { id: 3, date: '25/04/2026', customer: 'LEANDRO RODRIGUES QUEIROZ', car: 'S10 LTZ', plate: 'QAN-2H95', total: 4300 },
+  { id: 4, date: '25/04/2026', customer: 'CLEBER ANTUNES RICARDO FREITAS', car: 'RAM 3500 NIGHT', plate: 'QAU-1V55', total: 12100 },
+  { id: 5, date: '24/04/2026', customer: 'JOAO HENRIQUE DE ALMEIDA', car: 'AMAROK V6', plate: 'QAN-2H95', total: 4300 },
+  { id: 6, date: '24/04/2026', customer: 'CLEBER ANTUNES RICARDO FREITAS', car: 'RAM 3500 NIGHT', plate: 'QAU-1V55', total: 12100 },
+  { id: 7, date: '24/04/2026', customer: 'JOAO HENRIQUE DE ALMEIDA', car: 'AMAROK V6', plate: 'QAN-2H95', total: 4300 },
+  { id: 8, date: '23/04/2026', customer: 'CLEBER ANTUNES RICARDO FREITAS', car: 'RAM 3500 NIGHT', plate: 'QAU-1V55', total: 12100 },
 ];
 
-const defaultServiceCatalog: Array<{ description: string; price: number }> = [
-  { description: 'REMAP STAGE 1', price: 1800 },
-  { description: 'REMAP STG2 DPF/EGR', price: 2000 },
-  { description: 'DIFUSOR INOX 2,5" POLEGADAS', price: 1400 },
-  { description: 'DIFUSOR INOX 3" POLEGADAS', price: 1500 },
-  { description: 'ESCAPE FINAL 4" POLEGADAS', price: 1800 },
-  { description: 'ADD HARDCUT', price: 400 },
-  { description: 'DOWNPIPE + INTERMEDIARIO AMAROK V6', price: 2200 },
+const defaultServiceCatalog: CatalogRow[] = [
+  { id: null, description: 'REMAP STAGE 1', price: 1800 },
+  { id: null, description: 'REMAP STG2 DPF/EGR', price: 2000 },
+  { id: null, description: 'DIFUSOR INOX 2,5" POLEGADAS', price: 1400 },
+  { id: null, description: 'DIFUSOR INOX 3" POLEGADAS', price: 1500 },
+  { id: null, description: 'ESCAPE FINAL 4" POLEGADAS', price: 1800 },
+  { id: null, description: 'ADD HARDCUT', price: 400 },
+  { id: null, description: 'DOWNPIPE + INTERMEDIARIO AMAROK V6', price: 2200 },
+];
+
+const defaultClients: ClientRow[] = [
+  { id: 1, name: 'JOAO HENRIQUE DE ALMEIDA', phone: '67 99871-1313', plate: 'QAN-2H92' },
+  { id: 2, name: 'MILENNA DE OLIVEIRA FELICIANO', phone: '67 99260-0928', plate: 'QUA-9J17' },
+  { id: 3, name: 'CLEBER ANTUNES RICARDO FREITAS', phone: '67 99111-2233', plate: 'QAU-1V55' },
+];
+
+const defaultFinancialEntries: FinancialEntry[] = [
+  { id: 1, date: '2026-04-25', description: 'Venda oficina', amount: 4300 },
+  { id: 2, date: '2026-04-25', description: 'Venda oficina', amount: 12100 },
+  { id: 3, date: '2026-04-24', description: 'Venda oficina', amount: 4300 },
 ];
 
 function formatMoney(value: number) {
@@ -144,7 +182,7 @@ function AppHeader({ now, onLogout }: { now: Date; onLogout: () => void }) {
   return (
     <header className="et-header">
       <div className="et-brand-block">
-        <img className="et-brand-logo" src={logoEtorkBrasil} alt="Etork Brasil" />
+        <img className="et-brand-logo" src={logoEtork} alt="Etork" />
         <div className="et-brand-user">usuario: ADMIN</div>
       </div>
       <div className="et-clock-wrap">
@@ -156,14 +194,48 @@ function AppHeader({ now, onLogout }: { now: Date; onLogout: () => void }) {
   );
 }
 
-function ServiceRows({ items }: { items: ServiceItem[] }) {
+function ServiceRows({
+  items,
+  onChangeItem,
+  onRemoveItem,
+}: {
+  items: ServiceItem[];
+  onChangeItem: (index: number, patch: Partial<ServiceItem>) => void;
+  onRemoveItem: (index: number) => void;
+}) {
   return (
     <div className="et-table">
       {items.map((item, index) => (
         <div className="et-row" key={`${item.description}-${index}`}>
-          <div className="et-cell et-service">{item.description}</div>
-          <div className="et-cell et-qty">{item.quantity}</div>
-          <div className="et-cell et-money">{formatMoney(item.price)}</div>
+          <input
+            className="et-cell et-service"
+            value={item.description}
+            onChange={(event) => onChangeItem(index, { description: event.target.value })}
+          />
+          <input
+            className="et-cell et-qty"
+            type="number"
+            min={1}
+            value={item.quantity}
+            onChange={(event) =>
+              onChangeItem(index, {
+                quantity: Math.max(1, Number(event.target.value) || 1),
+              })
+            }
+          />
+          <input
+            className="et-cell et-money"
+            type="number"
+            min={0}
+            step="0.01"
+            value={item.price}
+            onChange={(event) =>
+              onChangeItem(index, {
+                price: Math.max(0, Number(event.target.value) || 0),
+              })
+            }
+          />
+          <button className="item-delete" onClick={() => onRemoveItem(index)}>X</button>
         </div>
       ))}
     </div>
@@ -226,6 +298,12 @@ function App() {
     startDate: '',
     endDate: '',
   });
+  const [nextReceiptId, setNextReceiptId] = useState(9);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [clients, setClients] = useState<ClientRow[]>(defaultClients);
+  const [nextClientId, setNextClientId] = useState(defaultClients.length + 1);
+  const [financialEntries, setFinancialEntries] = useState<FinancialEntry[]>(defaultFinancialEntries);
+  const [nextFinancialId, setNextFinancialId] = useState(defaultFinancialEntries.length + 1);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000);
@@ -283,7 +361,16 @@ function App() {
         setScreen((prev) => (prev === 'auth-login' || prev === 'auth-register' || prev === 'auth-forgot' ? 'dashboard' : prev));
       } else {
         setScreen((prev) =>
-          prev === 'dashboard' || prev === 'new-quote' || prev === 'new-appointment' || prev === 'new-sale' || prev === 'print-receipt'
+          prev === 'dashboard' ||
+          prev === 'menu-search' ||
+          prev === 'menu-clients' ||
+          prev === 'menu-financial' ||
+          prev === 'menu-products' ||
+          prev === 'menu-reports' ||
+          prev === 'new-quote' ||
+          prev === 'new-appointment' ||
+          prev === 'new-sale' ||
+          prev === 'print-receipt'
             ? 'auth-login'
             : prev
         );
@@ -301,6 +388,11 @@ function App() {
 
     if (
       screen === 'dashboard' ||
+      screen === 'menu-search' ||
+      screen === 'menu-clients' ||
+      screen === 'menu-financial' ||
+      screen === 'menu-products' ||
+      screen === 'menu-reports' ||
       screen === 'new-quote' ||
       screen === 'new-appointment' ||
       screen === 'new-sale' ||
@@ -317,16 +409,24 @@ function App() {
     let active = true;
 
     async function loadFromDatabase() {
-      const [catalogResult, receiptResult] = await Promise.all([
+      const [catalogResult, receiptResult, clientsResult, financialResult] = await Promise.all([
         sb
           .from('service_catalog_v2')
-          .select('name, default_price, is_active')
+          .select('id, name, default_price, is_active')
           .eq('is_active', true)
           .order('name', { ascending: true }),
         sb
           .from('v_receipts_list_v2')
           .select('sale_date, customer_name, vehicle_desc, plate, total_amount')
           .limit(150),
+        sb
+          .from('clients_v2')
+          .select('id, name, phone, plate')
+          .order('id', { ascending: false }),
+        sb
+          .from('financial_entries_v2')
+          .select('id, entry_date, description, amount')
+          .order('id', { ascending: false }),
       ]);
 
       if (!active) return;
@@ -334,6 +434,7 @@ function App() {
       if (!catalogResult.error && catalogResult.data && catalogResult.data.length > 0) {
         setServiceCatalogData(
           catalogResult.data.map((item) => ({
+            id: item.id,
             description: item.name,
             price: Number(item.default_price) || 0,
           }))
@@ -341,15 +442,38 @@ function App() {
       }
 
       if (!receiptResult.error && receiptResult.data && receiptResult.data.length > 0) {
-        setReceipts(
-          receiptResult.data.map((row) => ({
-            date: toBrDate(row.sale_date),
-            customer: row.customer_name,
-            car: row.vehicle_desc,
-            plate: row.plate,
-            total: Number(row.total_amount) || 0,
-          }))
-        );
+        const mapped = receiptResult.data.map((row, index) => ({
+          id: index + 1,
+          date: toBrDate(row.sale_date),
+          customer: row.customer_name,
+          car: row.vehicle_desc,
+          plate: row.plate,
+          total: Number(row.total_amount) || 0,
+        }));
+        setReceipts(mapped);
+        setNextReceiptId(mapped.length + 1);
+      }
+
+      if (!clientsResult.error && clientsResult.data && clientsResult.data.length > 0) {
+        const mappedClients = clientsResult.data.map((item) => ({
+          id: Number(item.id),
+          name: item.name || '',
+          phone: item.phone || '',
+          plate: item.plate || '',
+        }));
+        setClients(mappedClients);
+        setNextClientId(Math.max(...mappedClients.map((client) => client.id)) + 1);
+      }
+
+      if (!financialResult.error && financialResult.data && financialResult.data.length > 0) {
+        const mappedEntries = financialResult.data.map((item) => ({
+          id: Number(item.id),
+          date: item.entry_date || new Date().toISOString().slice(0, 10),
+          description: item.description || '',
+          amount: Number(item.amount) || 0,
+        }));
+        setFinancialEntries(mappedEntries);
+        setNextFinancialId(Math.max(...mappedEntries.map((entry) => entry.id)) + 1);
       }
     }
 
@@ -401,6 +525,36 @@ function App() {
       return customerMatch && plateMatch;
     });
   }, [receipts, receiptFilters]);
+
+  const filteredClients = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return clients;
+    return clients.filter(
+      (client) =>
+        client.name.toLowerCase().includes(query) ||
+        client.phone.toLowerCase().includes(query) ||
+        client.plate.toLowerCase().includes(query)
+    );
+  }, [clients, searchQuery]);
+
+  const filteredProducts = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return serviceCatalogData;
+    return serviceCatalogData.filter((item) => item.description.toLowerCase().includes(query));
+  }, [serviceCatalogData, searchQuery]);
+
+  const filteredFinancialEntries = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return financialEntries;
+    return financialEntries.filter(
+      (entry) => entry.description.toLowerCase().includes(query) || entry.date.toLowerCase().includes(query)
+    );
+  }, [financialEntries, searchQuery]);
+
+  const financialTotal = useMemo(
+    () => financialEntries.reduce((acc, entry) => acc + entry.amount, 0),
+    [financialEntries]
+  );
 
   const nextAppointmentCard = savedAppointment
     ? {
@@ -467,6 +621,252 @@ function App() {
     const selected = pickServiceItem();
     if (!selected) return;
     setSaleData((prev) => ({ ...prev, items: [...prev.items, selected] }));
+  }
+
+  function updateItems(
+    target: 'quote' | 'appointment' | 'sale',
+    index: number,
+    patch: Partial<ServiceItem>
+  ) {
+    if (target === 'quote') {
+      setQuoteData((prev) => ({
+        ...prev,
+        items: prev.items.map((item, idx) => (idx === index ? { ...item, ...patch } : item)),
+      }));
+      return;
+    }
+
+    if (target === 'appointment') {
+      setAppointmentData((prev) => ({
+        ...prev,
+        items: prev.items.map((item, idx) => (idx === index ? { ...item, ...patch } : item)),
+      }));
+      return;
+    }
+
+    setSaleData((prev) => ({
+      ...prev,
+      items: prev.items.map((item, idx) => (idx === index ? { ...item, ...patch } : item)),
+    }));
+  }
+
+  function removeItem(target: 'quote' | 'appointment' | 'sale', index: number) {
+    if (target === 'quote') {
+      setQuoteData((prev) => ({ ...prev, items: prev.items.filter((_, idx) => idx !== index) }));
+      return;
+    }
+
+    if (target === 'appointment') {
+      setAppointmentData((prev) => ({ ...prev, items: prev.items.filter((_, idx) => idx !== index) }));
+      return;
+    }
+
+    setSaleData((prev) => ({ ...prev, items: prev.items.filter((_, idx) => idx !== index) }));
+  }
+
+  function handleMenuAction(name: 'Pesquisar' | 'Clientes' | 'Financeiro' | 'Produtos' | 'Relatorios') {
+    if (name === 'Pesquisar') setScreen('menu-search');
+    if (name === 'Clientes') setScreen('menu-clients');
+    if (name === 'Financeiro') setScreen('menu-financial');
+    if (name === 'Produtos') setScreen('menu-products');
+    if (name === 'Relatorios') setScreen('menu-reports');
+  }
+
+  async function updateClient(id: number, patch: Partial<ClientRow>) {
+    setClients((prev) => prev.map((client) => (client.id === id ? { ...client, ...patch } : client)));
+
+    if (!isSupabaseConfigured || !supabase) return;
+
+    const sb = supabase;
+    await sb
+      .from('clients_v2')
+      .update({
+        name: patch.name,
+        phone: patch.phone,
+        plate: patch.plate,
+      })
+      .eq('id', id);
+  }
+
+  async function addClient() {
+    if (isSupabaseConfigured && supabase) {
+      const sb = supabase;
+      const payload = {
+        name: 'NOVO CLIENTE',
+        phone: '67 90000-0000',
+        plate: 'AAA-0000',
+      };
+
+      const { data, error } = await sb.from('clients_v2').insert(payload).select('id, name, phone, plate').single();
+      if (!error && data) {
+        const dbClient: ClientRow = {
+          id: Number(data.id),
+          name: data.name || payload.name,
+          phone: data.phone || payload.phone,
+          plate: data.plate || payload.plate,
+        };
+        setClients((prev) => [dbClient, ...prev]);
+        setNextClientId((prev) => Math.max(prev, dbClient.id + 1));
+        return;
+      }
+    }
+
+    const newClient: ClientRow = {
+      id: nextClientId,
+      name: 'NOVO CLIENTE',
+      phone: '67 90000-0000',
+      plate: 'AAA-0000',
+    };
+    setClients((prev) => [newClient, ...prev]);
+    setNextClientId((prev) => prev + 1);
+  }
+
+  async function removeClient(id: number) {
+    setClients((prev) => prev.filter((client) => client.id !== id));
+
+    if (!isSupabaseConfigured || !supabase) return;
+
+    const sb = supabase;
+    await sb.from('clients_v2').delete().eq('id', id);
+  }
+
+  async function updateProduct(id: number | null, index: number, patch: Partial<{ description: string; price: number }>) {
+    setServiceCatalogData((prev) => prev.map((item, idx) => (idx === index ? { ...item, ...patch } : item)));
+
+    if (!isSupabaseConfigured || !supabase || id === null) return;
+
+    const sb = supabase;
+    await sb
+      .from('service_catalog_v2')
+      .update({
+        name: patch.description,
+        default_price: patch.price,
+      })
+      .eq('id', id);
+  }
+
+  async function addProduct() {
+    if (isSupabaseConfigured && supabase) {
+      const sb = supabase;
+      const payload = {
+        name: 'NOVO PRODUTO',
+        default_price: 0,
+        is_active: true,
+      };
+
+      const { data, error } = await sb
+        .from('service_catalog_v2')
+        .insert(payload)
+        .select('id, name, default_price')
+        .single();
+
+      if (!error && data) {
+        setServiceCatalogData((prev) => [
+          {
+            id: Number(data.id),
+            description: data.name,
+            price: Number(data.default_price) || 0,
+          },
+          ...prev,
+        ]);
+        return;
+      }
+    }
+
+    setServiceCatalogData((prev) => [{ id: null, description: 'NOVO PRODUTO', price: 0 }, ...prev]);
+  }
+
+  async function removeProduct(id: number | null, index: number) {
+    setServiceCatalogData((prev) => prev.filter((_, idx) => idx !== index));
+
+    if (!isSupabaseConfigured || !supabase || id === null) return;
+
+    const sb = supabase;
+    await sb.from('service_catalog_v2').update({ is_active: false }).eq('id', id);
+  }
+
+  async function updateFinancialEntry(id: number, patch: Partial<FinancialEntry>) {
+    setFinancialEntries((prev) => prev.map((entry) => (entry.id === id ? { ...entry, ...patch } : entry)));
+
+    if (!isSupabaseConfigured || !supabase) return;
+
+    const sb = supabase;
+    await sb
+      .from('financial_entries_v2')
+      .update({
+        entry_date: patch.date,
+        description: patch.description,
+        amount: patch.amount,
+      })
+      .eq('id', id);
+  }
+
+  async function addFinancialEntry() {
+    if (isSupabaseConfigured && supabase) {
+      const sb = supabase;
+      const payload = {
+        entry_date: new Date().toISOString().slice(0, 10),
+        description: 'LANCAMENTO',
+        amount: 0,
+      };
+
+      const { data, error } = await sb
+        .from('financial_entries_v2')
+        .insert(payload)
+        .select('id, entry_date, description, amount')
+        .single();
+
+      if (!error && data) {
+        const dbEntry: FinancialEntry = {
+          id: Number(data.id),
+          date: data.entry_date,
+          description: data.description,
+          amount: Number(data.amount) || 0,
+        };
+        setFinancialEntries((prev) => [dbEntry, ...prev]);
+        setNextFinancialId((prev) => Math.max(prev, dbEntry.id + 1));
+        return;
+      }
+    }
+
+    const newEntry: FinancialEntry = {
+      id: nextFinancialId,
+      date: new Date().toISOString().slice(0, 10),
+      description: 'LANCAMENTO',
+      amount: 0,
+    };
+    setFinancialEntries((prev) => [newEntry, ...prev]);
+    setNextFinancialId((prev) => prev + 1);
+  }
+
+  async function removeFinancialEntry(id: number) {
+    setFinancialEntries((prev) => prev.filter((entry) => entry.id !== id));
+
+    if (!isSupabaseConfigured || !supabase) return;
+
+    const sb = supabase;
+    await sb.from('financial_entries_v2').delete().eq('id', id);
+  }
+
+  function updateReceipt(id: number, patch: Partial<ReceiptRow>) {
+    setReceipts((prev) => prev.map((row) => (row.id === id ? { ...row, ...patch } : row)));
+  }
+
+  function removeReceipt(id: number) {
+    setReceipts((prev) => prev.filter((row) => row.id !== id));
+  }
+
+  function addReceipt() {
+    const newRow: ReceiptRow = {
+      id: nextReceiptId,
+      date: now.toLocaleDateString('pt-BR'),
+      customer: 'NOVO CLIENTE',
+      car: 'NOVO VEICULO',
+      plate: 'AAA-0000',
+      total: 0,
+    };
+    setReceipts((prev) => [newRow, ...prev]);
+    setNextReceiptId((prev) => prev + 1);
   }
 
   async function persistDocument(
@@ -711,6 +1111,7 @@ function App() {
     const nowDate = now.toLocaleDateString('pt-BR');
     const car = saleData.vehicleDetails.split('\n')[0] || saleData.vehicleDetails;
     const newReceipt: ReceiptRow = {
+      id: nextReceiptId,
       date: nowDate,
       customer: saleData.customer,
       car,
@@ -736,6 +1137,7 @@ function App() {
     setIsSaving(false);
 
     setReceipts((prev) => [newReceipt, ...prev]);
+    setNextReceiptId((prev) => prev + 1);
     window.alert(result.ok ? 'Venda finalizada e salva no banco.' : 'Venda finalizada localmente (falha no banco).');
     setScreen('print-receipt');
   }
@@ -915,7 +1317,7 @@ function App() {
   if (screen === 'intro-system') {
     return (
       <main className="intro-screen intro-system">
-        <h1>SISTEMA ETORK</h1>
+        <img src={logoEtork} alt="Etork" className="intro-logo-lg" />
       </main>
     );
   }
@@ -1087,16 +1489,165 @@ function App() {
     <div className="et-shell">
       <AppHeader now={now} onLogout={() => void handleLogout()} />
 
+      {screen === 'menu-search' && (
+        <main className="panel panel-form">
+          <h2 className="panel-title">PESQUISAR</h2>
+          <section className="form-grid menu-single">
+            <div className="form-main">
+              <div className="line"><strong>BUSCA:</strong> <input className="input-look" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="cliente, placa, produto..." /></div>
+
+              <div className="menu-block">
+                <div className="line"><strong>CLIENTES</strong></div>
+                {filteredClients.map((client) => (
+                  <div className="menu-row" key={client.id}>
+                    <span>{client.name}</span>
+                    <span>{client.phone}</span>
+                    <span>{client.plate}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="menu-block">
+                <div className="line"><strong>PRODUTOS</strong></div>
+                {filteredProducts.map((item, index) => (
+                  <div className="menu-row" key={`${item.description}-${index}`}>
+                    <span>{item.description}</span>
+                    <span>{formatMoney(item.price)}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="menu-block">
+                <div className="line"><strong>FINANCEIRO</strong></div>
+                {filteredFinancialEntries.map((entry) => (
+                  <div className="menu-row" key={entry.id}>
+                    <span>{entry.date}</span>
+                    <span>{entry.description}</span>
+                    <span>{formatMoney(entry.amount)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+          <footer className="panel-footer">
+            <div className="footer-right">
+              <button className="btn-back" onClick={() => setScreen('dashboard')}>←</button>
+            </div>
+          </footer>
+        </main>
+      )}
+
+      {screen === 'menu-clients' && (
+        <main className="panel panel-form">
+          <h2 className="panel-title">CLIENTES</h2>
+          <section className="form-grid menu-single">
+            <div className="form-main">
+              <div className="mini-actions receipt-actions">
+                <button className="btn-cyan lg" onClick={addClient}>NOVO CLIENTE</button>
+              </div>
+              {clients.map((client) => (
+                <div className="menu-row editable" key={client.id}>
+                  <input className="input-look" value={client.name} onChange={(event) => updateClient(client.id, { name: event.target.value })} />
+                  <input className="input-look" value={client.phone} onChange={(event) => updateClient(client.id, { phone: event.target.value })} />
+                  <input className="input-look plate" value={client.plate} onChange={(event) => updateClient(client.id, { plate: event.target.value.toUpperCase() })} />
+                  <button className="item-delete" onClick={() => removeClient(client.id)}>X</button>
+                </div>
+              ))}
+            </div>
+          </section>
+          <footer className="panel-footer">
+            <div className="footer-right">
+              <button className="btn-back" onClick={() => setScreen('dashboard')}>←</button>
+            </div>
+          </footer>
+        </main>
+      )}
+
+      {screen === 'menu-products' && (
+        <main className="panel panel-form">
+          <h2 className="panel-title">PRODUTOS</h2>
+          <section className="form-grid menu-single">
+            <div className="form-main">
+              <div className="mini-actions receipt-actions">
+                <button className="btn-cyan lg" onClick={addProduct}>NOVO PRODUTO</button>
+              </div>
+              {serviceCatalogData.map((item, index) => (
+                <div className="menu-row editable" key={`${item.description}-${index}`}>
+                  <input className="input-look" value={item.description} onChange={(event) => void updateProduct(item.id, index, { description: event.target.value })} />
+                  <input className="input-look" type="number" min={0} step="0.01" value={item.price} onChange={(event) => void updateProduct(item.id, index, { price: Math.max(0, Number(event.target.value) || 0) })} />
+                  <button className="item-delete" onClick={() => void removeProduct(item.id, index)}>X</button>
+                </div>
+              ))}
+            </div>
+          </section>
+          <footer className="panel-footer">
+            <div className="footer-right">
+              <button className="btn-back" onClick={() => setScreen('dashboard')}>←</button>
+            </div>
+          </footer>
+        </main>
+      )}
+
+      {screen === 'menu-financial' && (
+        <main className="panel panel-form">
+          <h2 className="panel-title">FINANCEIRO</h2>
+          <section className="form-grid menu-single">
+            <div className="form-main">
+              <div className="line"><strong>TOTAL GERAL:</strong> <span>{formatMoney(financialTotal)}</span></div>
+              <div className="mini-actions receipt-actions">
+                <button className="btn-cyan lg" onClick={addFinancialEntry}>NOVO LANCAMENTO</button>
+              </div>
+              {financialEntries.map((entry) => (
+                <div className="menu-row editable" key={entry.id}>
+                  <input className="input-look" type="date" value={entry.date} onChange={(event) => updateFinancialEntry(entry.id, { date: event.target.value })} />
+                  <input className="input-look" value={entry.description} onChange={(event) => updateFinancialEntry(entry.id, { description: event.target.value })} />
+                  <input className="input-look" type="number" min={0} step="0.01" value={entry.amount} onChange={(event) => updateFinancialEntry(entry.id, { amount: Math.max(0, Number(event.target.value) || 0) })} />
+                  <button className="item-delete" onClick={() => removeFinancialEntry(entry.id)}>X</button>
+                </div>
+              ))}
+            </div>
+          </section>
+          <footer className="panel-footer">
+            <div className="footer-right">
+              <button className="btn-back" onClick={() => setScreen('dashboard')}>←</button>
+            </div>
+          </footer>
+        </main>
+      )}
+
+      {screen === 'menu-reports' && (
+        <main className="panel panel-form">
+          <h2 className="panel-title">RELATORIOS</h2>
+          <section className="form-grid menu-single">
+            <div className="form-main">
+              <div className="line"><strong>CLIENTES CADASTRADOS:</strong> <span>{clients.length}</span></div>
+              <div className="line"><strong>PRODUTOS CADASTRADOS:</strong> <span>{serviceCatalogData.length}</span></div>
+              <div className="line"><strong>RECIBOS GERADOS:</strong> <span>{receipts.length}</span></div>
+              <div className="line"><strong>FATURAMENTO:</strong> <span>{formatMoney(financialTotal)}</span></div>
+              <div className="mini-actions">
+                <button className="btn-yellow lg" onClick={() => window.print()}>IMPRIMIR RELATORIO</button>
+                <button className="btn-cyan lg" onClick={() => setScreen('print-receipt')}>VER RECIBOS</button>
+              </div>
+            </div>
+          </section>
+          <footer className="panel-footer">
+            <div className="footer-right">
+              <button className="btn-back" onClick={() => setScreen('dashboard')}>←</button>
+            </div>
+          </footer>
+        </main>
+      )}
+
       {screen === 'dashboard' && (
         <main className="panel panel-dashboard">
           <h2 className="panel-title">SERVICOS</h2>
           <section className="dashboard-layout">
             <aside className="left-actions">
-              <button>PESQUISAR</button>
-              <button>CLIENTES</button>
-              <button>FINANCEIRO</button>
-              <button>PRODUTOS</button>
-              <button>RELATORIOS</button>
+              <button onClick={() => handleMenuAction('Pesquisar')}>PESQUISAR</button>
+              <button onClick={() => handleMenuAction('Clientes')}>CLIENTES</button>
+              <button onClick={() => handleMenuAction('Financeiro')}>FINANCEIRO</button>
+              <button onClick={() => handleMenuAction('Produtos')}>PRODUTOS</button>
+              <button onClick={() => handleMenuAction('Relatorios')}>RELATORIOS</button>
             </aside>
 
             <section className="dashboard-center">
@@ -1133,9 +1684,13 @@ function App() {
           <h2 className="panel-title">NOVO ORCAMENTO</h2>
           <section className="form-grid">
             <div className="form-main">
-              <div className="line"><strong>VEICULO:</strong> <span>{quoteData.vehicle}</span></div>
+              <div className="line"><strong>VEICULO:</strong> <input className="input-look" value={quoteData.vehicle} onChange={(event) => setQuoteData((prev) => ({ ...prev, vehicle: event.target.value }))} /></div>
               <div className="line line-mini"><strong>LISTAR</strong> <button onClick={addItemToQuote}>+</button></div>
-              <ServiceRows items={quoteData.items} />
+              <ServiceRows
+                items={quoteData.items}
+                onChangeItem={(index, patch) => updateItems('quote', index, patch)}
+                onRemoveItem={(index) => removeItem('quote', index)}
+              />
               {quoteData.note && <div className="note-box">OBS: {quoteData.note}</div>}
             </div>
 
@@ -1144,7 +1699,7 @@ function App() {
 
           <footer className="panel-footer">
             <div className="footer-left">
-              <div className="line footer-time"><strong>TEMPO DE SERVICO</strong> <span>1D</span></div>
+              <div className="line footer-time"><strong>TEMPO DE SERVICO</strong> <input className="input-look small" type="number" min={1} value={quoteData.timeDays} onChange={(event) => setQuoteData((prev) => ({ ...prev, timeDays: Math.max(1, Number(event.target.value) || 1) }))} /></div>
               <div className="mini-actions">
                 <button className="btn-yellow" onClick={() => askAndApplyDiscount(quoteData.discount, (next) => setQuoteData((prev) => ({ ...prev, discount: next })))}>INSERIR DESCONTO</button>
                 <button className="btn-cyan" onClick={() => askAndApplyNote(quoteData.note, (next) => setQuoteData((prev) => ({ ...prev, note: next })))}>INSERIR OBSERVACAO</button>
@@ -1164,18 +1719,22 @@ function App() {
           <h2 className="panel-title">NOVO AGENDAMENTO</h2>
           <section className="form-grid">
             <div className="form-main">
-              <div className="line"><strong>DATA:</strong> <span>{appointmentData.date}</span></div>
-              <div className="line"><strong>CLIENTE:</strong> <span>{appointmentData.customer}</span> <small className="badge">CLIENTE FINAL</small></div>
+              <div className="line"><strong>DATA:</strong> <input className="input-look" value={appointmentData.date} onChange={(event) => setAppointmentData((prev) => ({ ...prev, date: event.target.value }))} /></div>
+              <div className="line"><strong>CLIENTE:</strong> <input className="input-look" value={appointmentData.customer} onChange={(event) => setAppointmentData((prev) => ({ ...prev, customer: event.target.value }))} /> <small className="badge">CLIENTE FINAL</small></div>
               <div className="line line-mini"><strong>LISTAR</strong> <button onClick={addItemToAppointment}>+</button></div>
-              <ServiceRows items={appointmentData.items} />
+              <ServiceRows
+                items={appointmentData.items}
+                onChangeItem={(index, patch) => updateItems('appointment', index, patch)}
+                onRemoveItem={(index) => removeItem('appointment', index)}
+              />
               {appointmentData.note && <div className="note-box">OBS: {appointmentData.note}</div>}
             </div>
 
             <aside className="vehicle-info">
-              <div className="line side-top"><strong>TEL:</strong> <span>{appointmentData.phone}</span></div>
-              <div className="line side-top"><strong>{appointmentData.laborRequired ? 'MAO DE OBRA' : 'SEM MAO DE OBRA'}</strong></div>
-              <div className="line side-top"><strong>PLACA:</strong> <span>{appointmentData.plate}</span></div>
-              <div className="vehicle-card">{appointmentData.vehicleDetails.split('\n').map((line) => <div key={line}>{line}</div>)}</div>
+              <div className="line side-top"><strong>TEL:</strong> <input className="input-look" value={appointmentData.phone} onChange={(event) => setAppointmentData((prev) => ({ ...prev, phone: event.target.value }))} /></div>
+              <div className="line side-top line-check"><strong>MAO DE OBRA</strong> <input type="checkbox" checked={appointmentData.laborRequired} onChange={(event) => setAppointmentData((prev) => ({ ...prev, laborRequired: event.target.checked }))} /></div>
+              <div className="line side-top"><strong>PLACA:</strong> <input className="input-look plate" value={appointmentData.plate} onChange={(event) => setAppointmentData((prev) => ({ ...prev, plate: event.target.value.toUpperCase() }))} /></div>
+              <textarea className="vehicle-card vehicle-input" value={appointmentData.vehicleDetails} onChange={(event) => setAppointmentData((prev) => ({ ...prev, vehicleDetails: event.target.value }))} />
             </aside>
           </section>
 
@@ -1205,18 +1764,22 @@ function App() {
 
           <section className="form-grid">
             <div className="form-main">
-              <div className="line"><strong>CLIENTE:</strong> <span>{saleData.customer}</span> <small className="badge">{saleData.customerType}</small></div>
+              <div className="line"><strong>CLIENTE:</strong> <input className="input-look" value={saleData.customer} onChange={(event) => setSaleData((prev) => ({ ...prev, customer: event.target.value }))} /> <input className="input-look small" value={saleData.customerType} onChange={(event) => setSaleData((prev) => ({ ...prev, customerType: event.target.value }))} /></div>
               <div className="line line-mini"><strong>LISTAR</strong> <button onClick={addItemToSale}>+</button></div>
-              <ServiceRows items={saleData.items} />
+              <ServiceRows
+                items={saleData.items}
+                onChangeItem={(index, patch) => updateItems('sale', index, patch)}
+                onRemoveItem={(index) => removeItem('sale', index)}
+              />
               {saleData.note && <div className="note-box">OBS: {saleData.note}</div>}
             </div>
 
             <aside className="vehicle-info">
-              <div className="line side-top"><strong>TEL:</strong> <span>{saleData.phone}</span></div>
-              <div className="line side-top"><strong>{saleData.laborRequired ? 'MAO DE OBRA' : 'SEM MAO DE OBRA'}</strong></div>
-              <div className="line side-top"><strong>PLACA:</strong> <span>{saleData.plate}</span></div>
-              <div className="vehicle-card">{saleData.vehicleDetails.split('\n').map((line) => <div key={line}>{line}</div>)}</div>
-              <div className="line footer-time"><strong>TEMPO DE SERVICO</strong> <span>{saleData.timeDays}D</span></div>
+              <div className="line side-top"><strong>TEL:</strong> <input className="input-look" value={saleData.phone} onChange={(event) => setSaleData((prev) => ({ ...prev, phone: event.target.value }))} /></div>
+              <div className="line side-top line-check"><strong>MAO DE OBRA</strong> <input type="checkbox" checked={saleData.laborRequired} onChange={(event) => setSaleData((prev) => ({ ...prev, laborRequired: event.target.checked }))} /></div>
+              <div className="line side-top"><strong>PLACA:</strong> <input className="input-look plate" value={saleData.plate} onChange={(event) => setSaleData((prev) => ({ ...prev, plate: event.target.value.toUpperCase() }))} /></div>
+              <textarea className="vehicle-card vehicle-input" value={saleData.vehicleDetails} onChange={(event) => setSaleData((prev) => ({ ...prev, vehicleDetails: event.target.value }))} />
+              <div className="line footer-time"><strong>TEMPO DE SERVICO</strong> <input className="input-look small" type="number" min={1} value={saleData.timeDays} onChange={(event) => setSaleData((prev) => ({ ...prev, timeDays: Math.max(1, Number(event.target.value) || 1) }))} /></div>
             </aside>
           </section>
 
@@ -1251,13 +1814,17 @@ function App() {
           </section>
 
           <section className="receipt-table">
-            {filteredReceipts.map((row, index) => (
-              <div className="receipt-row" key={row.customer + index}>
-                <span>{row.date}</span>
-                <span>{row.customer}</span>
-                <span>{row.car}</span>
-                <span>{row.plate}</span>
-                <span>{formatMoney(row.total)}</span>
+            <div className="mini-actions receipt-actions">
+              <button className="btn-cyan lg" onClick={addReceipt}>NOVO RECIBO</button>
+            </div>
+            {filteredReceipts.map((row) => (
+              <div className="receipt-row editable" key={row.id}>
+                <input className="input-look" value={row.date} onChange={(event) => updateReceipt(row.id, { date: event.target.value })} />
+                <input className="input-look" value={row.customer} onChange={(event) => updateReceipt(row.id, { customer: event.target.value })} />
+                <input className="input-look" value={row.car} onChange={(event) => updateReceipt(row.id, { car: event.target.value })} />
+                <input className="input-look plate" value={row.plate} onChange={(event) => updateReceipt(row.id, { plate: event.target.value.toUpperCase() })} />
+                <input className="input-look" type="number" min={0} step="0.01" value={row.total} onChange={(event) => updateReceipt(row.id, { total: Math.max(0, Number(event.target.value) || 0) })} />
+                <button className="item-delete" onClick={() => removeReceipt(row.id)}>X</button>
               </div>
             ))}
             {filteredReceipts.length === 0 && <div className="receipt-empty">Nenhum recibo encontrado para os filtros selecionados.</div>}
@@ -1266,7 +1833,7 @@ function App() {
           <footer className="panel-footer">
             <div className="footer-left">
               <div className="mini-actions">
-                <button className="btn-yellow lg" onClick={exportReceiptCSV}>PDF</button>
+                <button className="btn-yellow lg" onClick={exportReceiptCSV}>EXPORTAR CSV</button>
                 <button className="btn-yellow lg" onClick={() => window.print()}>IMPRIMIR</button>
               </div>
             </div>
