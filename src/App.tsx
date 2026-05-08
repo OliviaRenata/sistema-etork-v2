@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import logoEtork from './assets/logoetork.png';
 import logoEtorkBrasil from './assets/logoetorkbrasil.png';
+import { isSupabaseConfigured, supabase } from './lib/supabase';
 
 type Screen =
   | 'intro-brand'
@@ -80,7 +81,7 @@ const receiptRows: ReceiptRow[] = [
   { date: '23/04/2026', customer: 'CLEBER ANTUNES RICARDO FREITAS', car: 'RAM 3500 NIGHT', plate: 'QAU-1V55', total: 12100 },
 ];
 
-const serviceCatalog: Array<{ description: string; price: number }> = [
+const defaultServiceCatalog: Array<{ description: string; price: number }> = [
   { description: 'REMAP STAGE 1', price: 1800 },
   { description: 'REMAP STG2 DPF/EGR', price: 2000 },
   { description: 'DIFUSOR INOX 2,5" POLEGADAS', price: 1400 },
@@ -95,9 +96,31 @@ function formatMoney(value: number) {
 }
 
 function parseBrDate(value: string) {
+  if (value.includes('-')) {
+    const raw = new Date(value);
+    return Number.isNaN(raw.getTime()) ? null : raw;
+  }
+
   const [day, month, year] = value.split('/').map(Number);
   if (!day || !month || !year) return null;
   return new Date(year, month - 1, day);
+}
+
+function parseBrDateTime(value: string) {
+  const [datePart, timePart] = value.split(' ');
+  const [day, month, year] = datePart.split('/').map(Number);
+  const [hour = 0, minute = 0] = (timePart || '').split(':').map(Number);
+
+  if (!day || !month || !year) return null;
+
+  const date = new Date(year, month - 1, day, hour, minute, 0, 0);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function toBrDate(value: string) {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleDateString('pt-BR');
 }
 
 function parseMoneyInput(raw: string) {
@@ -145,6 +168,8 @@ function ServiceRows({ items }: { items: ServiceItem[] }) {
 function App() {
   const [screen, setScreen] = useState<Screen>('intro-brand');
   const [now, setNow] = useState(() => new Date());
+  const [serviceCatalogData, setServiceCatalogData] = useState(defaultServiceCatalog);
+  const [isSaving, setIsSaving] = useState(false);
   const [quoteData, setQuoteData] = useState({
     vehicle: 'RAM 1500 CLASSIC 2023',
     items: cloneItems(quoteItems),
@@ -201,6 +226,55 @@ function App() {
       window.clearTimeout(secondStep);
     };
   }, [screen]);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) return;
+
+    let active = true;
+
+    async function loadFromDatabase() {
+      const [catalogResult, receiptResult] = await Promise.all([
+        supabase
+          .from('service_catalog_v2')
+          .select('name, default_price, is_active')
+          .eq('is_active', true)
+          .order('name', { ascending: true }),
+        supabase
+          .from('v_receipts_list_v2')
+          .select('sale_date, customer_name, vehicle_desc, plate, total_amount')
+          .limit(150),
+      ]);
+
+      if (!active) return;
+
+      if (!catalogResult.error && catalogResult.data && catalogResult.data.length > 0) {
+        setServiceCatalogData(
+          catalogResult.data.map((item) => ({
+            description: item.name,
+            price: Number(item.default_price) || 0,
+          }))
+        );
+      }
+
+      if (!receiptResult.error && receiptResult.data && receiptResult.data.length > 0) {
+        setReceipts(
+          receiptResult.data.map((row) => ({
+            date: toBrDate(row.sale_date),
+            customer: row.customer_name,
+            car: row.vehicle_desc,
+            plate: row.plate,
+            total: Number(row.total_amount) || 0,
+          }))
+        );
+      }
+    }
+
+    loadFromDatabase();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const quoteSubtotal = useMemo(
     () => quoteData.items.reduce((acc, item) => acc + item.price * item.quantity, 0),
@@ -270,11 +344,11 @@ function App() {
   }
 
   function pickServiceItem() {
-    const menu = serviceCatalog.map((item, idx) => `${idx + 1}. ${item.description} - ${formatMoney(item.price)}`).join('\n');
+    const menu = serviceCatalogData.map((item, idx) => `${idx + 1}. ${item.description} - ${formatMoney(item.price)}`).join('\n');
     const pick = window.prompt(`Selecione o servico pelo numero:\n\n${menu}`);
     if (!pick) return null;
     const index = Number(pick) - 1;
-    if (!Number.isInteger(index) || !serviceCatalog[index]) {
+    if (!Number.isInteger(index) || !serviceCatalogData[index]) {
       window.alert('Servico invalido.');
       return null;
     }
@@ -287,9 +361,9 @@ function App() {
     }
 
     return {
-      description: serviceCatalog[index].description,
+      description: serviceCatalogData[index].description,
       quantity: qty,
-      price: serviceCatalog[index].price,
+      price: serviceCatalogData[index].price,
     } as ServiceItem;
   }
 
@@ -311,7 +385,107 @@ function App() {
     setSaleData((prev) => ({ ...prev, items: [...prev.items, selected] }));
   }
 
-  function finalizeQuote() {
+  async function persistDocument(
+    docType: 'orcamento' | 'agendamento' | 'venda',
+    payload: {
+      customerName: string;
+      phone: string;
+      plate: string;
+      vehicleSnapshot: string;
+      laborRequired: boolean;
+      serviceTimeDays: number;
+      discount: number;
+      note: string;
+      scheduledFor?: string;
+    },
+    items: ServiceItem[]
+  ) {
+    if (!isSupabaseConfigured || !supabase) return { ok: false as const, error: 'Supabase nao configurado' };
+
+    const scheduledForIso = payload.scheduledFor ? parseBrDateTime(payload.scheduledFor)?.toISOString() ?? null : null;
+    const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    const total = Math.max(subtotal - payload.discount, 0);
+
+    const { data: documentRow, error: documentError } = await supabase
+      .from('documents_v2')
+      .insert({
+        doc_type: docType,
+        status: 'aberto',
+        customer_name_snapshot: payload.customerName || null,
+        phone_snapshot: payload.phone || null,
+        plate_snapshot: payload.plate || null,
+        vehicle_snapshot: payload.vehicleSnapshot || null,
+        labor_required: payload.laborRequired,
+        service_time_days: payload.serviceTimeDays,
+        scheduled_for: scheduledForIso,
+        discount_amount: payload.discount,
+        notes: payload.note || null,
+        subtotal_amount: subtotal,
+        total_amount: total,
+      })
+      .select('id')
+      .single();
+
+    if (documentError || !documentRow) {
+      return { ok: false as const, error: documentError?.message || 'Erro ao salvar documento' };
+    }
+
+    if (items.length > 0) {
+      const itemRows = items.map((item) => ({
+        document_id: documentRow.id,
+        description: item.description,
+        quantity: item.quantity,
+        unit_price: item.price,
+      }));
+
+      const { error: itemsError } = await supabase.from('document_items_v2').insert(itemRows);
+      if (itemsError) {
+        return { ok: false as const, error: itemsError.message };
+      }
+    }
+
+    return { ok: true as const, id: documentRow.id };
+  }
+
+  async function fetchLatestDocumentWithItems(docType: 'orcamento' | 'agendamento') {
+    if (!isSupabaseConfigured || !supabase) return null;
+
+    const { data: doc, error: docError } = await supabase
+      .from('documents_v2')
+      .select('id, customer_name_snapshot, phone_snapshot, plate_snapshot, vehicle_snapshot, notes, discount_amount, service_time_days, scheduled_for')
+      .eq('doc_type', docType)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (docError || !doc) return null;
+
+    const { data: items } = await supabase
+      .from('document_items_v2')
+      .select('description, quantity, unit_price')
+      .eq('document_id', doc.id)
+      .order('created_at', { ascending: true });
+
+    const mappedItems: ServiceItem[] = (items || []).map((item) => ({
+      description: item.description,
+      quantity: Number(item.quantity) || 1,
+      price: Number(item.unit_price) || 0,
+    }));
+
+    return {
+      customer: doc.customer_name_snapshot || '',
+      phone: doc.phone_snapshot || '',
+      plate: doc.plate_snapshot || '',
+      vehicleSnapshot: doc.vehicle_snapshot || '',
+      note: doc.notes || '',
+      discount: Number(doc.discount_amount) || 0,
+      timeDays: Number(doc.service_time_days) || 1,
+      scheduledFor: doc.scheduled_for,
+      items: mappedItems,
+    };
+  }
+
+  async function finalizeQuote() {
     const payload: SavedQuote = {
       vehicle: quoteData.vehicle,
       items: cloneItems(quoteData.items),
@@ -319,12 +493,31 @@ function App() {
       timeDays: quoteData.timeDays,
       note: quoteData.note,
     };
+
+    setIsSaving(true);
     setSavedQuote(payload);
-    window.alert('Orcamento salvo com sucesso.');
+
+    const result = await persistDocument(
+      'orcamento',
+      {
+        customerName: saleData.customer,
+        phone: saleData.phone,
+        plate: saleData.plate,
+        vehicleSnapshot: quoteData.vehicle,
+        laborRequired: saleData.laborRequired,
+        serviceTimeDays: quoteData.timeDays,
+        discount: quoteData.discount,
+        note: quoteData.note,
+      },
+      quoteData.items
+    );
+
+    setIsSaving(false);
+    window.alert(result.ok ? 'Orcamento salvo com sucesso no banco.' : 'Orcamento salvo localmente (falha no banco).');
     setScreen('dashboard');
   }
 
-  function finalizeAppointment() {
+  async function finalizeAppointment() {
     const payload: SavedAppointment = {
       date: appointmentData.date,
       customer: appointmentData.customer,
@@ -335,13 +528,43 @@ function App() {
       discount: appointmentData.discount,
       note: appointmentData.note,
     };
+
+    setIsSaving(true);
     setSavedAppointment(payload);
-    window.alert('Agendamento salvo com sucesso.');
+
+    const result = await persistDocument(
+      'agendamento',
+      {
+        customerName: appointmentData.customer,
+        phone: appointmentData.phone,
+        plate: appointmentData.plate,
+        vehicleSnapshot: appointmentData.vehicleDetails,
+        laborRequired: appointmentData.laborRequired,
+        serviceTimeDays: 1,
+        discount: appointmentData.discount,
+        note: appointmentData.note,
+        scheduledFor: appointmentData.date,
+      },
+      appointmentData.items
+    );
+
+    setIsSaving(false);
+    window.alert(result.ok ? 'Agendamento salvo com sucesso no banco.' : 'Agendamento salvo localmente (falha no banco).');
     setScreen('dashboard');
   }
 
-  function importQuoteToSale() {
-    const source = savedQuote || {
+  async function importQuoteToSale() {
+    const dbQuote = await fetchLatestDocumentWithItems('orcamento');
+
+    const source = dbQuote
+      ? {
+          vehicle: dbQuote.vehicleSnapshot,
+          items: dbQuote.items,
+          discount: dbQuote.discount,
+          timeDays: dbQuote.timeDays,
+          note: dbQuote.note,
+        }
+      : savedQuote || {
       vehicle: quoteData.vehicle,
       items: quoteData.items,
       discount: quoteData.discount,
@@ -357,11 +580,24 @@ function App() {
       note: source.note,
       vehicleDetails: source.vehicle,
     }));
-    window.alert('Orcamento importado para a venda.');
+    window.alert(dbQuote ? 'Orcamento importado do banco.' : 'Orcamento importado para a venda.');
   }
 
-  function importAppointmentToSale() {
-    const source = savedAppointment || {
+  async function importAppointmentToSale() {
+    const dbAppointment = await fetchLatestDocumentWithItems('agendamento');
+
+    const source = dbAppointment
+      ? {
+          date: dbAppointment.scheduledFor ? new Date(dbAppointment.scheduledFor).toLocaleString('pt-BR', { hour: '2-digit', minute: '2-digit' }).replace(',', '') : appointmentData.date,
+          customer: dbAppointment.customer,
+          phone: dbAppointment.phone,
+          plate: dbAppointment.plate,
+          vehicleDetails: dbAppointment.vehicleSnapshot,
+          items: dbAppointment.items,
+          discount: dbAppointment.discount,
+          note: dbAppointment.note,
+        }
+      : savedAppointment || {
       date: appointmentData.date,
       customer: appointmentData.customer,
       phone: appointmentData.phone,
@@ -382,10 +618,10 @@ function App() {
       discount: source.discount,
       note: source.note,
     }));
-    window.alert('Agendamento importado para a venda.');
+    window.alert(dbAppointment ? 'Agendamento importado do banco.' : 'Agendamento importado para a venda.');
   }
 
-  function finalizeSale() {
+  async function finalizeSale() {
     const nowDate = now.toLocaleDateString('pt-BR');
     const car = saleData.vehicleDetails.split('\n')[0] || saleData.vehicleDetails;
     const newReceipt: ReceiptRow = {
@@ -396,8 +632,25 @@ function App() {
       total: saleTotal,
     };
 
+    setIsSaving(true);
+    const result = await persistDocument(
+      'venda',
+      {
+        customerName: saleData.customer,
+        phone: saleData.phone,
+        plate: saleData.plate,
+        vehicleSnapshot: saleData.vehicleDetails,
+        laborRequired: saleData.laborRequired,
+        serviceTimeDays: saleData.timeDays,
+        discount: saleData.discount,
+        note: saleData.note,
+      },
+      saleData.items
+    );
+    setIsSaving(false);
+
     setReceipts((prev) => [newReceipt, ...prev]);
-    window.alert('Venda finalizada e adicionada aos recibos.');
+    window.alert(result.ok ? 'Venda finalizada e salva no banco.' : 'Venda finalizada localmente (falha no banco).');
     setScreen('print-receipt');
   }
 
@@ -501,7 +754,7 @@ function App() {
             </div>
             <div className="footer-right">
               <button className="btn-back" onClick={() => setScreen('dashboard')}>←</button>
-              <button className="btn-finish" onClick={finalizeQuote}>FINALIZAR ORCAMENTO</button>
+              <button className="btn-finish" onClick={() => void finalizeQuote()}>{isSaving ? 'SALVANDO...' : 'FINALIZAR ORCAMENTO'}</button>
             </div>
           </footer>
         </main>
@@ -537,7 +790,7 @@ function App() {
             </div>
             <div className="footer-right">
               <button className="btn-back" onClick={() => setScreen('dashboard')}>←</button>
-              <button className="btn-finish" onClick={finalizeAppointment}>FINALIZAR AGENDAMENTO</button>
+              <button className="btn-finish" onClick={() => void finalizeAppointment()}>{isSaving ? 'SALVANDO...' : 'FINALIZAR AGENDAMENTO'}</button>
             </div>
           </footer>
         </main>
@@ -547,8 +800,8 @@ function App() {
         <main className="panel panel-form">
           <h2 className="panel-title">NOVA VENDA</h2>
           <section className="sale-tools">
-            <button className="tool-blue" onClick={importQuoteToSale}>IMPORTAR ORCAMENTO</button>
-            <button className="tool-yellow" onClick={importAppointmentToSale}>IMPORTAR AGENDAMENTO</button>
+            <button className="tool-blue" onClick={() => void importQuoteToSale()}>IMPORTAR ORCAMENTO</button>
+            <button className="tool-yellow" onClick={() => void importAppointmentToSale()}>IMPORTAR AGENDAMENTO</button>
           </section>
 
           <section className="form-grid">
@@ -579,7 +832,7 @@ function App() {
             <div className="footer-right">
               <button className="btn-back" onClick={() => setScreen('dashboard')}>←</button>
               <button className="btn-dark" onClick={() => window.alert('Servico enviado para fila interna.')}>ENVIAR SERVICO</button>
-              <button className="btn-finish" onClick={finalizeSale}>FINALIZAR VENDA</button>
+              <button className="btn-finish" onClick={() => void finalizeSale()}>{isSaving ? 'SALVANDO...' : 'FINALIZAR VENDA'}</button>
             </div>
           </footer>
         </main>
