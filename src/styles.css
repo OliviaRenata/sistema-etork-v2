@@ -27,8 +27,8 @@ body,
 
 body {
   font-family: 'Rajdhani', 'Arial Narrow', Arial, sans-serif;
-  font-weight: 700;
-  letter-spacing: 0.2px;
+  font-weight: 600;
+  letter-spacing: 0.15px;
   color: var(--white);
   background: radial-gradient(circle at 52% 0%, #4a4a4a 0%, var(--bg-2) 28%, var(--bg-1) 62%, #040404 100%);
 }
@@ -64,25 +64,27 @@ button {
 }
 
 .et-header {
-  height: 130px;
+  height: 92px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 20px;
+  padding: 10px 22px;
   background: linear-gradient(90deg, rgba(12, 12, 12, 0.95) 0%, rgba(62, 62, 62, 0.7) 55%, rgba(28, 28, 28, 0.95) 100%);
   border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .et-brand-logo {
-  width: 170px;
+  width: 150px;
   object-fit: contain;
 }
 
 .et-brand-user {
-  margin-left: 36px;
-  margin-top: 8px;
-  font-size: 30px;
-  text-transform: lowercase;
+  margin-left: 18px;
+  margin-top: 4px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--gray-1);
 }
 
 .et-clock-wrap {
@@ -93,29 +95,33 @@ button {
   background: #d0d0d0;
   color: #101010;
   border: 3px solid #8f8f8f;
-  border-radius: 10px;
-  font-size: 54px;
-  line-height: 0.95;
-  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 30px;
+  line-height: 1;
+  padding: 5px 12px;
   display: inline-block;
-  min-width: 190px;
+  min-width: 118px;
+  letter-spacing: 1px;
 }
 
 .et-day {
-  margin-top: 8px;
-  font-size: 52px;
+  margin-top: 5px;
+  font-size: 14px;
+  color: var(--gray-1);
 }
 .et-logout {
   position: absolute;
   top: 12px;
   right: 20px;
-  min-height: 40px;
-  padding: 0 18px;
+  min-height: 34px;
+  padding: 0 14px;
   border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 12px;
   background: rgba(10, 14, 20, 0.85);
   color: var(--white);
-  font-size: 20px;
+  font-size: 12px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
 }
 .auth-screen {
   min-height: 100vh;
@@ -132,35 +138,39 @@ button {
   background: rgba(16, 22, 31, 0.93);
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 18px;
-  padding: 26px;
+  padding: 24px;
   box-shadow: 0 26px 55px rgba(0, 0, 0, 0.45);
   display: grid;
   gap: 12px;
 }
 .auth-logo {
-  width: 220px;
+  width: 180px;
   justify-self: center;
   margin-bottom: 8px;
 }
 .auth-card h1 {
   margin: 0;
-  font-size: clamp(40px, 5vw, 56px);
+  font-size: clamp(28px, 4vw, 36px);
   text-align: center;
+  letter-spacing: 1px;
 }
 .auth-card label {
   display: grid;
   gap: 4px;
-  font-size: 24px;
+  font-size: 13px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--gray-1);
 }
 .auth-card input {
-  height: 52px;
+  height: 44px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 10px;
   background: rgba(3, 7, 12, 0.82);
   color: var(--white);
   padding: 0 14px;
   font: inherit;
-  font-size: 24px;
+  font-size: 15px;
 }
 .auth-card input:focus {
   outline: 2px solid rgba(180, 180, 180, 0.5);
@@ -168,13 +178,15 @@ button {
 }
 .auth-primary {
   margin-top: 6px;
-  min-height: 56px;
-  border-radius: 12px;
+  min-height: 46px;
+  border-radius: 10px;
   border: 0;
   background: linear-gradient(140deg, #d0d0d0 0%, #8f8f8f 100%);
   color: #111;
-  font-size: 30px;
+  font-size: 13px;
   font-weight: 700;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
 }
 .auth-primary:disabled {
   opacity: 0.7;
@@ -187,13 +199,15 @@ button {
   flex-wrap: wrap;
 }
 .auth-links button {
-  min-height: 44px;
+  min-height: 36px;
   padding: 0 14px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 10px;
   background: rgba(31, 40, 53, 0.92);
   color: var(--white);
-  font-size: 20px;
+  font-size: 12px;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
 }
 .auth-message {
   margin: 0;
@@ -201,27 +215,27 @@ button {
   padding: 8px 10px;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.08);
-  font-size: 20px;
+  font-size: 13px;
 }
 
 .panel {
-  min-height: calc(100vh - 130px);
-  padding: 14px 12px 16px;
+  min-height: calc(100vh - 92px);
+  padding: 16px 16px 20px;
 }
 
 .panel-title {
   margin: 0;
   text-align: center;
-  font-size: clamp(42px, 4vw, 76px);
-  letter-spacing: 2px;
+  font-size: clamp(24px, 3vw, 34px);
+  letter-spacing: 1.4px;
 }
 
 .dashboard-layout {
   margin-top: 18px;
   display: grid;
-  grid-template-columns: 170px 1fr 170px;
-  gap: 14px;
-  min-height: calc(100vh - 220px);
+  grid-template-columns: 180px 1fr 190px;
+  gap: 16px;
+  min-height: calc(100vh - 176px);
 }
 
 .left-actions,
@@ -235,10 +249,12 @@ button {
   color: #e8e8e8;
   border: 2px solid #5e5e5e;
   border-radius: 24px;
-  min-height: 88px;
+  min-height: 64px;
   background: linear-gradient(145deg, #2b2b2b, #191919);
   box-shadow: inset -2px -2px 2px rgba(255, 255, 255, 0.15);
-  font-size: 36px;
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
 .dashboard-center {
@@ -256,21 +272,23 @@ button {
 }
 
 .service-chip {
-  width: min(230px, 100%);
+  width: min(210px, 100%);
   background: #bdbdbd;
   color: #131313;
-  padding: 10px;
+  padding: 10px 12px;
 }
 
 .service-chip strong {
   display: block;
-  font-size: 38px;
+  font-size: 17px;
+  letter-spacing: 0.5px;
 }
 
 .service-chip span {
   display: block;
-  font-size: 42px;
+  font-size: 15px;
   margin-top: 4px;
+  color: #2b2b2b;
 }
 
 .service-chip small {
@@ -278,10 +296,10 @@ button {
   margin-top: 8px;
   padding: 2px 6px;
   text-align: center;
-  font-size: 24px;
+  font-size: 11px;
+  letter-spacing: 0.8px;
 }
 
-.tone-warning { background: #ccab13; }
 .tone-warning { background: #8f8f8f; }
 .tone-danger { background: #6f6f6f; }
 .tone-success { background: #b5b5b5; }
@@ -293,16 +311,18 @@ button {
   display: inline-block;
   background: #bdbdbd;
   color: #111;
-  font-size: 28px;
-  padding: 0 6px;
+  font-size: 12px;
+  letter-spacing: 1px;
+  padding: 3px 10px;
+  text-transform: uppercase;
 }
 
 .next-card {
   margin-top: 10px;
-  width: 190px;
+  width: 220px;
   background: #bdbdbd;
   color: #181818;
-  padding: 10px;
+  padding: 12px;
 }
 
 .next-card strong,
@@ -314,21 +334,24 @@ button {
 
 .next-card strong,
 .next-card span {
-  font-size: 42px;
+  font-size: 17px;
 }
 
 .next-card small {
   margin-top: 10px;
   background: #8f8f8f;
-  font-size: 30px;
-  padding: 4px 0;
+  font-size: 11px;
+  letter-spacing: 1px;
+  padding: 6px 0;
 }
 
 .right-actions button {
-  min-height: 130px;
+  min-height: 82px;
   border: 0;
   color: #111;
-  font-size: 32px;
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
 .action-green,
@@ -340,8 +363,8 @@ button {
 
 .form-grid {
   display: grid;
-  grid-template-columns: 1fr 300px;
-  gap: 14px;
+  grid-template-columns: 1fr 320px;
+  gap: 16px;
   margin-top: 16px;
 }
 
@@ -349,8 +372,8 @@ button {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: clamp(28px, 2.2vw, 44px);
-  margin-bottom: 8px;
+  font-size: clamp(13px, 1.4vw, 16px);
+  margin-bottom: 10px;
 }
 
 .line strong {
@@ -361,7 +384,7 @@ button {
   background: rgba(232, 232, 232, 0.12);
   display: inline-block;
   padding: 0 8px;
-  min-width: 240px;
+  min-width: 180px;
 }
 
 .line-mini b {
@@ -377,10 +400,10 @@ button {
 .line-mini button {
   display: inline-grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  font-size: 28px;
+  font-size: 18px;
   background: #000;
   color: #fff;
   border: 0;
@@ -390,15 +413,16 @@ button {
 .note-box {
   margin-top: 8px;
   padding: 6px 8px;
-  font-size: 22px;
+  font-size: 13px;
   background: rgba(232, 232, 232, 0.12);
 }
 
 .badge {
-  font-size: 28px;
+  font-size: 11px;
   color: #000;
   background: #b7b7b7;
-  padding: 0 8px;
+  padding: 2px 8px;
+  letter-spacing: 0.8px;
 }
 
 .et-table {
@@ -407,7 +431,7 @@ button {
 
 .et-row {
   display: grid;
-  grid-template-columns: 1fr 36px 190px;
+  grid-template-columns: 1fr 90px 130px 44px;
   gap: 10px;
   margin-bottom: 8px;
 }
@@ -415,7 +439,10 @@ button {
 .et-cell {
   background: rgba(232, 232, 232, 0.12);
   padding: 0 8px;
-  font-size: clamp(30px, 2vw, 40px);
+  font-size: 14px;
+  height: 38px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
 }
 
 .et-qty {
@@ -428,15 +455,16 @@ button {
 
 .vehicle-info .side-top {
   justify-content: flex-end;
-  font-size: 30px;
+  font-size: 13px;
 }
 
 .vehicle-card {
   background: #d8d8d8;
   color: #222;
-  font-size: 46px;
-  line-height: 1.12;
-  padding: 8px;
+  font-size: 14px;
+  line-height: 1.35;
+  padding: 10px;
+  border-radius: 8px;
 }
 
 .panel-footer {
@@ -453,8 +481,12 @@ button {
 
 .mini-actions button {
   border: 0;
-  padding: 8px 14px;
-  font-size: 24px;
+  min-height: 42px;
+  padding: 0 14px;
+  font-size: 11px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  border-radius: 10px;
 }
 
 .btn-yellow { background: #c8c8c8; color: #101010; }
@@ -464,13 +496,17 @@ button {
   color: #fff;
   border: 2px solid #5e5e5e;
   border-radius: 20px;
-  min-height: 84px;
+  min-height: 58px;
   min-width: 170px;
+  font-size: 12px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
 }
 
 .total {
   margin-top: 10px;
-  font-size: 52px;
+  font-size: 17px;
+  letter-spacing: 0.8px;
 }
 
 .total span {
@@ -486,24 +522,26 @@ button {
 }
 
 .btn-back {
-  width: 56px;
-  height: 56px;
+  width: 44px;
+  height: 44px;
   border: 0;
   border-radius: 50%;
   background: #9a9a9a;
   color: #000;
-  font-size: 38px;
+  font-size: 22px;
   line-height: 1;
 }
 
 .btn-finish {
   border: 2px solid #595959;
   border-radius: 20px;
-  min-height: 84px;
+  min-height: 58px;
   min-width: 220px;
   background: linear-gradient(145deg, #3d3d3d, #232323);
   color: #e0e0e0;
-  font-size: 24px;
+  font-size: 12px;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
 }
 
 .sale-tools {
@@ -516,9 +554,11 @@ button {
 .sale-tools button {
   border: 0;
   border-radius: 12px;
-  min-height: 54px;
-  font-size: 42px;
-  padding: 0 14px;
+  min-height: 44px;
+  font-size: 11px;
+  padding: 0 16px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
   color: #111;
 }
 
@@ -542,14 +582,16 @@ button {
 }
 
 .input-look {
-  height: 36px;
+  height: 38px;
   width: 100%;
   max-width: 720px;
   border: 0;
   background: rgba(232, 232, 232, 0.12);
   color: #fff;
   font: inherit;
-  padding: 0 8px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 14px;
 }
 
 .input-look:focus {
@@ -557,11 +599,11 @@ button {
 }
 
 .input-look.small {
-  width: 180px;
+  width: 120px;
 }
 
 .input-look.plate {
-  width: 220px;
+  width: 140px;
 }
 
 .receipt-table {
@@ -577,8 +619,9 @@ button {
 
 .receipt-row span {
   background: rgba(232, 232, 232, 0.12);
-  padding: 0 4px;
-  font-size: 29px;
+  padding: 8px 10px;
+  font-size: 13px;
+  border-radius: 8px;
 }
 
 .btn-yellow.lg {
@@ -589,7 +632,7 @@ button {
   margin-top: 12px;
   padding: 8px;
   background: rgba(232, 232, 232, 0.12);
-  font-size: 22px;
+  font-size: 13px;
 }
 
 .skip-intro {
@@ -617,9 +660,10 @@ button {
   border: 1px solid #555;
   background: #202020;
   color: #f2f2f2;
-  border-radius: 6px;
-  min-width: 36px;
-  min-height: 36px;
+  border-radius: 8px;
+  min-width: 40px;
+  min-height: 38px;
+  font-size: 12px;
 }
 
 .item-delete:hover {
@@ -628,15 +672,15 @@ button {
 
 .vehicle-input {
   width: 100%;
-  min-height: 150px;
+  min-height: 120px;
   border: 0;
   resize: vertical;
   font: inherit;
 }
 
 .line-check input {
-  width: 24px;
-  height: 24px;
+  width: 18px;
+  height: 18px;
 }
 
 .receipt-row.editable {
@@ -668,7 +712,8 @@ button {
 .menu-row span {
   background: rgba(232, 232, 232, 0.12);
   padding: 6px 8px;
-  font-size: 22px;
+  font-size: 13px;
+  border-radius: 8px;
 }
 
 .menu-row.editable {
@@ -682,20 +727,8 @@ button {
 }
 
 @media (max-width: 1280px) {
-  .et-brand-user,
-  .line,
-  .et-cell,
-  .service-chip strong,
-  .service-chip span,
-  .vehicle-card,
-  .sale-tools button,
-  .total,
-  .receipt-row span {
-    font-size: 18px;
-  }
-
   .panel-title {
-    font-size: 34px;
+    font-size: 26px;
   }
 
   .dashboard-layout {
@@ -704,8 +737,8 @@ button {
 
   .left-actions button,
   .right-actions button {
-    min-height: 70px;
-    font-size: 16px;
+    min-height: 58px;
+    font-size: 11px;
   }
 
   .form-grid {
@@ -717,12 +750,12 @@ button {
   }
 
   .et-clock {
-    font-size: 28px;
-    min-width: 102px;
+    font-size: 24px;
+    min-width: 94px;
   }
 
   .et-day {
-    font-size: 24px;
+    font-size: 13px;
   }
 
   .receipt-row {
@@ -764,10 +797,10 @@ button {
 
   .auth-card label,
   .auth-card input {
-    font-size: 20px;
+    font-size: 14px;
   }
 
   .auth-primary {
-    font-size: 24px;
+    font-size: 12px;
   }
 }
