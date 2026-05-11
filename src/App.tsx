@@ -73,6 +73,7 @@ type CatalogRow = {
   id: number | null;
   description: string;
   price: number;
+  quantity: number;
 };
 
 const dashboardServices = [
@@ -112,13 +113,13 @@ const receiptRows: ReceiptRow[] = [
 ];
 
 const defaultServiceCatalog: CatalogRow[] = [
-  { id: null, description: 'REMAP STAGE 1', price: 1800 },
-  { id: null, description: 'REMAP STG2 DPF/EGR', price: 2000 },
-  { id: null, description: 'DIFUSOR INOX 2,5" POLEGADAS', price: 1400 },
-  { id: null, description: 'DIFUSOR INOX 3" POLEGADAS', price: 1500 },
-  { id: null, description: 'ESCAPE FINAL 4" POLEGADAS', price: 1800 },
-  { id: null, description: 'ADD HARDCUT', price: 400 },
-  { id: null, description: 'DOWNPIPE + INTERMEDIARIO AMAROK V6', price: 2200 },
+  { id: null, description: 'REMAP STAGE 1', price: 1800, quantity: 1 },
+  { id: null, description: 'REMAP STG2 DPF/EGR', price: 2000, quantity: 1 },
+  { id: null, description: 'DIFUSOR INOX 2,5" POLEGADAS', price: 1400, quantity: 1 },
+  { id: null, description: 'DIFUSOR INOX 3" POLEGADAS', price: 1500, quantity: 1 },
+  { id: null, description: 'ESCAPE FINAL 4" POLEGADAS', price: 1800, quantity: 1 },
+  { id: null, description: 'ADD HARDCUT', price: 400, quantity: 1 },
+  { id: null, description: 'DOWNPIPE + INTERMEDIARIO AMAROK V6', price: 2200, quantity: 1 },
 ];
 
 const defaultClients: ClientRow[] = [
@@ -242,6 +243,73 @@ function ServiceRows({
   );
 }
 
+function ProductModal({
+  isOpen,
+  mode,
+  data,
+  onSave,
+  onClose,
+  onDataChange,
+}: {
+  isOpen: boolean;
+  mode: 'add' | 'edit';
+  data: { description: string; quantity: number; price: number };
+  onSave: () => void;
+  onClose: () => void;
+  onDataChange: (patch: Partial<{ description: string; quantity: number; price: number }>) => void;
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <h3 className="modal-title">{mode === 'add' ? 'NOVO PRODUTO' : 'EDITAR PRODUTO'}</h3>
+        
+        <div className="modal-body">
+          <div className="form-field">
+            <label>NOME DO PRODUTO</label>
+            <input
+              type="text"
+              className="modal-input"
+              value={data.description}
+              onChange={(e) => onDataChange({ description: e.target.value })}
+              placeholder="Digite o nome do produto"
+            />
+          </div>
+
+          <div className="form-field">
+            <label>QUANTIDADE</label>
+            <input
+              type="number"
+              className="modal-input"
+              value={data.quantity}
+              min={1}
+              onChange={(e) => onDataChange({ quantity: Math.max(1, Number(e.target.value) || 1) })}
+            />
+          </div>
+
+          <div className="form-field">
+            <label>VALOR UNITÁRIO</label>
+            <input
+              type="number"
+              className="modal-input"
+              value={data.price}
+              min={0}
+              step="0.01"
+              onChange={(e) => onDataChange({ price: Math.max(0, Number(e.target.value) || 0) })}
+            />
+          </div>
+        </div>
+
+        <div className="modal-footer">
+          <button className="btn-cancel" onClick={onClose}>CANCELAR</button>
+          <button className="btn-save" onClick={onSave}>{mode === 'add' ? 'ADICIONAR' : 'SALVAR'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [screen, setScreen] = useState<Screen>('intro-brand');
   const [now, setNow] = useState(() => new Date());
@@ -300,10 +368,17 @@ function App() {
   });
   const [nextReceiptId, setNextReceiptId] = useState(9);
   const [searchQuery, setSearchQuery] = useState('');
+  const [productSearchQuery, setProductSearchQuery] = useState('');
   const [clients, setClients] = useState<ClientRow[]>(defaultClients);
   const [nextClientId, setNextClientId] = useState(defaultClients.length + 1);
   const [financialEntries, setFinancialEntries] = useState<FinancialEntry[]>(defaultFinancialEntries);
   const [nextFinancialId, setNextFinancialId] = useState(defaultFinancialEntries.length + 1);
+  
+  // Product Modal State
+  const [productModalOpen, setProductModalOpen] = useState(false);
+  const [productModalMode, setProductModalMode] = useState<'add' | 'edit'>('add');
+  const [productModalData, setProductModalData] = useState({ description: '', quantity: 1, price: 0 });
+  const [productEditingIndex, setProductEditingIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000);
@@ -437,6 +512,7 @@ function App() {
             id: item.id,
             description: item.name,
             price: Number(item.default_price) || 0,
+            quantity: 1,
           }))
         );
       }
@@ -538,10 +614,10 @@ function App() {
   }, [clients, searchQuery]);
 
   const filteredProducts = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
+    const query = productSearchQuery.trim().toLowerCase();
     if (!query) return serviceCatalogData;
     return serviceCatalogData.filter((item) => item.description.toLowerCase().includes(query));
-  }, [serviceCatalogData, searchQuery]);
+  }, [serviceCatalogData, productSearchQuery]);
 
   const filteredFinancialEntries = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -730,7 +806,7 @@ function App() {
     await sb.from('clients_v2').delete().eq('id', id);
   }
 
-  async function updateProduct(id: number | null, index: number, patch: Partial<{ description: string; price: number }>) {
+  async function updateProduct(id: number | null, index: number, patch: Partial<{ description: string; price: number; quantity: number }>) {
     setServiceCatalogData((prev) => prev.map((item, idx) => (idx === index ? { ...item, ...patch } : item)));
 
     if (!isSupabaseConfigured || !supabase || id === null) return;
@@ -746,34 +822,85 @@ function App() {
   }
 
   async function addProduct() {
-    if (isSupabaseConfigured && supabase) {
-      const sb = supabase;
-      const payload = {
-        name: 'NOVO PRODUTO',
-        default_price: 0,
-        is_active: true,
-      };
+    setProductModalMode('add');
+    setProductModalData({ description: '', quantity: 1, price: 0 });
+    setProductEditingIndex(null);
+    setProductModalOpen(true);
+  }
 
-      const { data, error } = await sb
-        .from('service_catalog_v2')
-        .insert(payload)
-        .select('id, name, default_price')
-        .single();
-
-      if (!error && data) {
-        setServiceCatalogData((prev) => [
-          {
-            id: Number(data.id),
-            description: data.name,
-            price: Number(data.default_price) || 0,
-          },
-          ...prev,
-        ]);
-        return;
-      }
+  async function saveProduct() {
+    if (!productModalData.description.trim()) {
+      window.alert('Preencha o nome do produto');
+      return;
     }
 
-    setServiceCatalogData((prev) => [{ id: null, description: 'NOVO PRODUTO', price: 0 }, ...prev]);
+    if (productModalMode === 'add') {
+      if (isSupabaseConfigured && supabase) {
+        const sb = supabase;
+        const payload = {
+          name: productModalData.description,
+          default_price: productModalData.price,
+          is_active: true,
+        };
+
+        const { data, error } = await sb
+          .from('service_catalog_v2')
+          .insert(payload)
+          .select('id, name, default_price')
+          .single();
+
+        if (!error && data) {
+          setServiceCatalogData((prev) => [
+            {
+              id: Number(data.id),
+              description: data.name,
+              price: Number(data.default_price) || 0,
+              quantity: productModalData.quantity,
+            },
+            ...prev,
+          ]);
+          setProductModalOpen(false);
+          return;
+        }
+      }
+
+      setServiceCatalogData((prev) => [
+        {
+          id: null,
+          description: productModalData.description,
+          price: productModalData.price,
+          quantity: productModalData.quantity,
+        },
+        ...prev,
+      ]);
+    } else if (productEditingIndex !== null) {
+      // Edit mode
+      const product = serviceCatalogData[productEditingIndex];
+      await updateProduct(product.id, productEditingIndex, {
+        description: productModalData.description,
+        price: productModalData.price,
+        quantity: productModalData.quantity,
+      });
+    }
+
+    setProductModalOpen(false);
+  }
+
+  function openEditProductModal(index: number) {
+    const product = serviceCatalogData[index];
+    setProductModalMode('edit');
+    setProductModalData({
+      description: product.description,
+      quantity: product.quantity,
+      price: product.price,
+    });
+    setProductEditingIndex(index);
+    setProductModalOpen(true);
+  }
+
+  function closeProductModal() {
+    setProductModalOpen(false);
+    setProductEditingIndex(null);
   }
 
   async function removeProduct(id: number | null, index: number) {
@@ -1568,16 +1695,36 @@ function App() {
           <h2 className="panel-title">PRODUTOS</h2>
           <section className="form-grid menu-single">
             <div className="form-main">
+              <div className="line search-bar">
+                <strong>BUSCA:</strong> 
+                <input 
+                  className="input-look" 
+                  value={productSearchQuery} 
+                  onChange={(event) => setProductSearchQuery(event.target.value)} 
+                  placeholder="nome do produto..."
+                />
+              </div>
               <div className="mini-actions receipt-actions">
                 <button className="btn-cyan lg" onClick={addProduct}>NOVO PRODUTO</button>
               </div>
-              {serviceCatalogData.map((item, index) => (
-                <div className="menu-row editable" key={`${item.description}-${index}`}>
-                  <input className="input-look" value={item.description} onChange={(event) => void updateProduct(item.id, index, { description: event.target.value })} />
-                  <input className="input-look" type="number" min={0} step="0.01" value={item.price} onChange={(event) => void updateProduct(item.id, index, { price: Math.max(0, Number(event.target.value) || 0) })} />
-                  <button className="item-delete" onClick={() => void removeProduct(item.id, index)}>X</button>
-                </div>
-              ))}
+              {filteredProducts.length === 0 ? (
+                <div className="no-results">Nenhum produto encontrado</div>
+              ) : (
+                filteredProducts.map((item, index) => {
+                  const actualIndex = serviceCatalogData.findIndex(
+                    (p) => p.description === item.description && p.price === item.price
+                  );
+                  return (
+                    <div className="menu-row editable" key={`${item.description}-${index}`}>
+                      <span className="product-name">{item.description}</span>
+                      <span className="product-qty">QTD: {item.quantity}</span>
+                      <span className="product-price">{formatMoney(item.price)}</span>
+                      <button className="item-edit" onClick={() => openEditProductModal(actualIndex)}>✎</button>
+                      <button className="item-delete" onClick={() => void removeProduct(item.id, actualIndex)}>X</button>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </section>
           <footer className="panel-footer">
@@ -1844,6 +1991,15 @@ function App() {
           </footer>
         </main>
       )}
+
+      <ProductModal
+        isOpen={productModalOpen}
+        mode={productModalMode}
+        data={productModalData}
+        onSave={saveProduct}
+        onClose={closeProductModal}
+        onDataChange={(patch) => setProductModalData((prev) => ({ ...prev, ...patch }))}
+      />
 
       <button className="skip-intro" onClick={() => setScreen('dashboard')}>IR PARA O SISTEMA</button>
       <img className="brand-watermark" src={logoEtork} alt="Etork" />
