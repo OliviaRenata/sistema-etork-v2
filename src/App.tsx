@@ -178,6 +178,10 @@ function toBrDate(value: string) {
   return parsed.toLocaleDateString('pt-BR');
 }
 
+function normalizeCatalogKey(value: string) {
+  return value.trim().toUpperCase();
+}
+
 function parseMoneyInput(raw: string) {
   const normalized = raw.trim().replace(/\s+/g, '').replace(/\./g, '').replace(',', '.');
   const value = Number(normalized);
@@ -619,7 +623,7 @@ function App() {
       const [catalogResult, receiptResult, clientsResult, financialResult, appointmentResult] = await Promise.all([
         sb
           .from('service_catalog_v2')
-          .select('id, name, default_price, is_active')
+          .select('id, name, default_price, quantity, is_active')
           .eq('is_active', true)
           .order('name', { ascending: true }),
         sb
@@ -650,7 +654,7 @@ function App() {
             id: item.id,
             description: item.name,
             price: Number(item.default_price) || 0,
-            quantity: 1,
+            quantity: Number(item.quantity) || 1,
           }))
         );
       }
@@ -1063,6 +1067,7 @@ function App() {
       .update({
         name: patch.description,
         default_price: patch.price,
+        quantity: patch.quantity,
       })
       .eq('id', id);
   }
@@ -1086,13 +1091,14 @@ function App() {
         const payload = {
           name: productModalData.description,
           default_price: productModalData.price,
+          quantity: productModalData.quantity,
           is_active: true,
         };
 
         const { data, error } = await sb
           .from('service_catalog_v2')
           .insert(payload)
-          .select('id, name, default_price')
+          .select('id, name, default_price, quantity')
           .single();
 
         if (!error && data) {
@@ -1101,7 +1107,7 @@ function App() {
               id: Number(data.id),
               description: data.name,
               price: Number(data.default_price) || 0,
-              quantity: productModalData.quantity,
+              quantity: Number(data.quantity) || productModalData.quantity,
             },
             ...prev,
           ]);
@@ -1494,6 +1500,55 @@ function App() {
   }
 
   async function finalizeSale() {
+    const soldByDescription = saleData.items.reduce<Record<string, number>>((acc, item) => {
+      const key = normalizeCatalogKey(item.description);
+      if (!key) return acc;
+      acc[key] = (acc[key] || 0) + (Number(item.quantity) || 0);
+      return acc;
+    }, {});
+
+    const catalogByDescription = serviceCatalogData.reduce<Record<string, CatalogRow>>((acc, item) => {
+      const key = normalizeCatalogKey(item.description);
+      if (key && !acc[key]) acc[key] = item;
+      return acc;
+    }, {});
+
+    const insufficientItems: string[] = [];
+    Object.entries(soldByDescription).forEach(([key, soldQty]) => {
+      const catalogItem = catalogByDescription[key];
+      if (!catalogItem) return;
+      if (catalogItem.quantity < soldQty) {
+        insufficientItems.push(`${catalogItem.description} (estoque: ${catalogItem.quantity}, venda: ${soldQty})`);
+      }
+    });
+
+    if (insufficientItems.length > 0) {
+      window.alert(`Estoque insuficiente para:\n${insufficientItems.join('\n')}`);
+      return;
+    }
+
+    const nextCatalog = serviceCatalogData.map((item) => {
+      const soldQty = soldByDescription[normalizeCatalogKey(item.description)] || 0;
+      if (soldQty <= 0) return item;
+      return { ...item, quantity: item.quantity - soldQty };
+    });
+    setServiceCatalogData(nextCatalog);
+
+    if (isSupabaseConfigured && supabase) {
+      const sb = supabase;
+      await Promise.all(
+        nextCatalog
+          .filter((item) => item.id !== null)
+          .filter((item) => soldByDescription[normalizeCatalogKey(item.description)] > 0)
+          .map((item) =>
+            sb
+              .from('service_catalog_v2')
+              .update({ quantity: item.quantity })
+              .eq('id', item.id as number)
+          )
+      );
+    }
+
     const nowDate = now.toLocaleDateString('pt-BR');
     const car = saleData.vehicleDetails.split('\n')[0] || saleData.vehicleDetails;
     const newReceipt: ReceiptRow = {
@@ -1973,10 +2028,14 @@ function App() {
                   const actualIndex = serviceCatalogData.findIndex(
                     (p) => p.description === item.description && p.price === item.price
                   );
+                  const isOutOfStock = item.quantity <= 0;
                   return (
-                    <div className="menu-row editable" key={`${item.description}-${index}`}>
+                    <div className={`menu-row editable ${isOutOfStock ? 'out-of-stock' : ''}`} key={`${item.description}-${index}`}>
                       <span className="product-name">{item.description}</span>
-                      <span className="product-qty">QTD: {item.quantity}</span>
+                      <span className={`product-qty ${isOutOfStock ? 'out-of-stock' : ''}`}>
+                        QTD: {item.quantity}
+                        {isOutOfStock && <strong className="stock-alert">SEM ESTOQUE</strong>}
+                      </span>
                       <span className="product-price">{formatMoney(item.price)}</span>
                       <div className="item-actions">
                         <button className="item-edit" onClick={() => openEditProductModal(actualIndex)}>✎</button>
