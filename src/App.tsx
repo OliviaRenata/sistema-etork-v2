@@ -15,6 +15,7 @@ type Screen =
   | 'menu-financial'
   | 'menu-products'
   | 'menu-reports'
+  | 'appointment-calendar'
   | 'dashboard'
   | 'new-quote'
   | 'new-appointment'
@@ -44,6 +45,17 @@ type SavedAppointment = {
   items: ServiceItem[];
   discount: number;
   note: string;
+};
+
+type CalendarAppointment = {
+  id: string;
+  date: string;
+  customer: string;
+  phone: string;
+  plate: string;
+  vehicleDetails: string;
+  note: string;
+  total: number;
 };
 
 type ReceiptRow = {
@@ -170,6 +182,19 @@ function parseMoneyInput(raw: string) {
   const normalized = raw.trim().replace(/\s+/g, '').replace(/\./g, '').replace(',', '.');
   const value = Number(normalized);
   return Number.isFinite(value) ? value : null;
+}
+
+function toInputDateValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function toCalendarDateKey(value: string) {
+  const parsed = parseBrDateTime(value);
+  if (!parsed) return '';
+  return toInputDateValue(parsed);
 }
 
 function cloneItems(items: ServiceItem[]) {
@@ -373,6 +398,8 @@ function App() {
   const [nextClientId, setNextClientId] = useState(defaultClients.length + 1);
   const [financialEntries, setFinancialEntries] = useState<FinancialEntry[]>(defaultFinancialEntries);
   const [nextFinancialId, setNextFinancialId] = useState(defaultFinancialEntries.length + 1);
+  const [calendarAppointments, setCalendarAppointments] = useState<CalendarAppointment[]>([]);
+  const [calendarSelectedDate, setCalendarSelectedDate] = useState(() => toInputDateValue(new Date()));
   
   // Product Modal State
   const [productModalOpen, setProductModalOpen] = useState(false);
@@ -442,6 +469,7 @@ function App() {
           prev === 'menu-financial' ||
           prev === 'menu-products' ||
           prev === 'menu-reports' ||
+          prev === 'appointment-calendar' ||
           prev === 'new-quote' ||
           prev === 'new-appointment' ||
           prev === 'new-sale' ||
@@ -478,13 +506,19 @@ function App() {
   }, [isAuthenticated, screen]);
 
   useEffect(() => {
+    if (screen === 'appointment-calendar') {
+      setCalendarSelectedDate(toInputDateValue(new Date()));
+    }
+  }, [screen]);
+
+  useEffect(() => {
     if (!isSupabaseConfigured || !supabase) return;
 
     const sb = supabase;
     let active = true;
 
     async function loadFromDatabase() {
-      const [catalogResult, receiptResult, clientsResult, financialResult] = await Promise.all([
+      const [catalogResult, receiptResult, clientsResult, financialResult, appointmentResult] = await Promise.all([
         sb
           .from('service_catalog_v2')
           .select('id, name, default_price, is_active')
@@ -502,6 +536,12 @@ function App() {
           .from('financial_entries_v2')
           .select('id, entry_date, description, amount')
           .order('id', { ascending: false }),
+        sb
+          .from('documents_v2')
+          .select('id, customer_name_snapshot, phone_snapshot, plate_snapshot, vehicle_snapshot, notes, discount_amount, scheduled_for, total_amount, created_at')
+          .eq('doc_type', 'agendamento')
+          .order('scheduled_for', { ascending: true, nullsFirst: false })
+          .order('created_at', { ascending: false }),
       ]);
 
       if (!active) return;
@@ -551,6 +591,33 @@ function App() {
         setFinancialEntries(mappedEntries);
         setNextFinancialId(Math.max(...mappedEntries.map((entry) => entry.id)) + 1);
       }
+
+      if (!appointmentResult.error && appointmentResult.data && appointmentResult.data.length > 0) {
+        const mappedAppointments = appointmentResult.data.map((item) => ({
+          id: String(item.id),
+          date: item.scheduled_for ? new Date(item.scheduled_for).toLocaleString('pt-BR', { hour: '2-digit', minute: '2-digit' }).replace(',', '') : '',
+          customer: item.customer_name_snapshot || '',
+          phone: item.phone_snapshot || '',
+          plate: item.plate_snapshot || '',
+          vehicleDetails: item.vehicle_snapshot || '',
+          note: item.notes || '',
+          total: Number(item.total_amount) || 0,
+        }));
+        setCalendarAppointments(mappedAppointments);
+      } else if (savedAppointment) {
+        setCalendarAppointments([
+          {
+            id: 'local-saved-appointment',
+            date: savedAppointment.date,
+            customer: savedAppointment.customer,
+            phone: savedAppointment.phone,
+            plate: savedAppointment.plate,
+            vehicleDetails: savedAppointment.vehicleDetails,
+            note: savedAppointment.note,
+            total: savedAppointment.items.reduce((acc, item) => acc + item.price * item.quantity, 0) - savedAppointment.discount,
+          },
+        ]);
+      }
     }
 
     loadFromDatabase();
@@ -580,6 +647,45 @@ function App() {
     [saleData.items]
   );
   const saleTotal = useMemo(() => Math.max(saleSubtotal - saleData.discount, 0), [saleSubtotal, saleData.discount]);
+
+  const calendarSelectedDateTime = useMemo(() => new Date(`${calendarSelectedDate}T12:00:00`), [calendarSelectedDate]);
+  const calendarMonthStart = useMemo(
+    () => new Date(calendarSelectedDateTime.getFullYear(), calendarSelectedDateTime.getMonth(), 1),
+    [calendarSelectedDateTime]
+  );
+  const calendarMonthLabel = useMemo(
+    () => calendarMonthStart.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }),
+    [calendarMonthStart]
+  );
+  const calendarGridStart = useMemo(() => {
+    const start = new Date(calendarMonthStart);
+    start.setDate(start.getDate() - start.getDay());
+    return start;
+  }, [calendarMonthStart]);
+  const calendarDays = useMemo(
+    () =>
+      Array.from({ length: 42 }, (_, index) => {
+        const day = new Date(calendarGridStart);
+        day.setDate(calendarGridStart.getDate() + index);
+        return day;
+      }),
+    [calendarGridStart]
+  );
+  const appointmentsByDate = useMemo(
+    () =>
+      calendarAppointments.reduce<Record<string, CalendarAppointment[]>>((acc, item) => {
+        const key = toCalendarDateKey(item.date);
+        if (!key) return acc;
+        acc[key] = acc[key] ? [...acc[key], item] : [item];
+        return acc;
+      }, {}),
+    [calendarAppointments]
+  );
+  const calendarSelectedAppointments = useMemo(
+    () => appointmentsByDate[calendarSelectedDate] || [],
+    [appointmentsByDate, calendarSelectedDate]
+  );
+  const calendarTodayKey = toInputDateValue(new Date());
 
   const filteredReceipts = useMemo(() => {
     return receipts.filter((row) => {
@@ -632,11 +738,13 @@ function App() {
     [financialEntries]
   );
 
-  const nextAppointmentCard = savedAppointment
+  const nextAppointmentSource = calendarAppointments[0] || savedAppointment;
+
+  const nextAppointmentCard = nextAppointmentSource
     ? {
-        model: savedAppointment.vehicleDetails.split('\n')[0] || 'SEM VEICULO',
-        plate: savedAppointment.plate,
-        date: savedAppointment.date,
+        model: nextAppointmentSource.vehicleDetails.split('\n')[0] || 'SEM VEICULO',
+        plate: nextAppointmentSource.plate,
+        date: nextAppointmentSource.date,
       }
     : { model: 'HB20 1.0', plate: 'QUA-9J17', date: '27/04/2026 08:00' };
 
@@ -740,12 +848,24 @@ function App() {
     setSaleData((prev) => ({ ...prev, items: prev.items.filter((_, idx) => idx !== index) }));
   }
 
-  function handleMenuAction(name: 'Pesquisar' | 'Clientes' | 'Financeiro' | 'Produtos' | 'Relatorios') {
+  function handleMenuAction(name: 'Pesquisar' | 'Clientes' | 'Financeiro' | 'Produtos' | 'Relatorios' | 'Agenda') {
     if (name === 'Pesquisar') setScreen('menu-search');
     if (name === 'Clientes') setScreen('menu-clients');
     if (name === 'Financeiro') setScreen('menu-financial');
     if (name === 'Produtos') setScreen('menu-products');
     if (name === 'Relatorios') setScreen('menu-reports');
+    if (name === 'Agenda') {
+      setCalendarSelectedDate(toInputDateValue(new Date()));
+      setScreen('appointment-calendar');
+    }
+  }
+
+  function moveCalendarMonth(offset: number) {
+    setCalendarSelectedDate((current) => {
+      const nextDate = new Date(`${current}T12:00:00`);
+      nextDate.setMonth(nextDate.getMonth() + offset);
+      return toInputDateValue(nextDate);
+    });
   }
 
   async function updateClient(id: number, patch: Partial<ClientRow>) {
@@ -1144,6 +1264,19 @@ function App() {
 
     setIsSaving(true);
     setSavedAppointment(payload);
+    setCalendarAppointments((prev) => [
+      {
+        id: `local-${Date.now()}`,
+        date: payload.date,
+        customer: payload.customer,
+        phone: payload.phone,
+        plate: payload.plate,
+        vehicleDetails: payload.vehicleDetails,
+        note: payload.note,
+        total: appointmentData.items.reduce((acc, item) => acc + item.price * item.quantity, 0) - appointmentData.discount,
+      },
+      ...prev,
+    ]);
 
     const result = await persistDocument(
       'agendamento',
@@ -1785,6 +1918,79 @@ function App() {
         </main>
       )}
 
+      {screen === 'appointment-calendar' && (
+        <main className="panel panel-form panel-calendar">
+          <h2 className="panel-title">CALENDARIO DE AGENDAMENTOS</h2>
+          <section className="calendar-layout">
+            <div className="calendar-main">
+              <div className="calendar-toolbar">
+                <button className="calendar-nav" onClick={() => moveCalendarMonth(-1)}>‹</button>
+                <div className="calendar-month-label">{calendarMonthLabel}</div>
+                <button className="calendar-nav" onClick={() => moveCalendarMonth(1)}>›</button>
+              </div>
+
+              <div className="calendar-weekdays">
+                {['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'].map((day) => (
+                  <div className="calendar-weekday" key={day}>
+                    {day}
+                  </div>
+                ))}
+              </div>
+
+              <div className="calendar-grid">
+                {calendarDays.map((day) => {
+                  const dayKey = toInputDateValue(day);
+                  const isSelected = dayKey === calendarSelectedDate;
+                  const isToday = dayKey === calendarTodayKey;
+                  const dayAppointments = appointmentsByDate[dayKey] || [];
+
+                  return (
+                    <button
+                      key={dayKey}
+                      className={`calendar-day ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''}`}
+                      onClick={() => setCalendarSelectedDate(dayKey)}
+                    >
+                      <span className="calendar-day-number">{day.getDate()}</span>
+                      {dayAppointments.length > 0 && <span className="calendar-day-badge">{dayAppointments.length}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <aside className="calendar-side">
+              <div className="calendar-side-header">
+                <strong>{new Date(`${calendarSelectedDate}T12:00:00`).toLocaleDateString('pt-BR')}</strong>
+                <span>{calendarSelectedAppointments.length} agendamento(s)</span>
+              </div>
+
+              <div className="calendar-side-list">
+                {calendarSelectedAppointments.length === 0 ? (
+                  <div className="calendar-empty">Nenhum agendamento neste dia.</div>
+                ) : (
+                  calendarSelectedAppointments.map((appointment) => (
+                    <article className="calendar-card" key={appointment.id}>
+                      <div className="calendar-card-title">{appointment.customer || 'SEM CLIENTE'}</div>
+                      <div className="calendar-card-line">{appointment.plate || 'SEM PLACA'}</div>
+                      <div className="calendar-card-line">{appointment.vehicleDetails.split('\n')[0] || 'SEM VEICULO'}</div>
+                      <div className="calendar-card-line">{appointment.date}</div>
+                      <div className="calendar-card-line">{formatMoney(appointment.total)}</div>
+                      {appointment.note && <div className="calendar-card-note">OBS: {appointment.note}</div>}
+                    </article>
+                  ))
+                )}
+              </div>
+            </aside>
+          </section>
+
+          <footer className="panel-footer">
+            <div className="footer-right">
+              <button className="btn-back" onClick={() => setScreen('dashboard')}>←</button>
+            </div>
+          </footer>
+        </main>
+      )}
+
       {screen === 'dashboard' && (
         <main className="panel panel-dashboard">
           <h2 className="panel-title">SERVICOS</h2>
@@ -1794,6 +2000,7 @@ function App() {
               <button onClick={() => handleMenuAction('Clientes')}>CLIENTES</button>
               <button onClick={() => handleMenuAction('Financeiro')}>FINANCEIRO</button>
               <button onClick={() => handleMenuAction('Produtos')}>PRODUTOS</button>
+              <button onClick={() => handleMenuAction('Agenda')}>AGENDA</button>
               <button onClick={() => handleMenuAction('Relatorios')}>RELATORIOS</button>
             </aside>
 
