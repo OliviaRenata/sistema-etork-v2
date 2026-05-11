@@ -94,6 +94,15 @@ type FinancialEntry = {
   amount: number;
 };
 
+type FinancialFilters = {
+  query: string;
+  startDate: string;
+  endDate: string;
+  kind: 'all' | 'receita' | 'despesa';
+};
+
+const FINANCIAL_PAGE_SIZE = 25;
+
 type CatalogRow = {
   id: number | null;
   description: string;
@@ -673,6 +682,13 @@ function App() {
   const [nextClientId, setNextClientId] = useState(defaultClients.length + 1);
   const [financialEntries, setFinancialEntries] = useState<FinancialEntry[]>(defaultFinancialEntries);
   const [nextFinancialId, setNextFinancialId] = useState(defaultFinancialEntries.length + 1);
+  const [financialFilters, setFinancialFilters] = useState<FinancialFilters>({
+    query: '',
+    startDate: '',
+    endDate: '',
+    kind: 'all',
+  });
+  const [financialPage, setFinancialPage] = useState(1);
   const [calendarAppointments, setCalendarAppointments] = useState<CalendarAppointment[]>([]);
   const [calendarSelectedDate, setCalendarSelectedDate] = useState(() => toInputDateValue(new Date()));
   
@@ -1157,17 +1173,81 @@ function App() {
   }, [serviceCatalogData, productSearchQuery]);
 
   const filteredFinancialEntries = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-    if (!query) return financialEntries;
-    return financialEntries.filter(
-      (entry) => entry.description.toLowerCase().includes(query) || entry.date.toLowerCase().includes(query)
-    );
-  }, [financialEntries, searchQuery]);
+    const query = financialFilters.query.trim().toLowerCase();
+    const start = financialFilters.startDate ? new Date(`${financialFilters.startDate}T00:00:00`) : null;
+    const end = financialFilters.endDate ? new Date(`${financialFilters.endDate}T23:59:59.999`) : null;
+
+    return financialEntries
+      .filter((entry) => {
+        const matchesQuery =
+          !query ||
+          entry.description.toLowerCase().includes(query) ||
+          entry.date.toLowerCase().includes(query) ||
+          String(entry.id).includes(query);
+
+        const amount = Number(entry.amount) || 0;
+        const matchesKind =
+          financialFilters.kind === 'all' ||
+          (financialFilters.kind === 'receita' && amount >= 0) ||
+          (financialFilters.kind === 'despesa' && amount < 0);
+
+        const entryDate = new Date(`${entry.date}T12:00:00`);
+        if (Number.isNaN(entryDate.getTime())) return false;
+
+        if (start && entryDate < start) return false;
+        if (end && entryDate > end) return false;
+
+        return matchesQuery && matchesKind;
+      })
+      .sort((a, b) => {
+        const dateDiff = new Date(`${b.date}T12:00:00`).getTime() - new Date(`${a.date}T12:00:00`).getTime();
+        if (dateDiff !== 0) return dateDiff;
+        return b.id - a.id;
+      });
+  }, [financialEntries, financialFilters]);
+
+  const financialSummary = useMemo(() => {
+    const income = filteredFinancialEntries.reduce((acc, entry) => acc + (entry.amount >= 0 ? entry.amount : 0), 0);
+    const expense = filteredFinancialEntries.reduce((acc, entry) => acc + (entry.amount < 0 ? Math.abs(entry.amount) : 0), 0);
+    const balance = income - expense;
+
+    return {
+      totalEntries: filteredFinancialEntries.length,
+      income,
+      expense,
+      balance,
+    };
+  }, [filteredFinancialEntries]);
+
+  const financialTotalPages = useMemo(
+    () => Math.max(1, Math.ceil(filteredFinancialEntries.length / FINANCIAL_PAGE_SIZE)),
+    [filteredFinancialEntries.length]
+  );
+
+  const pagedFinancialEntries = useMemo(() => {
+    const startIndex = (financialPage - 1) * FINANCIAL_PAGE_SIZE;
+    return filteredFinancialEntries.slice(startIndex, startIndex + FINANCIAL_PAGE_SIZE);
+  }, [filteredFinancialEntries, financialPage]);
+
+  const financialPageRangeLabel = useMemo(() => {
+    if (filteredFinancialEntries.length === 0) return '0-0';
+    const from = (financialPage - 1) * FINANCIAL_PAGE_SIZE + 1;
+    const to = Math.min(financialPage * FINANCIAL_PAGE_SIZE, filteredFinancialEntries.length);
+    return `${from}-${to}`;
+  }, [filteredFinancialEntries.length, financialPage]);
 
   const financialTotal = useMemo(
     () => financialEntries.reduce((acc, entry) => acc + entry.amount, 0),
     [financialEntries]
   );
+
+  useEffect(() => {
+    setFinancialPage(1);
+  }, [financialFilters.query, financialFilters.startDate, financialFilters.endDate, financialFilters.kind]);
+
+  useEffect(() => {
+    setFinancialPage((current) => Math.min(current, financialTotalPages));
+  }, [financialTotalPages]);
 
   const nextAppointmentSource = calendarAppointments[0] || savedAppointment;
 
@@ -1651,8 +1731,17 @@ function App() {
     await sb.from('service_catalog_v2').update({ is_active: false }).eq('id', id);
   }
 
-  async function updateFinancialEntry(id: number, patch: Partial<FinancialEntry>) {
+  function updateFinancialEntry(id: number, patch: Partial<FinancialEntry>) {
     setFinancialEntries((prev) => prev.map((entry) => (entry.id === id ? { ...entry, ...patch } : entry)));
+
+    if (patch.description !== undefined && patch.description.trim() === '') {
+      setFinancialEntries((prev) => prev.map((entry) => (entry.id === id ? { ...entry, description: 'LANCAMENTO' } : entry)));
+    }
+  }
+
+  async function persistFinancialEntry(id: number) {
+    const current = financialEntries.find((entry) => entry.id === id);
+    if (!current) return;
 
     if (!isSupabaseConfigured || !supabase) return;
 
@@ -1660,9 +1749,9 @@ function App() {
     await sb
       .from('financial_entries_v2')
       .update({
-        entry_date: patch.date,
-        description: patch.description,
-        amount: patch.amount,
+        entry_date: current.date,
+        description: current.description || 'LANCAMENTO',
+        amount: current.amount,
       })
       .eq('id', id);
   }
@@ -2309,6 +2398,24 @@ function App() {
     URL.revokeObjectURL(url);
   }
 
+  function exportFinancialCSV() {
+    const header = 'ID,Data,Descricao,Tipo,Valor\n';
+    const body = filteredFinancialEntries
+      .map((row) => {
+        const type = row.amount < 0 ? 'DESPESA' : 'RECEITA';
+        return `${row.id},${row.date},"${row.description.replaceAll('"', '""')}",${type},${row.amount.toFixed(2)}`;
+      })
+      .join('\n');
+
+    const blob = new Blob([header + body], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `financeiro-filtrado-${Date.now()}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
   if (screen === 'intro-brand') {
     return (
       <main className="intro-screen intro-brand">
@@ -2622,18 +2729,112 @@ function App() {
           <h2 className="panel-title">FINANCEIRO</h2>
           <section className="form-grid menu-single">
             <div className="form-main">
-              <div className="line"><strong>TOTAL GERAL:</strong> <span>{formatMoney(financialTotal)}</span></div>
+              <div className="financial-summary-grid">
+                <article className="financial-card">
+                  <strong>LANCAMENTOS</strong>
+                  <span>{financialSummary.totalEntries}</span>
+                </article>
+                <article className="financial-card">
+                  <strong>RECEITAS</strong>
+                  <span>{formatMoney(financialSummary.income)}</span>
+                </article>
+                <article className="financial-card">
+                  <strong>DESPESAS</strong>
+                  <span>{formatMoney(financialSummary.expense)}</span>
+                </article>
+                <article className={`financial-card ${financialSummary.balance < 0 ? 'negative' : 'positive'}`}>
+                  <strong>SALDO</strong>
+                  <span>{formatMoney(financialSummary.balance)}</span>
+                </article>
+              </div>
+
+              <div className="financial-filters">
+                <input
+                  className="input-look"
+                  placeholder="Buscar por descricao, data ou id"
+                  value={financialFilters.query}
+                  onChange={(event) => setFinancialFilters((prev) => ({ ...prev, query: event.target.value }))}
+                />
+                <input
+                  className="input-look"
+                  type="date"
+                  value={financialFilters.startDate}
+                  onChange={(event) => setFinancialFilters((prev) => ({ ...prev, startDate: event.target.value }))}
+                />
+                <input
+                  className="input-look"
+                  type="date"
+                  value={financialFilters.endDate}
+                  onChange={(event) => setFinancialFilters((prev) => ({ ...prev, endDate: event.target.value }))}
+                />
+                <select
+                  className="input-look"
+                  value={financialFilters.kind}
+                  onChange={(event) =>
+                    setFinancialFilters((prev) => ({ ...prev, kind: event.target.value as FinancialFilters['kind'] }))
+                  }
+                >
+                  <option value="all">TODOS</option>
+                  <option value="receita">SOMENTE RECEITAS</option>
+                  <option value="despesa">SOMENTE DESPESAS</option>
+                </select>
+              </div>
+
+              <div className="line"><strong>TOTAL GERAL (BASE COMPLETA):</strong> <span>{formatMoney(financialTotal)}</span></div>
               <div className="mini-actions receipt-actions">
                 <button className="btn-cyan lg" onClick={addFinancialEntry}>NOVO LANCAMENTO</button>
+                <button className="btn-yellow lg" onClick={exportFinancialCSV}>EXPORTAR CSV FILTRADO</button>
               </div>
-              {financialEntries.map((entry) => (
-                <div className="menu-row editable" key={entry.id}>
-                  <input className="input-look" type="date" value={entry.date} onChange={(event) => updateFinancialEntry(entry.id, { date: event.target.value })} />
-                  <input className="input-look" value={entry.description} onChange={(event) => updateFinancialEntry(entry.id, { description: event.target.value })} />
-                  <input className="input-look" type="number" min={0} step="0.01" value={entry.amount} onChange={(event) => updateFinancialEntry(entry.id, { amount: Math.max(0, Number(event.target.value) || 0) })} />
-                  <button className="item-delete" onClick={() => removeFinancialEntry(entry.id)}>X</button>
+              {pagedFinancialEntries.map((entry) => (
+                <div className="menu-row editable financial-row" key={entry.id}>
+                  <input
+                    className="input-look"
+                    type="date"
+                    value={entry.date}
+                    onChange={(event) => updateFinancialEntry(entry.id, { date: event.target.value })}
+                    onBlur={() => void persistFinancialEntry(entry.id)}
+                  />
+                  <input
+                    className="input-look"
+                    value={entry.description}
+                    onChange={(event) => updateFinancialEntry(entry.id, { description: event.target.value })}
+                    onBlur={() => void persistFinancialEntry(entry.id)}
+                  />
+                  <input
+                    className="input-look"
+                    type="number"
+                    step="0.01"
+                    value={entry.amount}
+                    onChange={(event) => updateFinancialEntry(entry.id, { amount: Number(event.target.value) || 0 })}
+                    onBlur={() => void persistFinancialEntry(entry.id)}
+                  />
+                  <button className="item-delete" onClick={() => void removeFinancialEntry(entry.id)}>X</button>
                 </div>
               ))}
+              {filteredFinancialEntries.length === 0 && (
+                <div className="receipt-empty">Nenhum lancamento encontrado para os filtros aplicados.</div>
+              )}
+              {filteredFinancialEntries.length > 0 && (
+                <div className="financial-pagination">
+                  <span>{`Mostrando ${financialPageRangeLabel} de ${filteredFinancialEntries.length}`}</span>
+                  <div className="mini-actions">
+                    <button
+                      className="btn-cyan"
+                      onClick={() => setFinancialPage((current) => Math.max(1, current - 1))}
+                      disabled={financialPage <= 1}
+                    >
+                      ANTERIOR
+                    </button>
+                    <button
+                      className="btn-cyan"
+                      onClick={() => setFinancialPage((current) => Math.min(financialTotalPages, current + 1))}
+                      disabled={financialPage >= financialTotalPages}
+                    >
+                      PROXIMA
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </section>
           <footer className="panel-footer">

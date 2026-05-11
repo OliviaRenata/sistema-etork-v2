@@ -931,6 +931,71 @@ button {
   padding-top: 10px;
 }
 
+.financial-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.financial-card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 4px;
+}
+
+.financial-card strong {
+  font-size: 11px;
+  color: var(--gray-1);
+  letter-spacing: 0.7px;
+}
+
+.financial-card span {
+  font-size: 17px;
+  color: var(--white);
+}
+
+.financial-card.negative span {
+  color: #ff9e9e;
+}
+
+.financial-card.positive span {
+  color: #a7ffce;
+}
+
+.financial-filters {
+  display: grid;
+  grid-template-columns: 1.7fr repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.financial-row {
+  grid-template-columns: 150px 1fr 170px 48px !important;
+}
+
+.financial-pagination {
+  margin-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.financial-pagination span {
+  font-size: 12px;
+  color: var(--gray-1);
+}
+
+.financial-pagination .mini-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Product Modal Styles */
 .modal-overlay {
   position: fixed;
@@ -1393,6 +1458,18 @@ button {
 
   .receipt-row {
     grid-template-columns: 1fr;
+  }
+
+  .financial-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .financial-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .financial-row {
+    grid-template-columns: 1fr !important;
   }
 }
 
