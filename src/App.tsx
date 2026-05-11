@@ -29,11 +29,23 @@ type ServiceItem = {
 };
 
 type SavedQuote = {
+  customer: string;
+  phone: string;
+  plate: string;
   vehicle: string;
   items: ServiceItem[];
   discount: number;
   timeDays: number;
   note: string;
+};
+
+type ImportDocumentRow = {
+  id: number;
+  customer: string;
+  phone: string;
+  plate: string;
+  createdAt: string;
+  total: number;
 };
 
 type SavedAppointment = {
@@ -454,6 +466,9 @@ function App() {
   const [serviceCatalogData, setServiceCatalogData] = useState(defaultServiceCatalog);
   const [isSaving, setIsSaving] = useState(false);
   const [quoteData, setQuoteData] = useState({
+    customer: 'JOAO HENRIQUE DE ALMEIDA',
+    phone: '67 99871-1313',
+    plate: 'QAN-2H92',
     vehicle: 'RAM 1500 CLASSIC 2023',
     items: cloneItems(quoteItems),
     discount: 0,
@@ -508,6 +523,15 @@ function App() {
   const [productModalData, setProductModalData] = useState({ description: '', quantity: 1, price: 0 });
   const [productEditingIndex, setProductEditingIndex] = useState<number | null>(null);
   const [calendarEditData, setCalendarEditData] = useState<CalendarAppointment | null>(null);
+  const [appointmentQuoteSearch, setAppointmentQuoteSearch] = useState('');
+  const [appointmentQuoteResults, setAppointmentQuoteResults] = useState<ImportDocumentRow[]>([]);
+  const [appointmentSelectedQuoteId, setAppointmentSelectedQuoteId] = useState('');
+  const [saleQuoteSearch, setSaleQuoteSearch] = useState('');
+  const [saleQuoteResults, setSaleQuoteResults] = useState<ImportDocumentRow[]>([]);
+  const [saleSelectedQuoteId, setSaleSelectedQuoteId] = useState('');
+  const [saleAppointmentSearch, setSaleAppointmentSearch] = useState('');
+  const [saleAppointmentResults, setSaleAppointmentResults] = useState<ImportDocumentRow[]>([]);
+  const [saleSelectedAppointmentId, setSaleSelectedAppointmentId] = useState('');
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000);
@@ -861,10 +885,159 @@ function App() {
     apply(parsed);
   }
 
-  function askAndApplyNote(current: string, apply: (next: string) => void) {
-    const answer = window.prompt('Digite a observacao', current);
-    if (answer === null) return;
-    apply(answer.trim());
+  function findClientMatch(raw: string) {
+    const value = raw.trim().toLowerCase();
+    if (!value) return null;
+    return (
+      clients.find(
+        (client) =>
+          client.name.toLowerCase() === value ||
+          client.phone.toLowerCase() === value ||
+          client.plate.toLowerCase() === value
+      ) || null
+    );
+  }
+
+  function applyMatchedClient(target: 'quote' | 'appointment' | 'sale', customerValue: string) {
+    const client = findClientMatch(customerValue);
+    if (!client) return;
+
+    if (target === 'quote') {
+      setQuoteData((prev) => ({
+        ...prev,
+        customer: client.name,
+        phone: client.phone,
+        plate: client.plate,
+      }));
+      return;
+    }
+
+    if (target === 'appointment') {
+      setAppointmentData((prev) => ({
+        ...prev,
+        customer: client.name,
+        phone: client.phone,
+        plate: client.plate,
+      }));
+      return;
+    }
+
+    setSaleData((prev) => ({
+      ...prev,
+      customer: client.name,
+      phone: client.phone,
+      plate: client.plate,
+    }));
+  }
+
+  async function searchDocumentsForImport(docType: 'orcamento' | 'agendamento', query: string) {
+    if (!isSupabaseConfigured || !supabase) {
+      return [] as ImportDocumentRow[];
+    }
+
+    const sb = supabase;
+    const normalized = query.trim();
+    let builder = sb
+      .from('documents_v2')
+      .select('id, customer_name_snapshot, phone_snapshot, plate_snapshot, created_at, total_amount')
+      .eq('doc_type', docType)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (normalized) {
+      builder = builder.or(`customer_name_snapshot.ilike.%${normalized}%,phone_snapshot.ilike.%${normalized}%,plate_snapshot.ilike.%${normalized}%`);
+    }
+
+    const { data, error } = await builder;
+    if (error || !data) return [];
+
+    return data.map((row) => ({
+      id: Number(row.id),
+      customer: row.customer_name_snapshot || 'SEM CLIENTE',
+      phone: row.phone_snapshot || 'SEM TEL',
+      plate: row.plate_snapshot || 'SEM PLACA',
+      createdAt: toBrDate(row.created_at || ''),
+      total: Number(row.total_amount) || 0,
+    }));
+  }
+
+  async function fetchDocumentWithItemsById(docType: 'orcamento' | 'agendamento', id: number) {
+    if (!isSupabaseConfigured || !supabase) return null;
+
+    const sb = supabase;
+    const { data: doc, error: docError } = await sb
+      .from('documents_v2')
+      .select('id, customer_name_snapshot, phone_snapshot, plate_snapshot, vehicle_snapshot, notes, discount_amount, service_time_days, scheduled_for')
+      .eq('doc_type', docType)
+      .eq('id', id)
+      .maybeSingle();
+
+    if (docError || !doc) return null;
+
+    const { data: items } = await sb
+      .from('document_items_v2')
+      .select('description, quantity, unit_price')
+      .eq('document_id', doc.id)
+      .order('created_at', { ascending: true });
+
+    const mappedItems: ServiceItem[] = (items || []).map((item) => ({
+      description: item.description,
+      quantity: Number(item.quantity) || 1,
+      price: Number(item.unit_price) || 0,
+    }));
+
+    return {
+      customer: doc.customer_name_snapshot || '',
+      phone: doc.phone_snapshot || '',
+      plate: doc.plate_snapshot || '',
+      vehicleSnapshot: doc.vehicle_snapshot || '',
+      note: doc.notes || '',
+      discount: Number(doc.discount_amount) || 0,
+      timeDays: Number(doc.service_time_days) || 1,
+      scheduledFor: doc.scheduled_for,
+      items: mappedItems,
+    };
+  }
+
+  async function runAppointmentQuoteSearch() {
+    const rows = await searchDocumentsForImport('orcamento', appointmentQuoteSearch);
+    setAppointmentQuoteResults(rows);
+    setAppointmentSelectedQuoteId(rows[0] ? String(rows[0].id) : '');
+  }
+
+  async function runSaleQuoteSearch() {
+    const rows = await searchDocumentsForImport('orcamento', saleQuoteSearch);
+    setSaleQuoteResults(rows);
+    setSaleSelectedQuoteId(rows[0] ? String(rows[0].id) : '');
+  }
+
+  async function runSaleAppointmentSearch() {
+    const rows = await searchDocumentsForImport('agendamento', saleAppointmentSearch);
+    setSaleAppointmentResults(rows);
+    setSaleSelectedAppointmentId(rows[0] ? String(rows[0].id) : '');
+  }
+
+  async function importQuoteToAppointmentBySearch() {
+    const id = Number(appointmentSelectedQuoteId);
+    if (!id) return;
+
+    const selected = await fetchDocumentWithItemsById('orcamento', id);
+    if (!selected) {
+      window.alert('Orcamento nao encontrado.');
+      return;
+    }
+
+    setAppointmentData((prev) => ({
+      ...prev,
+      customer: selected.customer,
+      phone: selected.phone,
+      plate: selected.plate,
+      vehicleDetails: selected.vehicleSnapshot,
+      items: cloneItems(selected.items),
+      discount: selected.discount,
+      note: selected.note,
+    }));
+    window.alert('Orcamento importado para o agendamento.');
   }
 
   function pickServiceItem() {
@@ -1352,6 +1525,9 @@ function App() {
 
   async function finalizeQuote() {
     const payload: SavedQuote = {
+      customer: quoteData.customer,
+      phone: quoteData.phone,
+      plate: quoteData.plate,
       vehicle: quoteData.vehicle,
       items: cloneItems(quoteData.items),
       discount: quoteData.discount,
@@ -1365,11 +1541,11 @@ function App() {
     const result = await persistDocument(
       'orcamento',
       {
-        customerName: saleData.customer,
-        phone: saleData.phone,
-        plate: saleData.plate,
+        customerName: quoteData.customer,
+        phone: quoteData.phone,
+        plate: quoteData.plate,
         vehicleSnapshot: quoteData.vehicle,
-        laborRequired: saleData.laborRequired,
+        laborRequired: false,
         serviceTimeDays: quoteData.timeDays,
         discount: quoteData.discount,
         note: quoteData.note,
@@ -1436,6 +1612,9 @@ function App() {
 
     const source = dbQuote
       ? {
+          customer: dbQuote.customer,
+          phone: dbQuote.phone,
+          plate: dbQuote.plate,
           vehicle: dbQuote.vehicleSnapshot,
           items: dbQuote.items,
           discount: dbQuote.discount,
@@ -1443,6 +1622,9 @@ function App() {
           note: dbQuote.note,
         }
       : savedQuote || {
+      customer: quoteData.customer,
+      phone: quoteData.phone,
+      plate: quoteData.plate,
       vehicle: quoteData.vehicle,
       items: quoteData.items,
       discount: quoteData.discount,
@@ -1452,6 +1634,9 @@ function App() {
 
     setSaleData((prev) => ({
       ...prev,
+      customer: source.customer,
+      phone: source.phone,
+      plate: source.plate,
       items: cloneItems(source.items),
       discount: source.discount,
       timeDays: source.timeDays,
@@ -1459,6 +1644,53 @@ function App() {
       vehicleDetails: source.vehicle,
     }));
     window.alert(dbQuote ? 'Orcamento importado do banco.' : 'Orcamento importado para a venda.');
+  }
+
+  async function importQuoteToSaleBySearch() {
+    const id = Number(saleSelectedQuoteId);
+    if (!id) return;
+
+    const selected = await fetchDocumentWithItemsById('orcamento', id);
+    if (!selected) {
+      window.alert('Orcamento nao encontrado.');
+      return;
+    }
+
+    setSaleData((prev) => ({
+      ...prev,
+      customer: selected.customer,
+      phone: selected.phone,
+      plate: selected.plate,
+      vehicleDetails: selected.vehicleSnapshot,
+      items: cloneItems(selected.items),
+      discount: selected.discount,
+      timeDays: selected.timeDays,
+      note: selected.note,
+    }));
+    window.alert('Orcamento importado para a venda.');
+  }
+
+  async function importAppointmentToSaleBySearch() {
+    const id = Number(saleSelectedAppointmentId);
+    if (!id) return;
+
+    const selected = await fetchDocumentWithItemsById('agendamento', id);
+    if (!selected) {
+      window.alert('Agendamento nao encontrado.');
+      return;
+    }
+
+    setSaleData((prev) => ({
+      ...prev,
+      customer: selected.customer,
+      phone: selected.phone,
+      plate: selected.plate,
+      vehicleDetails: selected.vehicleSnapshot,
+      items: cloneItems(selected.items),
+      discount: selected.discount,
+      note: selected.note,
+    }));
+    window.alert('Agendamento importado para a venda.');
   }
 
   async function importAppointmentToSale() {
@@ -2225,6 +2457,9 @@ function App() {
           <h2 className="panel-title">NOVO ORCAMENTO</h2>
           <section className="form-grid">
             <div className="form-main">
+              <div className="line"><strong>CLIENTE:</strong> <input list="client-suggestions" className="input-look" value={quoteData.customer} onChange={(event) => setQuoteData((prev) => ({ ...prev, customer: event.target.value }))} onBlur={(event) => applyMatchedClient('quote', event.target.value)} /></div>
+              <div className="line"><strong>TEL:</strong> <input className="input-look" value={quoteData.phone} onChange={(event) => setQuoteData((prev) => ({ ...prev, phone: event.target.value }))} /></div>
+              <div className="line"><strong>PLACA:</strong> <input className="input-look plate" value={quoteData.plate} onChange={(event) => setQuoteData((prev) => ({ ...prev, plate: event.target.value.toUpperCase() }))} /></div>
               <div className="line"><strong>VEICULO:</strong> <input className="input-look" value={quoteData.vehicle} onChange={(event) => setQuoteData((prev) => ({ ...prev, vehicle: event.target.value }))} /></div>
               <div className="line line-mini"><strong>LISTAR</strong> <button onClick={addItemToQuote}>+</button></div>
               <ServiceRows
@@ -2232,7 +2467,7 @@ function App() {
                 onChangeItem={(index, patch) => updateItems('quote', index, patch)}
                 onRemoveItem={(index) => removeItem('quote', index)}
               />
-              {quoteData.note && <div className="note-box">OBS: {quoteData.note}</div>}
+              <div className="line"><strong>OBSERVACAO:</strong> <textarea className="vehicle-card note-input" value={quoteData.note} onChange={(event) => setQuoteData((prev) => ({ ...prev, note: event.target.value }))} /></div>
             </div>
 
             <aside className="vehicle-info vehicle-empty" />
@@ -2243,7 +2478,6 @@ function App() {
               <div className="line footer-time"><strong>TEMPO DE SERVICO</strong> <input className="input-look small" type="number" min={1} value={quoteData.timeDays} onChange={(event) => setQuoteData((prev) => ({ ...prev, timeDays: Math.max(1, Number(event.target.value) || 1) }))} /></div>
               <div className="mini-actions">
                 <button className="btn-yellow" onClick={() => askAndApplyDiscount(quoteData.discount, (next) => setQuoteData((prev) => ({ ...prev, discount: next })))}>INSERIR DESCONTO</button>
-                <button className="btn-cyan" onClick={() => askAndApplyNote(quoteData.note, (next) => setQuoteData((prev) => ({ ...prev, note: next })))}>INSERIR OBSERVACAO</button>
               </div>
               <div className="total">TOTAL: <span>{formatMoney(quoteTotal)}</span></div>
             </div>
@@ -2258,17 +2492,28 @@ function App() {
       {screen === 'new-appointment' && (
         <main className="panel panel-form">
           <h2 className="panel-title">NOVO AGENDAMENTO</h2>
+          <section className="sale-tools sale-tools-search">
+            <input className="input-look" value={appointmentQuoteSearch} onChange={(event) => setAppointmentQuoteSearch(event.target.value)} placeholder="Pesquisar orcamento por cliente, telefone ou placa" />
+            <button className="tool-blue" onClick={() => void runAppointmentQuoteSearch()}>PESQUISAR ORCAMENTO</button>
+            <select className="input-look" value={appointmentSelectedQuoteId} onChange={(event) => setAppointmentSelectedQuoteId(event.target.value)}>
+              <option value="">Selecione um orcamento</option>
+              {appointmentQuoteResults.map((row) => (
+                <option key={row.id} value={row.id}>{`${row.customer} | ${row.phone} | ${row.plate} | ${row.createdAt} | ${formatMoney(row.total)}`}</option>
+              ))}
+            </select>
+            <button className="tool-yellow" onClick={() => void importQuoteToAppointmentBySearch()}>IMPORTAR</button>
+          </section>
           <section className="form-grid">
             <div className="form-main">
               <div className="line"><strong>DATA:</strong> <input className="input-look" value={appointmentData.date} onChange={(event) => setAppointmentData((prev) => ({ ...prev, date: event.target.value }))} /></div>
-              <div className="line"><strong>CLIENTE:</strong> <input className="input-look" value={appointmentData.customer} onChange={(event) => setAppointmentData((prev) => ({ ...prev, customer: event.target.value }))} /> <small className="badge">CLIENTE FINAL</small></div>
+              <div className="line"><strong>CLIENTE:</strong> <input list="client-suggestions" className="input-look" value={appointmentData.customer} onChange={(event) => setAppointmentData((prev) => ({ ...prev, customer: event.target.value }))} onBlur={(event) => applyMatchedClient('appointment', event.target.value)} /> <small className="badge">CLIENTE FINAL</small></div>
               <div className="line line-mini"><strong>LISTAR</strong> <button onClick={addItemToAppointment}>+</button></div>
               <ServiceRows
                 items={appointmentData.items}
                 onChangeItem={(index, patch) => updateItems('appointment', index, patch)}
                 onRemoveItem={(index) => removeItem('appointment', index)}
               />
-              {appointmentData.note && <div className="note-box">OBS: {appointmentData.note}</div>}
+              <div className="line"><strong>OBSERVACAO:</strong> <textarea className="vehicle-card note-input" value={appointmentData.note} onChange={(event) => setAppointmentData((prev) => ({ ...prev, note: event.target.value }))} /></div>
             </div>
 
             <aside className="vehicle-info">
@@ -2283,7 +2528,6 @@ function App() {
             <div className="footer-left">
               <div className="mini-actions">
                 <button className="btn-yellow" onClick={() => askAndApplyDiscount(appointmentData.discount, (next) => setAppointmentData((prev) => ({ ...prev, discount: next })))}>INSERIR DESCONTO</button>
-                <button className="btn-cyan" onClick={() => askAndApplyNote(appointmentData.note, (next) => setAppointmentData((prev) => ({ ...prev, note: next })))}>INSERIR OBSERVACAO</button>
               </div>
               <div className="total">TOTAL: <span>{formatMoney(appointmentTotal)}</span></div>
             </div>
@@ -2298,21 +2542,39 @@ function App() {
       {screen === 'new-sale' && (
         <main className="panel panel-form">
           <h2 className="panel-title">NOVA VENDA</h2>
-          <section className="sale-tools">
-            <button className="tool-blue" onClick={() => void importQuoteToSale()}>IMPORTAR ORCAMENTO</button>
-            <button className="tool-yellow" onClick={() => void importAppointmentToSale()}>IMPORTAR AGENDAMENTO</button>
+          <section className="sale-tools sale-tools-search">
+            <input className="input-look" value={saleQuoteSearch} onChange={(event) => setSaleQuoteSearch(event.target.value)} placeholder="Pesquisar orcamento por cliente, telefone ou placa" />
+            <button className="tool-blue" onClick={() => void runSaleQuoteSearch()}>PESQUISAR ORCAMENTO</button>
+            <select className="input-look" value={saleSelectedQuoteId} onChange={(event) => setSaleSelectedQuoteId(event.target.value)}>
+              <option value="">Selecione um orcamento</option>
+              {saleQuoteResults.map((row) => (
+                <option key={row.id} value={row.id}>{`${row.customer} | ${row.phone} | ${row.plate} | ${row.createdAt} | ${formatMoney(row.total)}`}</option>
+              ))}
+            </select>
+            <button className="tool-green" onClick={() => void importQuoteToSaleBySearch()}>IMPORTAR ORCAMENTO</button>
+          </section>
+          <section className="sale-tools sale-tools-search secondary">
+            <input className="input-look" value={saleAppointmentSearch} onChange={(event) => setSaleAppointmentSearch(event.target.value)} placeholder="Pesquisar agendamento por cliente, telefone ou placa" />
+            <button className="tool-yellow" onClick={() => void runSaleAppointmentSearch()}>PESQUISAR AGENDAMENTO</button>
+            <select className="input-look" value={saleSelectedAppointmentId} onChange={(event) => setSaleSelectedAppointmentId(event.target.value)}>
+              <option value="">Selecione um agendamento</option>
+              {saleAppointmentResults.map((row) => (
+                <option key={row.id} value={row.id}>{`${row.customer} | ${row.phone} | ${row.plate} | ${row.createdAt} | ${formatMoney(row.total)}`}</option>
+              ))}
+            </select>
+            <button className="tool-yellow" onClick={() => void importAppointmentToSaleBySearch()}>IMPORTAR AGENDAMENTO</button>
           </section>
 
           <section className="form-grid">
             <div className="form-main">
-              <div className="line"><strong>CLIENTE:</strong> <input className="input-look" value={saleData.customer} onChange={(event) => setSaleData((prev) => ({ ...prev, customer: event.target.value }))} /> <input className="input-look small" value={saleData.customerType} onChange={(event) => setSaleData((prev) => ({ ...prev, customerType: event.target.value }))} /></div>
+              <div className="line"><strong>CLIENTE:</strong> <input list="client-suggestions" className="input-look" value={saleData.customer} onChange={(event) => setSaleData((prev) => ({ ...prev, customer: event.target.value }))} onBlur={(event) => applyMatchedClient('sale', event.target.value)} /> <input className="input-look small" value={saleData.customerType} onChange={(event) => setSaleData((prev) => ({ ...prev, customerType: event.target.value }))} /></div>
               <div className="line line-mini"><strong>LISTAR</strong> <button onClick={addItemToSale}>+</button></div>
               <ServiceRows
                 items={saleData.items}
                 onChangeItem={(index, patch) => updateItems('sale', index, patch)}
                 onRemoveItem={(index) => removeItem('sale', index)}
               />
-              {saleData.note && <div className="note-box">OBS: {saleData.note}</div>}
+              <div className="line"><strong>OBSERVACAO:</strong> <textarea className="vehicle-card note-input" value={saleData.note} onChange={(event) => setSaleData((prev) => ({ ...prev, note: event.target.value }))} /></div>
             </div>
 
             <aside className="vehicle-info">
@@ -2328,7 +2590,8 @@ function App() {
             <div className="footer-left">
               <div className="mini-actions">
                 <button className="btn-yellow" onClick={() => askAndApplyDiscount(saleData.discount, (next) => setSaleData((prev) => ({ ...prev, discount: next })))}>INSERIR DESCONTO</button>
-                <button className="btn-cyan" onClick={() => askAndApplyNote(saleData.note, (next) => setSaleData((prev) => ({ ...prev, note: next })))}>INSERIR OBSERVACAO</button>
+                <button className="btn-cyan" onClick={() => void importQuoteToSale()}>ULTIMO ORCAMENTO</button>
+                <button className="btn-cyan" onClick={() => void importAppointmentToSale()}>ULTIMO AGENDAMENTO</button>
               </div>
               <div className="total">TOTAL: <span>{formatMoney(saleTotal)}</span></div>
             </div>
@@ -2402,6 +2665,12 @@ function App() {
         onClose={() => setCalendarEditData(null)}
         onDataChange={(patch) => setCalendarEditData((prev) => prev ? { ...prev, ...patch } : prev)}
       />
+
+      <datalist id="client-suggestions">
+        {clients.map((client) => (
+          <option key={client.id} value={client.name}>{`${client.phone} | ${client.plate}`}</option>
+        ))}
+      </datalist>
 
 
       <button className="skip-intro" onClick={() => setScreen('dashboard')}>IR PARA O SISTEMA</button>

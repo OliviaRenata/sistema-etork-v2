@@ -417,6 +417,14 @@ button {
   background: rgba(232, 232, 232, 0.12);
 }
 
+.note-input {
+  width: 100%;
+  min-height: 86px;
+  resize: vertical;
+  border: 0;
+  font: inherit;
+}
+
 .badge {
   font-size: 11px;
   color: #000;
@@ -564,6 +572,22 @@ button {
 
 .tool-blue { background: #b0b0b0; }
 .tool-yellow { background: #909090; }
+.tool-green { background: #78b59f; }
+
+.sale-tools-search {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.sale-tools-search.secondary {
+  margin-top: -4px;
+}
+
+.sale-tools-search .input-look {
+  max-width: none;
+}
 
 .receipt-filters {
   display: grid;
@@ -1156,6 +1180,10 @@ button {
   }
 
   .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sale-tools-search {
     grid-template-columns: 1fr;
   }
 
