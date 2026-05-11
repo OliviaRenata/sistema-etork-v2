@@ -774,6 +774,17 @@ button {
   justify-content: flex-end;
 }
 
+.modal-content-wide {
+  width: min(520px, 95vw);
+}
+
+.modal-textarea {
+  resize: vertical;
+  min-height: 70px;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
 .btn-cancel,
 .btn-save {
   padding: 10px 20px;

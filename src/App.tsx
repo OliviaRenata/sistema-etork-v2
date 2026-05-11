@@ -335,6 +335,103 @@ function ProductModal({
   );
 }
 
+function AppointmentEditModal({
+  isOpen,
+  data,
+  onSave,
+  onClose,
+  onDataChange,
+}: {
+  isOpen: boolean;
+  data: CalendarAppointment | null;
+  onSave: () => void;
+  onClose: () => void;
+  onDataChange: (patch: Partial<CalendarAppointment>) => void;
+}) {
+  if (!isOpen || !data) return null;
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content modal-content-wide" onClick={(e) => e.stopPropagation()}>
+        <h3 className="modal-title">EDITAR AGENDAMENTO</h3>
+
+        <div className="modal-body">
+          <div className="form-field">
+            <label>DATA / HORA</label>
+            <input
+              type="text"
+              className="modal-input"
+              value={data.date}
+              onChange={(e) => onDataChange({ date: e.target.value })}
+              placeholder="DD/MM/AAAA HH:MM"
+            />
+          </div>
+
+          <div className="form-field">
+            <label>CLIENTE</label>
+            <input
+              type="text"
+              className="modal-input"
+              value={data.customer}
+              onChange={(e) => onDataChange({ customer: e.target.value })}
+              placeholder="Nome do cliente"
+            />
+          </div>
+
+          <div className="form-field">
+            <label>TELEFONE</label>
+            <input
+              type="text"
+              className="modal-input"
+              value={data.phone}
+              onChange={(e) => onDataChange({ phone: e.target.value })}
+              placeholder="(67) 9 0000-0000"
+            />
+          </div>
+
+          <div className="form-field">
+            <label>PLACA</label>
+            <input
+              type="text"
+              className="modal-input"
+              value={data.plate}
+              onChange={(e) => onDataChange({ plate: e.target.value.toUpperCase() })}
+              placeholder="AAA-0000"
+            />
+          </div>
+
+          <div className="form-field">
+            <label>VEÍCULO / SERVIÇO</label>
+            <textarea
+              className="modal-input modal-textarea"
+              value={data.vehicleDetails}
+              onChange={(e) => onDataChange({ vehicleDetails: e.target.value })}
+              rows={3}
+              placeholder="Detalhes do veículo e serviço"
+            />
+          </div>
+
+          <div className="form-field">
+            <label>OBSERVAÇÕES</label>
+            <input
+              type="text"
+              className="modal-input"
+              value={data.note}
+              onChange={(e) => onDataChange({ note: e.target.value })}
+              placeholder="Observações adicionais"
+            />
+          </div>
+        </div>
+
+        <div className="modal-footer">
+          <button className="btn-cancel" onClick={onClose}>CANCELAR</button>
+          <button className="btn-save" onClick={onSave}>SALVAR</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [screen, setScreen] = useState<Screen>('intro-brand');
   const [now, setNow] = useState(() => new Date());
@@ -406,6 +503,7 @@ function App() {
   const [productModalMode, setProductModalMode] = useState<'add' | 'edit'>('add');
   const [productModalData, setProductModalData] = useState({ description: '', quantity: 1, price: 0 });
   const [productEditingIndex, setProductEditingIndex] = useState<number | null>(null);
+  const [calendarEditData, setCalendarEditData] = useState<CalendarAppointment | null>(null);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000);
@@ -866,6 +964,34 @@ function App() {
       nextDate.setMonth(nextDate.getMonth() + offset);
       return toInputDateValue(nextDate);
     });
+  }
+
+  function openCalendarEdit(appt: CalendarAppointment) {
+    setCalendarEditData({ ...appt });
+  }
+
+  async function saveCalendarEdit() {
+    if (!calendarEditData) return;
+    const updated = { ...calendarEditData };
+    setCalendarAppointments((prev) =>
+      prev.map((a) => (a.id === updated.id ? updated : a))
+    );
+
+    if (isSupabaseConfigured && supabase) {
+      const sb = supabase;
+      await sb
+        .from('documents_v2')
+        .update({
+          customer_name: updated.customer,
+          customer_phone: updated.phone,
+          car_plate: updated.plate,
+          car_model: updated.vehicleDetails,
+          notes: updated.note,
+        })
+        .eq('id', updated.id);
+    }
+
+    setCalendarEditData(null);
   }
 
   async function updateClient(id: number, patch: Partial<ClientRow>) {
@@ -1969,7 +2095,7 @@ function App() {
                   <div className="calendar-empty">Nenhum agendamento neste dia.</div>
                 ) : (
                   calendarSelectedAppointments.map((appointment) => (
-                    <article className="calendar-card" key={appointment.id}>
+                    <article className="calendar-card" key={appointment.id} onClick={() => openCalendarEdit(appointment)} style={{ cursor: 'pointer' }}>
                       <div className="calendar-card-title">{appointment.customer || 'SEM CLIENTE'}</div>
                       <div className="calendar-card-line">{appointment.plate || 'SEM PLACA'}</div>
                       <div className="calendar-card-line">{appointment.vehicleDetails.split('\n')[0] || 'SEM VEICULO'}</div>
@@ -2207,6 +2333,15 @@ function App() {
         onClose={closeProductModal}
         onDataChange={(patch) => setProductModalData((prev) => ({ ...prev, ...patch }))}
       />
+
+      <AppointmentEditModal
+        isOpen={calendarEditData !== null}
+        data={calendarEditData}
+        onSave={saveCalendarEdit}
+        onClose={() => setCalendarEditData(null)}
+        onDataChange={(patch) => setCalendarEditData((prev) => prev ? { ...prev, ...patch } : prev)}
+      />
+
 
       <button className="skip-intro" onClick={() => setScreen('dashboard')}>IR PARA O SISTEMA</button>
       <img className="brand-watermark" src={logoEtork} alt="Etork" />
