@@ -61,6 +61,7 @@ type SavedAppointment = {
 
 type CalendarAppointment = {
   id: string;
+  dayKey: string;
   date: string;
   customer: string;
   phone: string;
@@ -717,6 +718,7 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (!isAuthenticated) return;
     if (!isSupabaseConfigured || !supabase) return;
 
     const sb = supabase;
@@ -877,21 +879,27 @@ function App() {
       }
 
       if (!appointmentResult.error && appointmentResult.data && appointmentResult.data.length > 0) {
-        const mappedAppointments = appointmentResult.data.map((item) => ({
-          id: String(item.id),
-          date: item.scheduled_for ? new Date(item.scheduled_for).toLocaleString('pt-BR', { hour: '2-digit', minute: '2-digit' }).replace(',', '') : '',
-          customer: item.customer_name_snapshot || '',
-          phone: item.phone_snapshot || '',
-          plate: item.plate_snapshot || '',
-          vehicleDetails: item.vehicle_snapshot || '',
-          note: item.notes || '',
-          total: Number(item.total_amount) || 0,
-        }));
+        const mappedAppointments = appointmentResult.data.map((item) => {
+          const scheduledDate = item.scheduled_for ? new Date(item.scheduled_for) : null;
+
+          return {
+            id: String(item.id),
+            dayKey: scheduledDate ? toInputDateValue(scheduledDate) : '',
+            date: scheduledDate ? formatBrDateTime(scheduledDate) : '',
+            customer: item.customer_name_snapshot || '',
+            phone: item.phone_snapshot || '',
+            plate: item.plate_snapshot || '',
+            vehicleDetails: item.vehicle_snapshot || '',
+            note: item.notes || '',
+            total: Number(item.total_amount) || 0,
+          };
+        });
         setCalendarAppointments(mappedAppointments);
       } else if (savedAppointment) {
         setCalendarAppointments([
           {
             id: 'local-saved-appointment',
+            dayKey: toCalendarDateKey(savedAppointment.date),
             date: savedAppointment.date,
             customer: savedAppointment.customer,
             phone: savedAppointment.phone,
@@ -909,7 +917,7 @@ function App() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [isAuthenticated]);
 
   const quoteSubtotal = useMemo(
     () => quoteData.items.reduce((acc, item) => acc + item.price * item.quantity, 0),
@@ -958,7 +966,7 @@ function App() {
   const appointmentsByDate = useMemo(
     () =>
       calendarAppointments.reduce<Record<string, CalendarAppointment[]>>((acc, item) => {
-        const key = toCalendarDateKey(item.date);
+        const key = item.dayKey || toCalendarDateKey(item.date);
         if (!key) return acc;
         acc[key] = acc[key] ? [...acc[key], item] : [item];
         return acc;
@@ -1446,7 +1454,14 @@ function App() {
 
   async function saveCalendarEdit() {
     if (!calendarEditData) return;
-    const updated = { ...calendarEditData };
+    const editedDate = parseBrDateTime(calendarEditData.date);
+    const normalizedDate = editedDate ? formatBrDateTime(editedDate) : calendarEditData.date;
+    const updated = {
+      ...calendarEditData,
+      date: normalizedDate,
+      dayKey: toCalendarDateKey(normalizedDate),
+    };
+
     setCalendarAppointments((prev) =>
       prev.map((a) => (a.id === updated.id ? updated : a))
     );
@@ -1456,13 +1471,15 @@ function App() {
       await sb
         .from('documents_v2')
         .update({
-          customer_name: updated.customer,
-          customer_phone: updated.phone,
-          car_plate: updated.plate,
-          car_model: updated.vehicleDetails,
+          customer_name_snapshot: updated.customer,
+          phone_snapshot: updated.phone,
+          plate_snapshot: updated.plate,
+          vehicle_snapshot: updated.vehicleDetails,
+          scheduled_for: editedDate ? editedDate.toISOString() : null,
           notes: updated.note,
         })
-        .eq('id', updated.id);
+        .eq('id', Number(updated.id))
+        .eq('doc_type', 'agendamento');
     }
 
     setCalendarEditData(null);
@@ -1883,6 +1900,7 @@ function App() {
     setCalendarAppointments((prev) => [
       {
         id: `local-${Date.now()}`,
+        dayKey: toCalendarDateKey(payload.date),
         date: payload.date,
         customer: payload.customer,
         phone: payload.phone,
