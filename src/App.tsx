@@ -100,6 +100,76 @@ type CatalogRow = {
   quantity: number;
 };
 
+type PrintableDocument = {
+  kind: 'orcamento' | 'venda';
+  number: string;
+  issuedAt: string;
+  customer: string;
+  customerType: string;
+  phone: string;
+  plate: string;
+  vehicle: string;
+  items: ServiceItem[];
+  subtotal: number;
+  discount: number;
+  total: number;
+  note: string;
+  serviceTimeDays: number;
+  laborRequired: boolean | null;
+};
+
+type PrintSettings = {
+  companyName: string;
+  companyDocument: string;
+  companyPhone: string;
+  companyEmail: string;
+  companyAddress: string;
+  paymentMethod: string;
+  warrantyDays: number;
+  validityDays: number;
+  responsibleName: string;
+};
+
+const PRINT_SETTINGS_STORAGE_KEY = 'etork_print_settings_v1';
+
+const defaultPrintSettings: PrintSettings = {
+  companyName: 'ETORK BRASIL',
+  companyDocument: 'CNPJ 00.000.000/0001-00',
+  companyPhone: '(67) 0000-0000',
+  companyEmail: 'contato@etorkbrasil.com',
+  companyAddress: 'Rua Exemplo, 123 - Campo Grande/MS',
+  paymentMethod: 'PIX, Cartao de Credito/Debito ou Dinheiro',
+  warrantyDays: 90,
+  validityDays: 15,
+  responsibleName: 'Responsavel Tecnico',
+};
+
+function sanitizePrintSettings(input: unknown): PrintSettings {
+  if (!input || typeof input !== 'object') {
+    return { ...defaultPrintSettings };
+  }
+
+  const value = input as Partial<PrintSettings>;
+
+  return {
+    companyName: typeof value.companyName === 'string' && value.companyName.trim() ? value.companyName : defaultPrintSettings.companyName,
+    companyDocument:
+      typeof value.companyDocument === 'string' && value.companyDocument.trim() ? value.companyDocument : defaultPrintSettings.companyDocument,
+    companyPhone: typeof value.companyPhone === 'string' && value.companyPhone.trim() ? value.companyPhone : defaultPrintSettings.companyPhone,
+    companyEmail: typeof value.companyEmail === 'string' && value.companyEmail.trim() ? value.companyEmail : defaultPrintSettings.companyEmail,
+    companyAddress:
+      typeof value.companyAddress === 'string' && value.companyAddress.trim() ? value.companyAddress : defaultPrintSettings.companyAddress,
+    paymentMethod:
+      typeof value.paymentMethod === 'string' && value.paymentMethod.trim() ? value.paymentMethod : defaultPrintSettings.paymentMethod,
+    warrantyDays:
+      typeof value.warrantyDays === 'number' && Number.isFinite(value.warrantyDays) ? Math.max(0, Math.floor(value.warrantyDays)) : defaultPrintSettings.warrantyDays,
+    validityDays:
+      typeof value.validityDays === 'number' && Number.isFinite(value.validityDays) ? Math.max(0, Math.floor(value.validityDays)) : defaultPrintSettings.validityDays,
+    responsibleName:
+      typeof value.responsibleName === 'string' && value.responsibleName.trim() ? value.responsibleName : defaultPrintSettings.responsibleName,
+  };
+}
+
 const dashboardServices = [
   { title: 'AMAROK V6', plate: 'NSA-6J85', status: 'EM ANDAMENTO', tone: 'warning' },
   { title: 'HILUX SRX', plate: 'SDR-F435', status: 'ATRASADO', tone: 'danger' },
@@ -174,14 +244,87 @@ function parseBrDate(value: string) {
 }
 
 function parseBrDateTime(value: string) {
-  const [datePart, timePart] = value.split(' ');
-  const [day, month, year] = datePart.split('/').map(Number);
-  const [hour = 0, minute = 0] = (timePart || '').split(':').map(Number);
+  const raw = value.trim();
+  if (!raw) return null;
 
-  if (!day || !month || !year) return null;
+  const normalized = raw.replace(',', ' ').replace(/\s+/g, ' ');
 
-  const date = new Date(year, month - 1, day, hour, minute, 0, 0);
-  return Number.isNaN(date.getTime()) ? null : date;
+  const brMatch = normalized.match(
+    /^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})(?:\s+(\d{1,2})(?::(\d{1,2}))?)?$/
+  );
+
+  if (brMatch) {
+    const day = Number(brMatch[1]);
+    const month = Number(brMatch[2]);
+    const rawYear = Number(brMatch[3]);
+    const year = rawYear < 100 ? 2000 + rawYear : rawYear;
+    const hour = Number(brMatch[4] ?? 0);
+    const minute = Number(brMatch[5] ?? 0);
+
+    const date = new Date(year, month - 1, day, hour, minute, 0, 0);
+    if (
+      date.getFullYear() === year &&
+      date.getMonth() === month - 1 &&
+      date.getDate() === day &&
+      date.getHours() === hour &&
+      date.getMinutes() === minute
+    ) {
+      return date;
+    }
+
+    return null;
+  }
+
+  const isoMatch = normalized.match(
+    /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2})(?::(\d{1,2}))?)?$/
+  );
+
+  if (isoMatch) {
+    const year = Number(isoMatch[1]);
+    const month = Number(isoMatch[2]);
+    const day = Number(isoMatch[3]);
+    const hour = Number(isoMatch[4] ?? 0);
+    const minute = Number(isoMatch[5] ?? 0);
+
+    const date = new Date(year, month - 1, day, hour, minute, 0, 0);
+    if (
+      date.getFullYear() === year &&
+      date.getMonth() === month - 1 &&
+      date.getDate() === day &&
+      date.getHours() === hour &&
+      date.getMinutes() === minute
+    ) {
+      return date;
+    }
+
+    return null;
+  }
+
+  const parsed = new Date(normalized);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function formatBrDateTime(value: Date) {
+  const day = String(value.getDate()).padStart(2, '0');
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const year = value.getFullYear();
+  const hours = String(value.getHours()).padStart(2, '0');
+  const minutes = String(value.getMinutes()).padStart(2, '0');
+  return `${day}/${month}/${year} ${hours}:${minutes}`;
+}
+
+function toDateTimeLocalValue(value: Date) {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const day = String(value.getDate()).padStart(2, '0');
+  const hours = String(value.getHours()).padStart(2, '0');
+  const minutes = String(value.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+function toDisplayAppointmentDate(value: string) {
+  const parsed = parseBrDateTime(value);
+  return parsed ? formatBrDateTime(parsed) : value;
 }
 
 function toBrDate(value: string) {
@@ -476,7 +619,7 @@ function App() {
     note: '',
   });
   const [appointmentData, setAppointmentData] = useState({
-    date: '27/04/2026 08:00',
+    date: toDateTimeLocalValue(new Date()),
     customer: 'MILENNA DE OLIVEIRA FELICIANO',
     phone: '67 99260-0928',
     plate: 'QUA-9J17',
@@ -506,6 +649,21 @@ function App() {
     plate: '',
     startDate: '',
     endDate: '',
+  });
+  const [selectedPrintKind, setSelectedPrintKind] = useState<'orcamento' | 'venda'>('venda');
+  const [lastSavedDocumentIds, setLastSavedDocumentIds] = useState<{ orcamento: number | null; venda: number | null }>({
+    orcamento: null,
+    venda: null,
+  });
+  const [printSettings, setPrintSettings] = useState<PrintSettings>(() => {
+    const stored = window.localStorage.getItem(PRINT_SETTINGS_STORAGE_KEY);
+    if (!stored) return { ...defaultPrintSettings };
+
+    try {
+      return sanitizePrintSettings(JSON.parse(stored));
+    } catch {
+      return { ...defaultPrintSettings };
+    }
   });
   const [nextReceiptId, setNextReceiptId] = useState(9);
   const [searchQuery, setSearchQuery] = useState('');
@@ -833,6 +991,145 @@ function App() {
       return customerMatch && plateMatch;
     });
   }, [receipts, receiptFilters]);
+
+  useEffect(() => {
+    if (screen !== 'print-receipt') return;
+    if (!isSupabaseConfigured || !supabase) return;
+
+    const sb = supabase;
+    let active = true;
+
+    async function loadLatestDocumentIds() {
+      const { data, error } = await sb
+        .from('documents_v2')
+        .select('id, doc_type')
+        .in('doc_type', ['orcamento', 'venda'])
+        .order('id', { ascending: false })
+        .limit(50);
+
+      if (!active || error || !data) return;
+
+      const lastQuote = data.find((item) => item.doc_type === 'orcamento');
+      const lastSale = data.find((item) => item.doc_type === 'venda');
+
+      setLastSavedDocumentIds((prev) => ({
+        orcamento: lastQuote ? Number(lastQuote.id) : prev.orcamento,
+        venda: lastSale ? Number(lastSale.id) : prev.venda,
+      }));
+    }
+
+    void loadLatestDocumentIds();
+
+    return () => {
+      active = false;
+    };
+  }, [screen]);
+
+  useEffect(() => {
+    window.localStorage.setItem(PRINT_SETTINGS_STORAGE_KEY, JSON.stringify(printSettings));
+  }, [printSettings]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    if (!isSupabaseConfigured || !supabase) return;
+
+    const sb = supabase;
+    let active = true;
+
+    async function loadPrintSettings() {
+      const { data, error } = await sb
+        .from('app_settings_v2')
+        .select('setting_value')
+        .eq('setting_key', 'print_settings')
+        .maybeSingle();
+
+      if (!active || error || !data || !data.setting_value) return;
+
+      setPrintSettings(sanitizePrintSettings(data.setting_value));
+    }
+
+    void loadPrintSettings();
+
+    return () => {
+      active = false;
+    };
+  }, [isAuthenticated, isSupabaseConfigured, supabase]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    if (!isSupabaseConfigured || !supabase) return;
+
+    const sb = supabase;
+    const timeoutId = window.setTimeout(() => {
+      void sb.from('app_settings_v2').upsert(
+        {
+          setting_key: 'print_settings',
+          setting_value: printSettings,
+        },
+        { onConflict: 'setting_key' }
+      );
+    }, 650);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [isAuthenticated, isSupabaseConfigured, printSettings, supabase]);
+
+  const printableDocuments = useMemo<PrintableDocument[]>(() => {
+    const nowStamp = now.toLocaleString('pt-BR');
+    const quoteSource = savedQuote || quoteData;
+    const saleVehicleFirstLine = saleData.vehicleDetails.split('\n')[0] || saleData.vehicleDetails;
+    const quoteId = lastSavedDocumentIds.orcamento;
+    const saleId = lastSavedDocumentIds.venda;
+    const quoteNumber = quoteId ? `ORC-${String(quoteId).padStart(6, '0')}` : `ORC-${savedQuote ? 'ATUAL' : 'RASCUNHO'}`;
+    const saleNumber = saleId ? `VEN-${String(saleId).padStart(6, '0')}` : `VEN-${receipts[0]?.id ?? nextReceiptId}`;
+
+    return [
+      {
+        kind: 'orcamento',
+        number: quoteNumber,
+        issuedAt: nowStamp,
+        customer: quoteSource.customer,
+        customerType: 'CLIENTE FINAL',
+        phone: quoteSource.phone,
+        plate: quoteSource.plate,
+        vehicle: quoteSource.vehicle,
+        items: cloneItems(quoteSource.items),
+        subtotal: quoteSource.items.reduce((acc, item) => acc + item.price * item.quantity, 0),
+        discount: quoteSource.discount,
+        total: Math.max(quoteSource.items.reduce((acc, item) => acc + item.price * item.quantity, 0) - quoteSource.discount, 0),
+        note: quoteSource.note,
+        serviceTimeDays: quoteSource.timeDays,
+        laborRequired: null,
+      },
+      {
+        kind: 'venda',
+        number: saleNumber,
+        issuedAt: `${receipts[0]?.date || now.toLocaleDateString('pt-BR')} ${now.toLocaleTimeString('pt-BR', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        })}`,
+        customer: saleData.customer,
+        customerType: saleData.customerType,
+        phone: saleData.phone,
+        plate: saleData.plate,
+        vehicle: saleData.vehicleDetails || saleVehicleFirstLine,
+        items: cloneItems(saleData.items),
+        subtotal: saleSubtotal,
+        discount: saleData.discount,
+        total: saleTotal,
+        note: saleData.note,
+        serviceTimeDays: saleData.timeDays,
+        laborRequired: saleData.laborRequired,
+      },
+    ];
+  }, [lastSavedDocumentIds.orcamento, lastSavedDocumentIds.venda, now, nextReceiptId, quoteData, receipts, saleData, saleSubtotal, saleTotal, savedQuote]);
+
+  const selectedPrintableDocument = useMemo(
+    () => printableDocuments.find((doc) => doc.kind === selectedPrintKind) || printableDocuments[0] || null,
+    [printableDocuments, selectedPrintKind]
+  );
 
   const filteredClients = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -1554,13 +1851,24 @@ function App() {
     );
 
     setIsSaving(false);
+    if (result.ok && result.id) {
+      setLastSavedDocumentIds((prev) => ({ ...prev, orcamento: Number(result.id) }));
+    }
     window.alert(result.ok ? 'Orcamento salvo com sucesso no banco.' : 'Orcamento salvo localmente (falha no banco).');
     setScreen('dashboard');
   }
 
   async function finalizeAppointment() {
+    const parsedAppointmentDate = parseBrDateTime(appointmentData.date);
+    if (!parsedAppointmentDate) {
+      window.alert('Data do agendamento invalida. Selecione data e hora validas.');
+      return;
+    }
+
+    const displayDate = formatBrDateTime(parsedAppointmentDate);
+
     const payload: SavedAppointment = {
-      date: appointmentData.date,
+      date: displayDate,
       customer: appointmentData.customer,
       phone: appointmentData.phone,
       plate: appointmentData.plate,
@@ -1808,10 +2116,14 @@ function App() {
       saleData.items
     );
     setIsSaving(false);
+    if (result.ok && result.id) {
+      setLastSavedDocumentIds((prev) => ({ ...prev, venda: Number(result.id) }));
+    }
 
     setReceipts((prev) => [newReceipt, ...prev]);
     setNextReceiptId((prev) => prev + 1);
     window.alert(result.ok ? 'Venda finalizada e salva no banco.' : 'Venda finalizada localmente (falha no banco).');
+    setSelectedPrintKind('venda');
     setScreen('print-receipt');
   }
 
@@ -2505,7 +2817,7 @@ function App() {
           </section>
           <section className="form-grid">
             <div className="form-main">
-              <div className="line"><strong>DATA:</strong> <input className="input-look" value={appointmentData.date} onChange={(event) => setAppointmentData((prev) => ({ ...prev, date: event.target.value }))} /></div>
+              <div className="line"><strong>DATA:</strong> <input type="datetime-local" className="input-look" value={appointmentData.date} onChange={(event) => setAppointmentData((prev) => ({ ...prev, date: event.target.value }))} title={toDisplayAppointmentDate(appointmentData.date)} /></div>
               <div className="line"><strong>CLIENTE:</strong> <input list="client-suggestions" className="input-look" value={appointmentData.customer} onChange={(event) => setAppointmentData((prev) => ({ ...prev, customer: event.target.value }))} onBlur={(event) => applyMatchedClient('appointment', event.target.value)} /> <small className="badge">CLIENTE FINAL</small></div>
               <div className="line line-mini"><strong>LISTAR</strong> <button onClick={addItemToAppointment}>+</button></div>
               <ServiceRows
@@ -2618,6 +2930,207 @@ function App() {
           </section>
 
           <section className="receipt-table">
+            <div className="receipt-print-layout">
+              <section className="print-config-card">
+                <h3>CONFIGURACAO DO DOCUMENTO</h3>
+                <div className="print-config-grid">
+                  <label>
+                    EMPRESA
+                    <input
+                      className="input-look"
+                      value={printSettings.companyName}
+                      onChange={(event) => setPrintSettings((prev) => ({ ...prev, companyName: event.target.value }))}
+                    />
+                  </label>
+                  <label>
+                    CNPJ/CPF
+                    <input
+                      className="input-look"
+                      value={printSettings.companyDocument}
+                      onChange={(event) => setPrintSettings((prev) => ({ ...prev, companyDocument: event.target.value }))}
+                    />
+                  </label>
+                  <label>
+                    TELEFONE DA EMPRESA
+                    <input
+                      className="input-look"
+                      value={printSettings.companyPhone}
+                      onChange={(event) => setPrintSettings((prev) => ({ ...prev, companyPhone: event.target.value }))}
+                    />
+                  </label>
+                  <label>
+                    EMAIL DA EMPRESA
+                    <input
+                      className="input-look"
+                      value={printSettings.companyEmail}
+                      onChange={(event) => setPrintSettings((prev) => ({ ...prev, companyEmail: event.target.value }))}
+                    />
+                  </label>
+                  <label className="wide">
+                    ENDERECO DA EMPRESA
+                    <input
+                      className="input-look"
+                      value={printSettings.companyAddress}
+                      onChange={(event) => setPrintSettings((prev) => ({ ...prev, companyAddress: event.target.value }))}
+                    />
+                  </label>
+                  <label className="wide">
+                    FORMA DE PAGAMENTO
+                    <input
+                      className="input-look"
+                      value={printSettings.paymentMethod}
+                      onChange={(event) => setPrintSettings((prev) => ({ ...prev, paymentMethod: event.target.value }))}
+                    />
+                  </label>
+                  <label>
+                    GARANTIA (DIAS)
+                    <input
+                      type="number"
+                      min={0}
+                      className="input-look"
+                      value={printSettings.warrantyDays}
+                      onChange={(event) =>
+                        setPrintSettings((prev) => ({ ...prev, warrantyDays: Math.max(0, Number(event.target.value) || 0) }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    VALIDADE ORCAMENTO (DIAS)
+                    <input
+                      type="number"
+                      min={0}
+                      className="input-look"
+                      value={printSettings.validityDays}
+                      onChange={(event) =>
+                        setPrintSettings((prev) => ({ ...prev, validityDays: Math.max(0, Number(event.target.value) || 0) }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    RESPONSAVEL
+                    <input
+                      className="input-look"
+                      value={printSettings.responsibleName}
+                      onChange={(event) => setPrintSettings((prev) => ({ ...prev, responsibleName: event.target.value }))}
+                    />
+                  </label>
+                </div>
+              </section>
+
+              <div className="print-doc-toolbar">
+                <div className="mini-actions">
+                  <button
+                    className={`btn-cyan lg ${selectedPrintKind === 'orcamento' ? 'active-print' : ''}`}
+                    onClick={() => setSelectedPrintKind('orcamento')}
+                  >
+                    ORCAMENTO
+                  </button>
+                  <button
+                    className={`btn-cyan lg ${selectedPrintKind === 'venda' ? 'active-print' : ''}`}
+                    onClick={() => setSelectedPrintKind('venda')}
+                  >
+                    VENDA
+                  </button>
+                </div>
+                <button className="btn-yellow lg" onClick={() => window.print()}>IMPRIMIR DOCUMENTO</button>
+              </div>
+
+              {selectedPrintableDocument ? (
+                <article className="print-doc-sheet">
+                  <header className="print-doc-header">
+                    <div>
+                      <img src={logoEtorkBrasil} alt="Etork Brasil" className="print-doc-logo" />
+                      <h3>{selectedPrintableDocument.kind === 'venda' ? 'RECIBO DE VENDA' : 'ORCAMENTO DE SERVICOS'}</h3>
+                      <p>Etork Brasil - Documento gerado pelo sistema</p>
+                    </div>
+                    <div className="print-doc-meta">
+                      <div><strong>Numero:</strong> <span>{selectedPrintableDocument.number}</span></div>
+                      <div><strong>Emissao:</strong> <span>{selectedPrintableDocument.issuedAt}</span></div>
+                      <div><strong>Tipo:</strong> <span>{selectedPrintableDocument.kind.toUpperCase()}</span></div>
+                    </div>
+                  </header>
+
+                  <section className="print-doc-grid">
+                    <div>
+                      <h4>Dados do Cliente</h4>
+                      <p><strong>Cliente:</strong> {selectedPrintableDocument.customer || 'NAO INFORMADO'}</p>
+                      <p><strong>Tipo:</strong> {selectedPrintableDocument.customerType || 'NAO INFORMADO'}</p>
+                      <p><strong>Telefone:</strong> {selectedPrintableDocument.phone || 'NAO INFORMADO'}</p>
+                      <p><strong>Placa:</strong> {selectedPrintableDocument.plate || 'NAO INFORMADA'}</p>
+                    </div>
+                    <div>
+                      <h4>Dados do Veiculo e Servico</h4>
+                      <p><strong>Veiculo:</strong> {selectedPrintableDocument.vehicle || 'NAO INFORMADO'}</p>
+                      <p><strong>Tempo estimado:</strong> {selectedPrintableDocument.serviceTimeDays} dia(s)</p>
+                      {selectedPrintableDocument.laborRequired !== null && (
+                        <p><strong>Mao de obra:</strong> {selectedPrintableDocument.laborRequired ? 'SIM' : 'NAO'}</p>
+                      )}
+                    </div>
+                  </section>
+
+                  <table className="print-doc-items">
+                    <thead>
+                      <tr>
+                        <th>Descricao</th>
+                        <th>Qtd</th>
+                        <th>Valor Unit.</th>
+                        <th>Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedPrintableDocument.items.map((item, index) => (
+                        <tr key={`${item.description}-${index}`}>
+                          <td>{item.description}</td>
+                          <td>{item.quantity}</td>
+                          <td>{formatMoney(item.price)}</td>
+                          <td>{formatMoney(item.price * item.quantity)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  <section className="print-doc-totals">
+                    <div><strong>Subtotal:</strong> <span>{formatMoney(selectedPrintableDocument.subtotal)}</span></div>
+                    <div><strong>Desconto:</strong> <span>{formatMoney(selectedPrintableDocument.discount)}</span></div>
+                    <div className="grand-total"><strong>Total:</strong> <span>{formatMoney(selectedPrintableDocument.total)}</span></div>
+                  </section>
+
+                  <section className="print-doc-note">
+                    <h4>Observacoes</h4>
+                    <p>{selectedPrintableDocument.note || 'Sem observacoes adicionais.'}</p>
+                  </section>
+
+                  <section className="print-doc-commercial">
+                    <h4>Informacoes Comerciais</h4>
+                    <p><strong>Forma de pagamento:</strong> {printSettings.paymentMethod}</p>
+                    <p><strong>Garantia:</strong> {printSettings.warrantyDays} dia(s)</p>
+                    <p><strong>Validade do orcamento:</strong> {printSettings.validityDays} dia(s)</p>
+                    <p><strong>Responsavel:</strong> {printSettings.responsibleName}</p>
+                  </section>
+
+                  <section className="print-doc-company">
+                    <h4>Dados da Empresa</h4>
+                    <p>{printSettings.companyName}</p>
+                    <p>{printSettings.companyDocument}</p>
+                    <p>{printSettings.companyPhone}</p>
+                    <p>{printSettings.companyEmail}</p>
+                    <p>{printSettings.companyAddress}</p>
+                  </section>
+
+                  <section className="print-doc-signatures">
+                    <div>
+                      <span>Assinatura da Empresa</span>
+                    </div>
+                    <div>
+                      <span>Assinatura do Cliente</span>
+                    </div>
+                  </section>
+                </article>
+              ) : (
+                <div className="receipt-empty">Nao ha dados suficientes para montar o documento de impressao.</div>
+              )}
+            </div>
+
             <div className="mini-actions receipt-actions">
               <button className="btn-cyan lg" onClick={addReceipt}>NOVO RECIBO</button>
             </div>

@@ -659,6 +659,197 @@ button {
   font-size: 13px;
 }
 
+.receipt-print-layout {
+  margin-bottom: 18px;
+}
+
+.print-config-card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.print-config-card h3 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  letter-spacing: 0.8px;
+}
+
+.print-config-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.print-config-grid label {
+  display: grid;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--gray-1);
+  letter-spacing: 0.6px;
+}
+
+.print-config-grid label.wide {
+  grid-column: span 2;
+}
+
+.print-doc-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.active-print {
+  outline: 2px solid rgba(255, 255, 255, 0.6);
+}
+
+.print-doc-sheet {
+  background: #fefefe;
+  color: #151515;
+  border-radius: 12px;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.print-doc-logo {
+  width: 130px;
+  height: auto;
+  margin-bottom: 6px;
+}
+
+.print-doc-header {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 14px;
+  border-bottom: 1px solid #d5d5d5;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+}
+
+.print-doc-header h3 {
+  margin: 0;
+  font-size: 24px;
+  letter-spacing: 0.8px;
+}
+
+.print-doc-header p {
+  margin: 4px 0 0;
+  color: #555;
+  font-size: 13px;
+}
+
+.print-doc-meta {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  font-size: 13px;
+}
+
+.print-doc-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.print-doc-grid h4,
+.print-doc-note h4 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+}
+
+.print-doc-grid p {
+  margin: 4px 0;
+  font-size: 13px;
+}
+
+.print-doc-items {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 12px;
+}
+
+.print-doc-items th,
+.print-doc-items td {
+  border: 1px solid #d7d7d7;
+  padding: 8px;
+  font-size: 13px;
+  vertical-align: top;
+}
+
+.print-doc-items th {
+  background: #efefef;
+  text-align: left;
+}
+
+.print-doc-totals {
+  margin-left: auto;
+  width: min(360px, 100%);
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.print-doc-totals > div {
+  display: flex;
+  justify-content: space-between;
+  border: 1px solid #d8d8d8;
+  padding: 7px 10px;
+  font-size: 13px;
+}
+
+.print-doc-totals .grand-total {
+  background: #ececec;
+  font-size: 16px;
+}
+
+.print-doc-note {
+  border: 1px solid #d8d8d8;
+  padding: 10px;
+  min-height: 72px;
+  margin-bottom: 12px;
+}
+
+.print-doc-note p {
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: 13px;
+}
+
+.print-doc-commercial,
+.print-doc-company {
+  border: 1px solid #d8d8d8;
+  padding: 10px;
+  margin-bottom: 12px;
+}
+
+.print-doc-commercial p,
+.print-doc-company p {
+  margin: 3px 0;
+  font-size: 13px;
+}
+
+.print-doc-signatures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 26px;
+}
+
+.print-doc-signatures > div {
+  border-top: 1px solid #888;
+  text-align: center;
+  padding-top: 6px;
+  font-size: 12px;
+  color: #444;
+}
+
 .skip-intro {
   position: fixed;
   bottom: 14px;
@@ -1254,5 +1445,70 @@ button {
 
   .auth-primary {
     font-size: 12px;
+  }
+
+  .print-doc-header,
+  .print-doc-grid,
+  .print-doc-signatures {
+    grid-template-columns: 1fr;
+  }
+
+  .print-config-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .print-config-grid label.wide {
+    grid-column: span 1;
+  }
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .et-header,
+  .panel-title,
+  .receipt-filters,
+  .receipt-actions,
+  .panel-footer,
+  .skip-intro,
+  .brand-watermark,
+  .print-doc-toolbar,
+  .print-config-card,
+  .receipt-row,
+  .receipt-empty {
+    display: none !important;
+  }
+
+  .panel,
+  .panel-form,
+  .receipt-table,
+  .receipt-print-layout {
+    padding: 0 !important;
+    margin: 0 !important;
+    min-height: 0 !important;
+    background: #fff !important;
+  }
+
+  .print-doc-sheet {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    color: #000 !important;
+  }
+
+  .print-doc-items th {
+    background: #efefef !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 }

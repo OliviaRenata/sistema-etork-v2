@@ -80,6 +80,22 @@ before update on public.financial_entries_v2
 for each row execute function public.set_updated_at();
 
 -- ------------------------------------------------------------
+-- APP SETTINGS
+-- ------------------------------------------------------------
+create table if not exists public.app_settings_v2 (
+  setting_key text primary key,
+  setting_value jsonb not null default '{}'::jsonb,
+  created_by uuid references auth.users(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+drop trigger if exists trg_app_settings_v2_updated_at on public.app_settings_v2;
+create trigger trg_app_settings_v2_updated_at
+before update on public.app_settings_v2
+for each row execute function public.set_updated_at();
+
+-- ------------------------------------------------------------
 -- DOCUMENTS (quote / appointment / sale)
 -- ------------------------------------------------------------
 create table if not exists public.documents_v2 (
@@ -151,6 +167,7 @@ where d.doc_type = 'venda';
 alter table public.clients_v2 enable row level security;
 alter table public.service_catalog_v2 enable row level security;
 alter table public.financial_entries_v2 enable row level security;
+alter table public.app_settings_v2 enable row level security;
 alter table public.documents_v2 enable row level security;
 alter table public.document_items_v2 enable row level security;
 
@@ -203,6 +220,23 @@ for update using (auth.role() = 'authenticated') with check (auth.role() = 'auth
 
 drop policy if exists "financial_entries_v2_delete_authenticated" on public.financial_entries_v2;
 create policy "financial_entries_v2_delete_authenticated" on public.financial_entries_v2
+for delete using (auth.role() = 'authenticated');
+
+-- app_settings_v2 policies
+drop policy if exists "app_settings_v2_select_authenticated" on public.app_settings_v2;
+create policy "app_settings_v2_select_authenticated" on public.app_settings_v2
+for select using (auth.role() = 'authenticated');
+
+drop policy if exists "app_settings_v2_insert_authenticated" on public.app_settings_v2;
+create policy "app_settings_v2_insert_authenticated" on public.app_settings_v2
+for insert with check (auth.role() = 'authenticated');
+
+drop policy if exists "app_settings_v2_update_authenticated" on public.app_settings_v2;
+create policy "app_settings_v2_update_authenticated" on public.app_settings_v2
+for update using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+
+drop policy if exists "app_settings_v2_delete_authenticated" on public.app_settings_v2;
+create policy "app_settings_v2_delete_authenticated" on public.app_settings_v2
 for delete using (auth.role() = 'authenticated');
 
 -- documents_v2 policies
