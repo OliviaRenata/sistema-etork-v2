@@ -657,17 +657,31 @@ button {
 }
 
 .item-delete {
-  border: 1px solid #555;
-  background: #202020;
-  color: #f2f2f2;
-  border-radius: 8px;
-  min-width: 40px;
-  min-height: 38px;
-  font-size: 12px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: rgba(255, 80, 80, 0.15);
+  border: 1px solid rgba(255, 80, 80, 0.4);
+  border-radius: 4px;
+  color: #ff5050;
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
 }
 
 .item-delete:hover {
-  background: #353535;
+  background: rgba(255, 80, 80, 0.3);
+  border-color: #ff5050;
+}
+
+.item-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-left: auto;
 }
 
 .vehicle-input {

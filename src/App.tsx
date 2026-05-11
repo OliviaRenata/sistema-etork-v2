@@ -1978,8 +1978,10 @@ function App() {
                       <span className="product-name">{item.description}</span>
                       <span className="product-qty">QTD: {item.quantity}</span>
                       <span className="product-price">{formatMoney(item.price)}</span>
-                      <button className="item-edit" onClick={() => openEditProductModal(actualIndex)}>✎</button>
-                      <button className="item-delete" onClick={() => void removeProduct(item.id, actualIndex)}>X</button>
+                      <div className="item-actions">
+                        <button className="item-edit" onClick={() => openEditProductModal(actualIndex)}>✎</button>
+                        <button className="item-delete" onClick={() => void removeProduct(item.id, actualIndex)}>✕</button>
+                      </div>
                     </div>
                   );
                 })
