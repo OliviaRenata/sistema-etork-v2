@@ -2963,29 +2963,31 @@ function App() {
     const saleRow = salesHistory.find((row) => row.id === saleId);
     if (!saleRow) return;
 
-    if (!isSupabaseConfigured || !supabase) {
-      const printable: PrintableDocument = {
-        kind: 'venda',
-        number: `VEN-${String(saleRow.id).padStart(6, '0')}`,
-        issuedAt: saleRow.createdAt,
-        customer: saleRow.customer,
-        customerType: 'CLIENTE FINAL',
-        phone: saleRow.phone,
-        plate: saleRow.plate,
-        vehicle: saleRow.vehicle,
-        items: [{ description: saleRow.vehicle || 'SERVICO', quantity: 1, price: saleRow.total }],
-        subtotal: saleRow.subtotal,
-        discount: saleRow.discount,
-        total: saleRow.total,
-        note: saleRow.note,
-        serviceTimeDays: saleRow.timeDays,
-        laborRequired: saleRow.laborRequired,
-      };
+    const basePrintable: PrintableDocument = {
+      kind: 'venda',
+      number: `VEN-${String(saleRow.id).padStart(6, '0')}`,
+      issuedAt: saleRow.createdAt,
+      customer: saleRow.customer,
+      customerType: 'CLIENTE FINAL',
+      phone: saleRow.phone,
+      plate: saleRow.plate,
+      vehicle: saleRow.vehicle,
+      items: [{ description: saleRow.vehicle || 'SERVICO', quantity: 1, price: saleRow.total }],
+      subtotal: saleRow.subtotal,
+      discount: saleRow.discount,
+      total: saleRow.total,
+      note: saleRow.note,
+      serviceTimeDays: saleRow.timeDays,
+      laborRequired: saleRow.laborRequired,
+    };
 
-      setSelectedSalePrintable(printable);
-      if (openReceipt) {
-        openSaleReceiptDocument(printable);
-      }
+    // Abre imediatamente o recibo para evitar sensacao de travamento enquanto busca itens detalhados.
+    if (openReceipt) {
+      openSaleReceiptDocument(basePrintable);
+    }
+
+    if (!isSupabaseConfigured || !supabase) {
+      setSelectedSalePrintable(basePrintable);
       return;
     }
 
@@ -3003,21 +3005,8 @@ function App() {
     }));
 
     const printable: PrintableDocument = {
-      kind: 'venda',
-      number: `VEN-${String(saleRow.id).padStart(6, '0')}`,
-      issuedAt: saleRow.createdAt,
-      customer: saleRow.customer,
-      customerType: 'CLIENTE FINAL',
-      phone: saleRow.phone,
-      plate: saleRow.plate,
-      vehicle: saleRow.vehicle,
-      items: mappedItems,
-      subtotal: saleRow.subtotal,
-      discount: saleRow.discount,
-      total: saleRow.total,
-      note: saleRow.note,
-      serviceTimeDays: saleRow.timeDays,
-      laborRequired: saleRow.laborRequired,
+      ...basePrintable,
+      items: mappedItems.length > 0 ? mappedItems : basePrintable.items,
     };
 
     setSelectedSalePrintable(printable);
