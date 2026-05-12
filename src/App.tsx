@@ -41,7 +41,7 @@ type SavedQuote = {
 };
 
 type ImportDocumentRow = {
-  id: number;
+  id: string;
   customer: string;
   phone: string;
   plate: string;
@@ -168,7 +168,7 @@ type QuoteData = {
 };
 
 type SaleHistoryRow = {
-  id: number;
+  id: string;
   createdAtIso: string;
   createdAt: string;
   customer: string;
@@ -1213,7 +1213,7 @@ function App() {
     endDate: '',
   });
   const [selectedPrintKind, setSelectedPrintKind] = useState<'orcamento' | 'venda'>('venda');
-  const [lastSavedDocumentIds, setLastSavedDocumentIds] = useState<{ orcamento: number | null; venda: number | null }>({
+  const [lastSavedDocumentIds, setLastSavedDocumentIds] = useState<{ orcamento: string | null; venda: string | null }>({
     orcamento: null,
     venda: null,
   });
@@ -1602,8 +1602,8 @@ function App() {
       const lastSale = data.find((item) => item.doc_type === 'venda');
 
       setLastSavedDocumentIds((prev) => ({
-        orcamento: lastQuote ? Number(lastQuote.id) : prev.orcamento,
-        venda: lastSale ? Number(lastSale.id) : prev.venda,
+        orcamento: lastQuote ? String(lastQuote.id) : prev.orcamento,
+        venda: lastSale ? String(lastSale.id) : prev.venda,
       }));
     }
 
@@ -1675,7 +1675,7 @@ function App() {
       if (!isSupabaseConfigured || !supabase) {
         if (!active) return;
         const fallback = receipts.map((row) => ({
-          id: row.id,
+          id: String(row.id),
           createdAtIso: '',
           createdAt: row.date,
           customer: row.customer,
@@ -1714,7 +1714,7 @@ function App() {
       }
 
       const mapped = data.map((row) => ({
-        id: Number(row.id),
+        id: String(row.id),
         createdAtIso: row.created_at || '',
         createdAt: row.created_at ? new Date(row.created_at).toLocaleString('pt-BR') : '',
         customer: row.customer_name_snapshot || 'SEM CLIENTE',
@@ -1747,8 +1747,8 @@ function App() {
     const saleVehicleFirstLine = saleData.vehicleDetails.split('\n')[0] || saleData.vehicleDetails;
     const quoteId = lastSavedDocumentIds.orcamento;
     const saleId = lastSavedDocumentIds.venda;
-    const quoteNumber = quoteId ? `ORC-${String(quoteId).padStart(6, '0')}` : `ORC-${savedQuote ? 'ATUAL' : 'RASCUNHO'}`;
-    const saleNumber = saleId ? `VEN-${String(saleId).padStart(6, '0')}` : `VEN-${receipts[0]?.id ?? nextReceiptId}`;
+    const quoteNumber = quoteId ? `ORC-${String(quoteId).slice(0, 8).toUpperCase()}` : `ORC-${savedQuote ? 'ATUAL' : 'RASCUNHO'}`;
+    const saleNumber = saleId ? `VEN-${String(saleId).slice(0, 8).toUpperCase()}` : `VEN-${receipts[0]?.id ?? nextReceiptId}`;
 
     return [
       {
@@ -2023,7 +2023,7 @@ function App() {
     if (error || !data) return [];
 
     return data.map((row) => ({
-      id: Number(row.id),
+      id: String(row.id),
       customer: row.customer_name_snapshot || 'SEM CLIENTE',
       phone: row.phone_snapshot || 'SEM TEL',
       plate: row.plate_snapshot || 'SEM PLACA',
@@ -2032,7 +2032,7 @@ function App() {
     }));
   }
 
-  async function fetchDocumentWithItemsById(docType: 'orcamento' | 'agendamento', id: number) {
+  async function fetchDocumentWithItemsById(docType: 'orcamento' | 'agendamento', id: string) {
     if (!isSupabaseConfigured || !supabase) return null;
 
     const sb = supabase;
@@ -2089,7 +2089,7 @@ function App() {
   }
 
   async function importQuoteToAppointmentBySearch() {
-    const id = Number(appointmentSelectedQuoteId);
+    const id = appointmentSelectedQuoteId.trim();
     if (!id) return;
 
     const selected = await fetchDocumentWithItemsById('orcamento', id);
@@ -2233,7 +2233,7 @@ function App() {
       prev.map((a) => (a.id === updated.id ? updated : a))
     );
 
-    if (isSupabaseConfigured && supabase) {
+    if (isSupabaseConfigured && supabase && !updated.id.startsWith('local-')) {
       const sb = supabase;
       await sb
         .from('documents_v2')
@@ -2245,7 +2245,7 @@ function App() {
           scheduled_for: editedDate ? editedDate.toISOString() : null,
           notes: updated.note,
         })
-        .eq('id', Number(updated.id))
+        .eq('id', updated.id)
         .eq('doc_type', 'agendamento');
     }
 
@@ -2648,7 +2648,7 @@ function App() {
 
     setIsSaving(false);
     if (result.ok && result.id) {
-      setLastSavedDocumentIds((prev) => ({ ...prev, orcamento: Number(result.id) }));
+      setLastSavedDocumentIds((prev) => ({ ...prev, orcamento: String(result.id) }));
     }
     window.alert(result.ok ? 'Orcamento salvo com sucesso no banco.' : 'Orcamento salvo localmente (falha no banco).');
     setScreen('dashboard');
@@ -2753,7 +2753,7 @@ function App() {
   }
 
   async function importQuoteToSaleBySearch() {
-    const id = Number(saleSelectedQuoteId);
+    const id = saleSelectedQuoteId.trim();
     if (!id) return;
 
     const selected = await fetchDocumentWithItemsById('orcamento', id);
@@ -2778,7 +2778,7 @@ function App() {
   }
 
   async function importAppointmentToSaleBySearch() {
-    const id = Number(saleSelectedAppointmentId);
+    const id = saleSelectedAppointmentId.trim();
     if (!id) return;
 
     const selected = await fetchDocumentWithItemsById('agendamento', id);
@@ -2919,7 +2919,7 @@ function App() {
     );
     setIsSaving(false);
     if (result.ok && result.id) {
-      setLastSavedDocumentIds((prev) => ({ ...prev, venda: Number(result.id) }));
+      setLastSavedDocumentIds((prev) => ({ ...prev, venda: String(result.id) }));
     }
 
     setReceipts((prev) => [newReceipt, ...prev]);
@@ -2945,11 +2945,6 @@ function App() {
       note: printable.note,
     }));
 
-    const parsedId = Number(printable.number.replace('VEN-', ''));
-    if (Number.isFinite(parsedId)) {
-      setLastSavedDocumentIds((prev) => ({ ...prev, venda: parsedId }));
-    }
-
     setSelectedPrintKind('venda');
     setScreen('print-receipt');
 
@@ -2960,7 +2955,7 @@ function App() {
     }
   }
 
-  async function selectSaleForReceipt(saleId: number, openReceipt = false) {
+  async function selectSaleForReceipt(saleId: string, openReceipt = false) {
     const saleRow = salesHistory.find((row) => row.id === saleId);
     if (!saleRow) return;
 
@@ -2968,7 +2963,7 @@ function App() {
 
     const basePrintable: PrintableDocument = {
       kind: 'venda',
-      number: `VEN-${String(saleRow.id).padStart(6, '0')}`,
+      number: `VEN-${saleRow.id.slice(0, 8).toUpperCase()}`,
       issuedAt: saleRow.createdAt,
       customer: saleRow.customer,
       customerType: 'CLIENTE FINAL',
