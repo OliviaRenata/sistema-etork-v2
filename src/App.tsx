@@ -1261,6 +1261,7 @@ function App() {
   const [saleSelectedAppointmentId, setSaleSelectedAppointmentId] = useState('');
   const [salesHistory, setSalesHistory] = useState<SaleHistoryRow[]>([]);
   const [salesHistoryLoading, setSalesHistoryLoading] = useState(false);
+  const [saleReceiptLoading, setSaleReceiptLoading] = useState(false);
   const [selectedSalePrintable, setSelectedSalePrintable] = useState<PrintableDocument | null>(null);
   const [salesHistoryFilters, setSalesHistoryFilters] = useState<SalesHistoryFilters>({
     query: '',
@@ -2963,6 +2964,8 @@ function App() {
     const saleRow = salesHistory.find((row) => row.id === saleId);
     if (!saleRow) return;
 
+    setSaleReceiptLoading(true);
+
     const basePrintable: PrintableDocument = {
       kind: 'venda',
       number: `VEN-${String(saleRow.id).padStart(6, '0')}`,
@@ -2988,30 +2991,35 @@ function App() {
 
     if (!isSupabaseConfigured || !supabase) {
       setSelectedSalePrintable(basePrintable);
+      setSaleReceiptLoading(false);
       return;
     }
 
-    const sb = supabase;
-    const { data: items } = await sb
-      .from('document_items_v2')
-      .select('description, quantity, unit_price')
-      .eq('document_id', saleId)
-      .order('created_at', { ascending: true });
+    try {
+      const sb = supabase;
+      const { data: items } = await sb
+        .from('document_items_v2')
+        .select('description, quantity, unit_price')
+        .eq('document_id', saleId)
+        .order('created_at', { ascending: true });
 
-    const mappedItems: ServiceItem[] = (items || []).map((item) => ({
-      description: item.description,
-      quantity: Number(item.quantity) || 1,
-      price: Number(item.unit_price) || 0,
-    }));
+      const mappedItems: ServiceItem[] = (items || []).map((item) => ({
+        description: item.description,
+        quantity: Number(item.quantity) || 1,
+        price: Number(item.unit_price) || 0,
+      }));
 
-    const printable: PrintableDocument = {
-      ...basePrintable,
-      items: mappedItems.length > 0 ? mappedItems : basePrintable.items,
-    };
+      const printable: PrintableDocument = {
+        ...basePrintable,
+        items: mappedItems.length > 0 ? mappedItems : basePrintable.items,
+      };
 
-    setSelectedSalePrintable(printable);
-    if (openReceipt) {
-      openSaleReceiptDocument(printable);
+      setSelectedSalePrintable(printable);
+      if (openReceipt) {
+        openSaleReceiptDocument(printable);
+      }
+    } finally {
+      setSaleReceiptLoading(false);
     }
   }
 
@@ -4114,6 +4122,10 @@ function App() {
                 </div>
                 <button className="btn-yellow lg" onClick={() => window.print()}>IMPRIMIR DOCUMENTO</button>
               </div>
+
+              {saleReceiptLoading && selectedPrintKind === 'venda' && (
+                <div className="receipt-empty">Carregando itens da venda...</div>
+              )}
 
               {selectedPrintableDocument ? (
                 <article className="print-doc-sheet">
