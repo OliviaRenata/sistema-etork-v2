@@ -15,6 +15,7 @@ type Screen =
   | 'menu-financial'
   | 'menu-products'
   | 'menu-reports'
+  | 'sales-history'
   | 'appointment-calendar'
   | 'dashboard'
   | 'new-quote'
@@ -102,6 +103,7 @@ type FinancialFilters = {
 };
 
 const FINANCIAL_PAGE_SIZE = 25;
+const SALES_HISTORY_PAGE_SIZE = 20;
 
 type CatalogRow = {
   id: number | null;
@@ -163,6 +165,29 @@ type QuoteData = {
   discount: number;
   timeDays: number;
   note: string;
+};
+
+type SaleHistoryRow = {
+  id: number;
+  createdAtIso: string;
+  createdAt: string;
+  customer: string;
+  phone: string;
+  plate: string;
+  vehicle: string;
+  subtotal: number;
+  discount: number;
+  surcharge: number;
+  total: number;
+  note: string;
+  timeDays: number;
+  laborRequired: boolean;
+};
+
+type SalesHistoryFilters = {
+  query: string;
+  startDate: string;
+  endDate: string;
 };
 
 const PRINT_SETTINGS_STORAGE_KEY = 'etork_print_settings_v1';
@@ -1234,6 +1259,15 @@ function App() {
   const [saleAppointmentSearch, setSaleAppointmentSearch] = useState('');
   const [saleAppointmentResults, setSaleAppointmentResults] = useState<ImportDocumentRow[]>([]);
   const [saleSelectedAppointmentId, setSaleSelectedAppointmentId] = useState('');
+  const [salesHistory, setSalesHistory] = useState<SaleHistoryRow[]>([]);
+  const [salesHistoryLoading, setSalesHistoryLoading] = useState(false);
+  const [selectedSalePrintable, setSelectedSalePrintable] = useState<PrintableDocument | null>(null);
+  const [salesHistoryFilters, setSalesHistoryFilters] = useState<SalesHistoryFilters>({
+    query: '',
+    startDate: '',
+    endDate: '',
+  });
+  const [salesHistoryPage, setSalesHistoryPage] = useState(1);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000);
@@ -1629,6 +1663,83 @@ function App() {
     };
   }, [isAuthenticated, isSupabaseConfigured, printSettings, supabase]);
 
+  useEffect(() => {
+    if (screen !== 'sales-history') return;
+
+    let active = true;
+
+    async function loadSalesHistory() {
+      setSalesHistoryLoading(true);
+
+      if (!isSupabaseConfigured || !supabase) {
+        if (!active) return;
+        const fallback = receipts.map((row) => ({
+          id: row.id,
+          createdAtIso: '',
+          createdAt: row.date,
+          customer: row.customer,
+          phone: '',
+          plate: row.plate,
+          vehicle: row.car,
+          subtotal: row.total,
+          discount: 0,
+          surcharge: 0,
+          total: row.total,
+          note: '',
+          timeDays: 1,
+          laborRequired: true,
+        }));
+        setSalesHistory(fallback);
+        setSalesHistoryLoading(false);
+        return;
+      }
+
+      const sb = supabase;
+      const { data, error } = await sb
+        .from('documents_v2')
+        .select(
+          'id, created_at, customer_name_snapshot, phone_snapshot, plate_snapshot, vehicle_snapshot, subtotal_amount, discount_amount, surcharge_amount, total_amount, notes, service_time_days, labor_required'
+        )
+        .eq('doc_type', 'venda')
+        .order('created_at', { ascending: false })
+        .limit(200);
+
+      if (!active) return;
+
+      if (error || !data) {
+        setSalesHistory([]);
+        setSalesHistoryLoading(false);
+        return;
+      }
+
+      const mapped = data.map((row) => ({
+        id: Number(row.id),
+        createdAtIso: row.created_at || '',
+        createdAt: row.created_at ? new Date(row.created_at).toLocaleString('pt-BR') : '',
+        customer: row.customer_name_snapshot || 'SEM CLIENTE',
+        phone: row.phone_snapshot || '',
+        plate: row.plate_snapshot || '',
+        vehicle: row.vehicle_snapshot || '',
+        subtotal: Number(row.subtotal_amount) || 0,
+        discount: Number(row.discount_amount) || 0,
+        surcharge: Number(row.surcharge_amount) || 0,
+        total: Number(row.total_amount) || 0,
+        note: row.notes || '',
+        timeDays: Number(row.service_time_days) || 1,
+        laborRequired: Boolean(row.labor_required),
+      }));
+
+      setSalesHistory(mapped);
+      setSalesHistoryLoading(false);
+    }
+
+    void loadSalesHistory();
+
+    return () => {
+      active = false;
+    };
+  }, [screen, isSupabaseConfigured, receipts, supabase]);
+
   const printableDocuments = useMemo<PrintableDocument[]>(() => {
     const nowStamp = now.toLocaleString('pt-BR');
     const quoteSource = savedQuote || quoteData;
@@ -1684,6 +1795,42 @@ function App() {
     () => printableDocuments.find((doc) => doc.kind === selectedPrintKind) || printableDocuments[0] || null,
     [printableDocuments, selectedPrintKind]
   );
+
+  const filteredSalesHistory = useMemo(() => {
+    const query = salesHistoryFilters.query.trim().toLowerCase();
+    const start = salesHistoryFilters.startDate ? new Date(`${salesHistoryFilters.startDate}T00:00:00`) : null;
+    const end = salesHistoryFilters.endDate ? new Date(`${salesHistoryFilters.endDate}T23:59:59.999`) : null;
+
+    return salesHistory.filter((row) => {
+      const matchesQuery =
+        !query ||
+        String(row.id).includes(query) ||
+        row.customer.toLowerCase().includes(query) ||
+        row.phone.toLowerCase().includes(query) ||
+        row.plate.toLowerCase().includes(query) ||
+        row.vehicle.toLowerCase().includes(query);
+
+      const parsedFromIso = row.createdAtIso ? new Date(row.createdAtIso) : null;
+      const parsedFromLabel = parseBrDate(row.createdAt);
+      const rowDate = parsedFromIso && !Number.isNaN(parsedFromIso.getTime()) ? parsedFromIso : parsedFromLabel;
+
+      if ((start || end) && !rowDate) return false;
+      if (start && rowDate && rowDate < start) return false;
+      if (end && rowDate && rowDate > end) return false;
+
+      return matchesQuery;
+    });
+  }, [salesHistory, salesHistoryFilters]);
+
+  const salesHistoryTotalPages = useMemo(
+    () => Math.max(1, Math.ceil(filteredSalesHistory.length / SALES_HISTORY_PAGE_SIZE)),
+    [filteredSalesHistory.length]
+  );
+
+  const pagedSalesHistory = useMemo(() => {
+    const startIndex = (salesHistoryPage - 1) * SALES_HISTORY_PAGE_SIZE;
+    return filteredSalesHistory.slice(startIndex, startIndex + SALES_HISTORY_PAGE_SIZE);
+  }, [filteredSalesHistory, salesHistoryPage]);
 
   const filteredClients = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -1778,6 +1925,14 @@ function App() {
   useEffect(() => {
     setFinancialPage((current) => Math.min(current, financialTotalPages));
   }, [financialTotalPages]);
+
+  useEffect(() => {
+    setSalesHistoryPage(1);
+  }, [salesHistoryFilters.query, salesHistoryFilters.startDate, salesHistoryFilters.endDate]);
+
+  useEffect(() => {
+    setSalesHistoryPage((current) => Math.min(current, salesHistoryTotalPages));
+  }, [salesHistoryTotalPages]);
 
   const nextAppointmentSource = calendarAppointments[0] || savedAppointment;
 
@@ -2772,6 +2927,94 @@ function App() {
     setScreen('print-receipt');
   }
 
+  async function selectSaleForReceipt(saleId: number) {
+    const saleRow = salesHistory.find((row) => row.id === saleId);
+    if (!saleRow) return;
+
+    if (!isSupabaseConfigured || !supabase) {
+      setSelectedSalePrintable({
+        kind: 'venda',
+        number: `VEN-${String(saleRow.id).padStart(6, '0')}`,
+        issuedAt: saleRow.createdAt,
+        customer: saleRow.customer,
+        customerType: 'CLIENTE FINAL',
+        phone: saleRow.phone,
+        plate: saleRow.plate,
+        vehicle: saleRow.vehicle,
+        items: [{ description: saleRow.vehicle || 'SERVICO', quantity: 1, price: saleRow.total }],
+        subtotal: saleRow.subtotal,
+        discount: saleRow.discount,
+        total: saleRow.total,
+        note: saleRow.note,
+        serviceTimeDays: saleRow.timeDays,
+        laborRequired: saleRow.laborRequired,
+      });
+      return;
+    }
+
+    const sb = supabase;
+    const { data: items } = await sb
+      .from('document_items_v2')
+      .select('description, quantity, unit_price')
+      .eq('document_id', saleId)
+      .order('created_at', { ascending: true });
+
+    const mappedItems: ServiceItem[] = (items || []).map((item) => ({
+      description: item.description,
+      quantity: Number(item.quantity) || 1,
+      price: Number(item.unit_price) || 0,
+    }));
+
+    setSelectedSalePrintable({
+      kind: 'venda',
+      number: `VEN-${String(saleRow.id).padStart(6, '0')}`,
+      issuedAt: saleRow.createdAt,
+      customer: saleRow.customer,
+      customerType: 'CLIENTE FINAL',
+      phone: saleRow.phone,
+      plate: saleRow.plate,
+      vehicle: saleRow.vehicle,
+      items: mappedItems,
+      subtotal: saleRow.subtotal,
+      discount: saleRow.discount,
+      total: saleRow.total,
+      note: saleRow.note,
+      serviceTimeDays: saleRow.timeDays,
+      laborRequired: saleRow.laborRequired,
+    });
+  }
+
+  function printSelectedSaleReceipt() {
+    if (!selectedSalePrintable) return;
+
+    setSaleData((prev) => ({
+      ...prev,
+      customer: selectedSalePrintable.customer,
+      customerType: selectedSalePrintable.customerType,
+      phone: selectedSalePrintable.phone,
+      plate: selectedSalePrintable.plate,
+      vehicleDetails: selectedSalePrintable.vehicle,
+      laborRequired: selectedSalePrintable.laborRequired ?? true,
+      timeDays: selectedSalePrintable.serviceTimeDays,
+      items: cloneItems(selectedSalePrintable.items),
+      discount: selectedSalePrintable.discount,
+      surcharge: Math.max(selectedSalePrintable.total - selectedSalePrintable.subtotal + selectedSalePrintable.discount, 0),
+      note: selectedSalePrintable.note,
+    }));
+
+    const parsedId = Number(selectedSalePrintable.number.replace('VEN-', ''));
+    if (Number.isFinite(parsedId)) {
+      setLastSavedDocumentIds((prev) => ({ ...prev, venda: parsedId }));
+    }
+
+    setSelectedPrintKind('venda');
+    setScreen('print-receipt');
+
+    window.setTimeout(() => {
+      window.print();
+    }, 180);
+  }
+
   async function handleLogin() {
     setAuthMessage('');
 
@@ -3515,9 +3758,121 @@ function App() {
               <button className="action-green" onClick={() => setScreen('new-sale')}>NOVA VENDA</button>
               <button className="action-yellow" onClick={() => setScreen('new-appointment')}>NOVO AGENDAMENTO</button>
               <button className="action-blue" onClick={() => setScreen('new-quote')}>NOVO ORCAMENTO</button>
+              <button className="action-blue" onClick={() => setScreen('sales-history')}>LISTAR VENDAS</button>
               <button className="action-orange" onClick={() => setScreen('print-receipt')}>IMPRIMIR RECIBO</button>
             </aside>
           </section>
+        </main>
+      )}
+
+      {screen === 'sales-history' && (
+        <main className="panel panel-form">
+          <h2 className="panel-title">LISTA DE VENDAS</h2>
+          <section className="form-grid menu-single">
+            <div className="form-main">
+              <div className="financial-filters">
+                <input
+                  className="input-look"
+                  placeholder="Buscar por cliente, placa, telefone, veiculo ou numero"
+                  value={salesHistoryFilters.query}
+                  onChange={(event) => setSalesHistoryFilters((prev) => ({ ...prev, query: event.target.value }))}
+                />
+                <input
+                  className="input-look"
+                  type="date"
+                  value={salesHistoryFilters.startDate}
+                  onChange={(event) => setSalesHistoryFilters((prev) => ({ ...prev, startDate: event.target.value }))}
+                />
+                <input
+                  className="input-look"
+                  type="date"
+                  value={salesHistoryFilters.endDate}
+                  onChange={(event) => setSalesHistoryFilters((prev) => ({ ...prev, endDate: event.target.value }))}
+                />
+              </div>
+
+              {salesHistoryLoading && <div className="receipt-empty">Carregando vendas...</div>}
+
+              {!salesHistoryLoading && filteredSalesHistory.length === 0 && (
+                <div className="receipt-empty">Nenhuma venda encontrada.</div>
+              )}
+
+              {!salesHistoryLoading &&
+                pagedSalesHistory.map((sale) => (
+                  <div className="menu-row editable" key={sale.id}>
+                    <span>{sale.createdAt}</span>
+                    <span>{sale.customer}</span>
+                    <span>{sale.plate || 'SEM PLACA'}</span>
+                    <span>{formatMoney(sale.total)}</span>
+                    <button className="btn-cyan" onClick={() => void selectSaleForReceipt(sale.id)}>SELECIONAR</button>
+                  </div>
+                ))}
+
+              {!salesHistoryLoading && filteredSalesHistory.length > 0 && (
+                <div className="financial-pagination">
+                  <span>{`Mostrando ${(salesHistoryPage - 1) * SALES_HISTORY_PAGE_SIZE + 1}-${Math.min(
+                    salesHistoryPage * SALES_HISTORY_PAGE_SIZE,
+                    filteredSalesHistory.length
+                  )} de ${filteredSalesHistory.length}`}</span>
+                  <div className="mini-actions">
+                    <button
+                      className="btn-cyan"
+                      onClick={() => setSalesHistoryPage((current) => Math.max(1, current - 1))}
+                      disabled={salesHistoryPage <= 1}
+                    >
+                      ANTERIOR
+                    </button>
+                    <button
+                      className="btn-cyan"
+                      onClick={() => setSalesHistoryPage((current) => Math.min(salesHistoryTotalPages, current + 1))}
+                      disabled={salesHistoryPage >= salesHistoryTotalPages}
+                    >
+                      PROXIMA
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {selectedSalePrintable && (
+                <div className="print-config-card" style={{ marginTop: 12 }}>
+                  <h3>VENDA SELECIONADA</h3>
+                  <div className="line"><strong>NUMERO:</strong> <span>{selectedSalePrintable.number}</span></div>
+                  <div className="line"><strong>CLIENTE:</strong> <span>{selectedSalePrintable.customer}</span></div>
+                  <div className="line"><strong>PLACA:</strong> <span>{selectedSalePrintable.plate || 'SEM PLACA'}</span></div>
+                  <div className="line"><strong>TOTAL:</strong> <span>{formatMoney(selectedSalePrintable.total)}</span></div>
+                  <table className="print-doc-items" style={{ marginTop: 10 }}>
+                    <thead>
+                      <tr>
+                        <th>Descricao</th>
+                        <th>Qtd</th>
+                        <th>Valor Unit.</th>
+                        <th>Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedSalePrintable.items.map((item, index) => (
+                        <tr key={`${item.description}-${index}`}>
+                          <td>{item.description}</td>
+                          <td>{item.quantity}</td>
+                          <td>{formatMoney(item.price)}</td>
+                          <td>{formatMoney(item.price * item.quantity)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div className="mini-actions receipt-actions">
+                    <button className="btn-yellow lg" onClick={printSelectedSaleReceipt}>IMPRIMIR RECIBO</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <footer className="panel-footer">
+            <div className="footer-right">
+              <button className="btn-back" onClick={() => setScreen('dashboard')}>←</button>
+            </div>
+          </footer>
         </main>
       )}
 
