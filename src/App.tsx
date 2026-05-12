@@ -140,6 +140,20 @@ type PrintSettings = {
   responsibleName: string;
 };
 
+type SaleData = {
+  customer: string;
+  customerType: string;
+  phone: string;
+  plate: string;
+  vehicleDetails: string;
+  laborRequired: boolean;
+  timeDays: number;
+  items: ServiceItem[];
+  discount: number;
+  surcharge: number;
+  note: string;
+};
+
 const PRINT_SETTINGS_STORAGE_KEY = 'etork_print_settings_v1';
 
 const defaultPrintSettings: PrintSettings = {
@@ -601,6 +615,324 @@ function AppointmentEditModal({
   );
 }
 
+function SaleScreen({
+  saleData,
+  setSaleData,
+  saleSubtotal,
+  saleTotal,
+  saleQuoteSearch,
+  setSaleQuoteSearch,
+  saleQuoteResults,
+  saleSelectedQuoteId,
+  setSaleSelectedQuoteId,
+  saleAppointmentSearch,
+  setSaleAppointmentSearch,
+  saleAppointmentResults,
+  saleSelectedAppointmentId,
+  setSaleSelectedAppointmentId,
+  runSaleQuoteSearch,
+  importQuoteToSaleBySearch,
+  runSaleAppointmentSearch,
+  importAppointmentToSaleBySearch,
+  importQuoteToSale,
+  importAppointmentToSale,
+  addItemToSale,
+  updateItems,
+  removeItem,
+  finalizeSale,
+  isSaving,
+  formatMoney,
+  receipts,
+  setScreen,
+  applyMatchedClient,
+}: {
+  saleData: SaleData;
+  setSaleData: (updater: (prev: SaleData) => SaleData) => void;
+  saleSubtotal: number;
+  saleTotal: number;
+  saleQuoteSearch: string;
+  setSaleQuoteSearch: (value: string) => void;
+  saleQuoteResults: ImportDocumentRow[];
+  saleSelectedQuoteId: string;
+  setSaleSelectedQuoteId: (value: string) => void;
+  saleAppointmentSearch: string;
+  setSaleAppointmentSearch: (value: string) => void;
+  saleAppointmentResults: ImportDocumentRow[];
+  saleSelectedAppointmentId: string;
+  setSaleSelectedAppointmentId: (value: string) => void;
+  runSaleQuoteSearch: () => void;
+  importQuoteToSaleBySearch: () => void;
+  runSaleAppointmentSearch: () => void;
+  importAppointmentToSaleBySearch: () => void;
+  importQuoteToSale: () => void;
+  importAppointmentToSale: () => void;
+  addItemToSale: () => void;
+  updateItems: (target: 'quote' | 'appointment' | 'sale', index: number, patch: Partial<ServiceItem>) => void;
+  removeItem: (target: 'quote' | 'appointment' | 'sale', index: number) => void;
+  finalizeSale: () => void;
+  isSaving: boolean;
+  formatMoney: (value: number) => string;
+  receipts: ReceiptRow[];
+  setScreen: (next: Screen) => void;
+  applyMatchedClient: (target: 'quote' | 'appointment' | 'sale', customerValue: string) => void;
+}) {
+  function patchSale(patch: Partial<SaleData>) {
+    setSaleData((prev) => ({ ...prev, ...patch }));
+  }
+
+  return (
+    <main className="sale-panel">
+      <div className="sale-topbar">
+        <span className="sale-topbar-title">BALCAO DE VENDAS</span>
+        <div className="sale-topbar-actions">
+          <button className="sale-btn-ghost" onClick={() => setScreen('dashboard')}>VOLTAR</button>
+          <button className="sale-btn-primary" onClick={() => window.alert('Servico enviado para a fila interna.')}>ENVIAR SERVICO</button>
+          <button className="sale-btn-green" onClick={finalizeSale} disabled={isSaving}>{isSaving ? 'SALVANDO...' : 'FINALIZAR VENDA'}</button>
+        </div>
+      </div>
+
+      <div className="sale-body">
+        <div className="sale-center">
+          <div className="sale-import-bar">
+            <div className="sale-import-row">
+              <input
+                className="sale-import-input"
+                value={saleQuoteSearch}
+                onChange={(e) => setSaleQuoteSearch(e.target.value)}
+                placeholder="Buscar orcamento por cliente, tel ou placa"
+              />
+              <button className="sale-import-btn blue" onClick={runSaleQuoteSearch}>BUSCAR ORC.</button>
+              <select className="sale-import-select" value={saleSelectedQuoteId} onChange={(e) => setSaleSelectedQuoteId(e.target.value)}>
+                <option value="">Selecione um orcamento</option>
+                {saleQuoteResults.map((row) => (
+                  <option key={row.id} value={row.id}>
+                    {`${row.customer} | ${row.plate} | ${row.createdAt} | ${formatMoney(row.total)}`}
+                  </option>
+                ))}
+              </select>
+              <button className="sale-import-btn green" onClick={importQuoteToSaleBySearch}>IMPORTAR</button>
+              <button className="sale-import-btn green" onClick={importQuoteToSale}>ULTIMO</button>
+            </div>
+
+            <div className="sale-import-row">
+              <input
+                className="sale-import-input"
+                value={saleAppointmentSearch}
+                onChange={(e) => setSaleAppointmentSearch(e.target.value)}
+                placeholder="Buscar agendamento por cliente, tel ou placa"
+              />
+              <button className="sale-import-btn amber" onClick={runSaleAppointmentSearch}>BUSCAR AGEND.</button>
+              <select
+                className="sale-import-select"
+                value={saleSelectedAppointmentId}
+                onChange={(e) => setSaleSelectedAppointmentId(e.target.value)}
+              >
+                <option value="">Selecione um agendamento</option>
+                {saleAppointmentResults.map((row) => (
+                  <option key={row.id} value={row.id}>
+                    {`${row.customer} | ${row.plate} | ${row.createdAt} | ${formatMoney(row.total)}`}
+                  </option>
+                ))}
+              </select>
+              <button className="sale-import-btn amber" onClick={importAppointmentToSaleBySearch}>IMPORTAR</button>
+              <button className="sale-import-btn amber" onClick={importAppointmentToSale}>ULTIMO</button>
+            </div>
+          </div>
+
+          <div className="sale-client-section">
+            <div className="sale-field">
+              <span className="sale-field-label">Cliente</span>
+              <input
+                list="client-suggestions"
+                className="sale-field-input"
+                value={saleData.customer}
+                onChange={(e) => patchSale({ customer: e.target.value })}
+                onBlur={(e) => applyMatchedClient('sale', e.target.value)}
+                placeholder="Nome do cliente"
+              />
+            </div>
+            <div className="sale-field">
+              <span className="sale-field-label">Tipo</span>
+              <input
+                className="sale-field-input"
+                value={saleData.customerType}
+                onChange={(e) => patchSale({ customerType: e.target.value })}
+                placeholder="CLIENTE FINAL"
+              />
+            </div>
+            <div className="sale-field">
+              <span className="sale-field-label">Telefone</span>
+              <input
+                className="sale-field-input"
+                value={saleData.phone}
+                onChange={(e) => patchSale({ phone: e.target.value })}
+                placeholder="(67) 9 0000-0000"
+              />
+            </div>
+            <div className="sale-field">
+              <span className="sale-field-label">Placa</span>
+              <input
+                className="sale-field-input plate"
+                value={saleData.plate}
+                onChange={(e) => patchSale({ plate: e.target.value.toUpperCase() })}
+                placeholder="AAA-0000"
+              />
+            </div>
+          </div>
+
+          <div className="sale-items-area">
+            <div className="sale-items-header">
+              <span>Descricao</span>
+              <span>Qtd</span>
+              <span>Vlr Unit.</span>
+              <span>Subtotal</span>
+              <span></span>
+            </div>
+
+            {saleData.items.map((item, index) => (
+              <div className="sale-item-row" key={`sale-item-${index}`}>
+                <input
+                  className="sale-item-input"
+                  value={item.description}
+                  onChange={(e) => updateItems('sale', index, { description: e.target.value })}
+                />
+                <input
+                  className="sale-item-input right"
+                  type="number"
+                  min={1}
+                  value={item.quantity}
+                  onChange={(e) => updateItems('sale', index, { quantity: Math.max(1, Number(e.target.value) || 1) })}
+                />
+                <input
+                  className="sale-item-input right"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={item.price}
+                  onChange={(e) => updateItems('sale', index, { price: Math.max(0, Number(e.target.value) || 0) })}
+                />
+                <span className="sale-item-total">{formatMoney(item.price * item.quantity)}</span>
+                <button className="sale-item-del" onClick={() => removeItem('sale', index)}>X</button>
+              </div>
+            ))}
+
+            <div className="sale-add-row">
+              <button className="sale-add-btn" onClick={addItemToSale}>+ ADICIONAR SERVICO / PRODUTO</button>
+            </div>
+          </div>
+
+          <div className="sale-note-area">
+            <textarea
+              className="sale-note-input"
+              rows={2}
+              value={saleData.note}
+              onChange={(e) => patchSale({ note: e.target.value })}
+              placeholder="Observacoes adicionais"
+            />
+          </div>
+        </div>
+
+        <div className="sale-sidebar">
+          <div className="sale-vehicle-section">
+            <div className="sale-section-title">Veiculo e Servico</div>
+            <textarea
+              className="sale-vehicle-textarea"
+              rows={4}
+              value={saleData.vehicleDetails}
+              onChange={(e) => patchSale({ vehicleDetails: e.target.value })}
+              placeholder={'MODELO\nCAMBIO\nANO\nCOMBUSTIVEL'}
+            />
+
+            <div className="sale-check-row">
+              <input
+                id="labor-check"
+                type="checkbox"
+                checked={saleData.laborRequired}
+                onChange={(e) => patchSale({ laborRequired: e.target.checked })}
+              />
+              <label htmlFor="labor-check">MAO DE OBRA INCLUSA</label>
+            </div>
+
+            <div className="sale-time-row">
+              <label>TEMPO (DIAS)</label>
+              <input
+                className="sale-time-input"
+                type="number"
+                min={1}
+                value={saleData.timeDays}
+                onChange={(e) => patchSale({ timeDays: Math.max(1, Number(e.target.value) || 1) })}
+              />
+            </div>
+          </div>
+
+          <div className="sale-totals-section">
+            <div className="sale-section-title">Resumo Financeiro</div>
+
+            <div className="sale-total-row">
+              <span className="sale-total-label">Subtotal</span>
+              <span className="sale-total-value">{formatMoney(saleSubtotal)}</span>
+            </div>
+
+            <div className="sale-total-row discount">
+              <span className="sale-total-label">Desconto (-)</span>
+              <input
+                className="sale-adj-input discount"
+                type="number"
+                min={0}
+                step="0.01"
+                value={saleData.discount}
+                onChange={(e) => patchSale({ discount: Math.max(0, Number(e.target.value) || 0) })}
+              />
+            </div>
+
+            <div className="sale-total-row surcharge">
+              <span className="sale-total-label">Acrescimo (+)</span>
+              <input
+                className="sale-adj-input surcharge"
+                type="number"
+                min={0}
+                step="0.01"
+                value={saleData.surcharge}
+                onChange={(e) => patchSale({ surcharge: Math.max(0, Number(e.target.value) || 0) })}
+              />
+            </div>
+
+            <div className="sale-total-row grand">
+              <span className="sale-total-label">TOTAL</span>
+              <span className="sale-total-value">{formatMoney(saleTotal)}</span>
+            </div>
+          </div>
+
+          <div className="sale-recent-section">
+            <div className="sale-recent-header">
+              <span className="sale-section-title" style={{ marginBottom: 0 }}>Lancamentos Recentes</span>
+              <span style={{ fontSize: '9px', color: '#44445a', letterSpacing: '0.1em' }}>{receipts.length} registros</span>
+            </div>
+
+            <div className="sale-recent-list">
+              {receipts.length === 0 ? (
+                <div className="sale-recent-empty">Nenhum lancamento</div>
+              ) : (
+                receipts.map((row) => (
+                  <div className="sale-recent-item" key={row.id} title={`${row.car} - ${formatMoney(row.total)}`}>
+                    <span className="sale-recent-name">{row.customer}</span>
+                    <div className="sale-recent-meta">
+                      <span className="sale-recent-plate">{row.plate}</span>
+                      <span className="sale-recent-date">{row.date}</span>
+                      <span className="sale-recent-total">{formatMoney(row.total)}</span>
+                    </div>
+                    <span style={{ fontSize: '9px', color: '#2a2a3a', letterSpacing: '0.06em' }}>{row.car}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
+
 function App() {
   const [screen, setScreen] = useState<Screen>('intro-brand');
   const [now, setNow] = useState(() => new Date());
@@ -639,7 +971,7 @@ function App() {
     discount: 0,
     note: '',
   });
-  const [saleData, setSaleData] = useState({
+  const [saleData, setSaleData] = useState<SaleData>({
     customer: 'JOAO HENRIQUE DE ALMEIDA',
     customerType: 'CLIENTE FINAL',
     phone: '67 99871-1313',
@@ -649,6 +981,7 @@ function App() {
     timeDays: 1,
     items: cloneItems(saleItems),
     discount: 0,
+    surcharge: 0,
     note: '',
   });
   const [receipts, setReceipts] = useState<ReceiptRow[]>(receiptRows);
@@ -954,7 +1287,10 @@ function App() {
     () => saleData.items.reduce((acc, item) => acc + item.price * item.quantity, 0),
     [saleData.items]
   );
-  const saleTotal = useMemo(() => Math.max(saleSubtotal - saleData.discount, 0), [saleSubtotal, saleData.discount]);
+  const saleTotal = useMemo(
+    () => Math.max(saleSubtotal - saleData.discount + saleData.surcharge, 0),
+    [saleSubtotal, saleData.discount, saleData.surcharge]
+  );
 
   const calendarSelectedDateTime = useMemo(() => new Date(`${calendarSelectedDate}T12:00:00`), [calendarSelectedDate]);
   const calendarMonthStart = useMemo(
@@ -1834,6 +2170,7 @@ function App() {
       laborRequired: boolean;
       serviceTimeDays: number;
       discount: number;
+      surcharge?: number;
       note: string;
       scheduledFor?: string;
     },
@@ -1844,7 +2181,8 @@ function App() {
     const sb = supabase;
     const scheduledForIso = payload.scheduledFor ? parseBrDateTime(payload.scheduledFor)?.toISOString() ?? null : null;
     const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
-    const total = Math.max(subtotal - payload.discount, 0);
+    const surcharge = Math.max(0, payload.surcharge ?? 0);
+    const total = Math.max(subtotal - payload.discount + surcharge, 0);
 
     const { data: documentRow, error: documentError } = await sb
       .from('documents_v2')
@@ -1859,6 +2197,7 @@ function App() {
         service_time_days: payload.serviceTimeDays,
         scheduled_for: scheduledForIso,
         discount_amount: payload.discount,
+        surcharge_amount: surcharge,
         notes: payload.note || null,
         subtotal_amount: subtotal,
         total_amount: total,
@@ -2054,6 +2393,7 @@ function App() {
       plate: source.plate,
       items: cloneItems(source.items),
       discount: source.discount,
+      surcharge: 0,
       timeDays: source.timeDays,
       note: source.note,
       vehicleDetails: source.vehicle,
@@ -2079,6 +2419,7 @@ function App() {
       vehicleDetails: selected.vehicleSnapshot,
       items: cloneItems(selected.items),
       discount: selected.discount,
+      surcharge: 0,
       timeDays: selected.timeDays,
       note: selected.note,
     }));
@@ -2103,6 +2444,7 @@ function App() {
       vehicleDetails: selected.vehicleSnapshot,
       items: cloneItems(selected.items),
       discount: selected.discount,
+      surcharge: 0,
       note: selected.note,
     }));
     window.alert('Agendamento importado para a venda.');
@@ -2141,6 +2483,7 @@ function App() {
       vehicleDetails: source.vehicleDetails,
       items: cloneItems(source.items),
       discount: source.discount,
+      surcharge: 0,
       note: source.note,
     }));
     window.alert(dbAppointment ? 'Agendamento importado do banco.' : 'Agendamento importado para a venda.');
@@ -2218,6 +2561,7 @@ function App() {
         laborRequired: saleData.laborRequired,
         serviceTimeDays: saleData.timeDays,
         discount: saleData.discount,
+        surcharge: saleData.surcharge,
         note: saleData.note,
       },
       saleData.items
@@ -3071,68 +3415,37 @@ function App() {
       )}
 
       {screen === 'new-sale' && (
-        <main className="panel panel-form">
-          <h2 className="panel-title">NOVA VENDA</h2>
-          <section className="sale-tools sale-tools-search">
-            <input className="input-look" value={saleQuoteSearch} onChange={(event) => setSaleQuoteSearch(event.target.value)} placeholder="Pesquisar orcamento por cliente, telefone ou placa" />
-            <button className="tool-blue" onClick={() => void runSaleQuoteSearch()}>PESQUISAR ORCAMENTO</button>
-            <select className="input-look" value={saleSelectedQuoteId} onChange={(event) => setSaleSelectedQuoteId(event.target.value)}>
-              <option value="">Selecione um orcamento</option>
-              {saleQuoteResults.map((row) => (
-                <option key={row.id} value={row.id}>{`${row.customer} | ${row.phone} | ${row.plate} | ${row.createdAt} | ${formatMoney(row.total)}`}</option>
-              ))}
-            </select>
-            <button className="tool-green" onClick={() => void importQuoteToSaleBySearch()}>IMPORTAR ORCAMENTO</button>
-          </section>
-          <section className="sale-tools sale-tools-search secondary">
-            <input className="input-look" value={saleAppointmentSearch} onChange={(event) => setSaleAppointmentSearch(event.target.value)} placeholder="Pesquisar agendamento por cliente, telefone ou placa" />
-            <button className="tool-yellow" onClick={() => void runSaleAppointmentSearch()}>PESQUISAR AGENDAMENTO</button>
-            <select className="input-look" value={saleSelectedAppointmentId} onChange={(event) => setSaleSelectedAppointmentId(event.target.value)}>
-              <option value="">Selecione um agendamento</option>
-              {saleAppointmentResults.map((row) => (
-                <option key={row.id} value={row.id}>{`${row.customer} | ${row.phone} | ${row.plate} | ${row.createdAt} | ${formatMoney(row.total)}`}</option>
-              ))}
-            </select>
-            <button className="tool-yellow" onClick={() => void importAppointmentToSaleBySearch()}>IMPORTAR AGENDAMENTO</button>
-          </section>
-
-          <section className="form-grid">
-            <div className="form-main">
-              <div className="line"><strong>CLIENTE:</strong> <input list="client-suggestions" className="input-look" value={saleData.customer} onChange={(event) => setSaleData((prev) => ({ ...prev, customer: event.target.value }))} onBlur={(event) => applyMatchedClient('sale', event.target.value)} /> <input className="input-look small" value={saleData.customerType} onChange={(event) => setSaleData((prev) => ({ ...prev, customerType: event.target.value }))} /></div>
-              <div className="line line-mini"><strong>LISTAR</strong> <button onClick={addItemToSale}>+</button></div>
-              <ServiceRows
-                items={saleData.items}
-                onChangeItem={(index, patch) => updateItems('sale', index, patch)}
-                onRemoveItem={(index) => removeItem('sale', index)}
-              />
-              <div className="line"><strong>OBSERVACAO:</strong> <textarea className="vehicle-card note-input" value={saleData.note} onChange={(event) => setSaleData((prev) => ({ ...prev, note: event.target.value }))} /></div>
-            </div>
-
-            <aside className="vehicle-info">
-              <div className="line side-top"><strong>TEL:</strong> <input className="input-look" value={saleData.phone} onChange={(event) => setSaleData((prev) => ({ ...prev, phone: event.target.value }))} /></div>
-              <div className="line side-top line-check"><strong>MAO DE OBRA</strong> <input type="checkbox" checked={saleData.laborRequired} onChange={(event) => setSaleData((prev) => ({ ...prev, laborRequired: event.target.checked }))} /></div>
-              <div className="line side-top"><strong>PLACA:</strong> <input className="input-look plate" value={saleData.plate} onChange={(event) => setSaleData((prev) => ({ ...prev, plate: event.target.value.toUpperCase() }))} /></div>
-              <textarea className="vehicle-card vehicle-input" value={saleData.vehicleDetails} onChange={(event) => setSaleData((prev) => ({ ...prev, vehicleDetails: event.target.value }))} />
-              <div className="line footer-time"><strong>TEMPO DE SERVICO</strong> <input className="input-look small" type="number" min={1} value={saleData.timeDays} onChange={(event) => setSaleData((prev) => ({ ...prev, timeDays: Math.max(1, Number(event.target.value) || 1) }))} /></div>
-            </aside>
-          </section>
-
-          <footer className="panel-footer">
-            <div className="footer-left">
-              <div className="mini-actions">
-                <button className="btn-yellow" onClick={() => askAndApplyDiscount(saleData.discount, (next) => setSaleData((prev) => ({ ...prev, discount: next })))}>INSERIR DESCONTO</button>
-                <button className="btn-cyan" onClick={() => void importQuoteToSale()}>ULTIMO ORCAMENTO</button>
-                <button className="btn-cyan" onClick={() => void importAppointmentToSale()}>ULTIMO AGENDAMENTO</button>
-              </div>
-              <div className="total">TOTAL: <span>{formatMoney(saleTotal)}</span></div>
-            </div>
-            <div className="footer-right">
-              <button className="btn-back" onClick={() => setScreen('dashboard')}>←</button>
-              <button className="btn-dark" onClick={() => window.alert('Servico enviado para fila interna.')}>ENVIAR SERVICO</button>
-              <button className="btn-finish" onClick={() => void finalizeSale()}>{isSaving ? 'SALVANDO...' : 'FINALIZAR VENDA'}</button>
-            </div>
-          </footer>
-        </main>
+        <SaleScreen
+          saleData={saleData}
+          setSaleData={setSaleData}
+          saleSubtotal={saleSubtotal}
+          saleTotal={saleTotal}
+          saleQuoteSearch={saleQuoteSearch}
+          setSaleQuoteSearch={setSaleQuoteSearch}
+          saleQuoteResults={saleQuoteResults}
+          saleSelectedQuoteId={saleSelectedQuoteId}
+          setSaleSelectedQuoteId={setSaleSelectedQuoteId}
+          saleAppointmentSearch={saleAppointmentSearch}
+          setSaleAppointmentSearch={setSaleAppointmentSearch}
+          saleAppointmentResults={saleAppointmentResults}
+          saleSelectedAppointmentId={saleSelectedAppointmentId}
+          setSaleSelectedAppointmentId={setSaleSelectedAppointmentId}
+          runSaleQuoteSearch={() => void runSaleQuoteSearch()}
+          importQuoteToSaleBySearch={() => void importQuoteToSaleBySearch()}
+          runSaleAppointmentSearch={() => void runSaleAppointmentSearch()}
+          importAppointmentToSaleBySearch={() => void importAppointmentToSaleBySearch()}
+          importQuoteToSale={() => void importQuoteToSale()}
+          importAppointmentToSale={() => void importAppointmentToSale()}
+          addItemToSale={addItemToSale}
+          updateItems={updateItems}
+          removeItem={removeItem}
+          finalizeSale={() => void finalizeSale()}
+          isSaving={isSaving}
+          formatMoney={formatMoney}
+          receipts={receipts}
+          setScreen={setScreen}
+          applyMatchedClient={applyMatchedClient}
+        />
       )}
 
       {screen === 'print-receipt' && (
