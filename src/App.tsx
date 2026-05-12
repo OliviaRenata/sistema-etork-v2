@@ -2193,12 +2193,13 @@ function App() {
     setSaleData((prev) => ({ ...prev, items: prev.items.filter((_, idx) => idx !== index) }));
   }
 
-  function handleMenuAction(name: 'Pesquisar' | 'Clientes' | 'Financeiro' | 'Produtos' | 'Relatorios' | 'Agenda') {
+  function handleMenuAction(name: 'Pesquisar' | 'Clientes' | 'Financeiro' | 'Produtos' | 'Relatorios' | 'Agenda' | 'Vendas') {
     if (name === 'Pesquisar') setScreen('menu-search');
     if (name === 'Clientes') setScreen('menu-clients');
     if (name === 'Financeiro') setScreen('menu-financial');
     if (name === 'Produtos') setScreen('menu-products');
     if (name === 'Relatorios') setScreen('menu-reports');
+    if (name === 'Vendas') setScreen('sales-history');
     if (name === 'Agenda') {
       setCalendarSelectedDate(toInputDateValue(new Date()));
       setScreen('appointment-calendar');
@@ -3733,6 +3734,7 @@ function App() {
               <button onClick={() => handleMenuAction('Produtos')}>PRODUTOS</button>
               <button onClick={() => handleMenuAction('Agenda')}>AGENDA</button>
               <button onClick={() => handleMenuAction('Relatorios')}>RELATORIOS</button>
+              <button onClick={() => handleMenuAction('Vendas')}>LISTAR VENDAS</button>
             </aside>
 
             <section className="dashboard-center">
@@ -3758,7 +3760,6 @@ function App() {
               <button className="action-green" onClick={() => setScreen('new-sale')}>NOVA VENDA</button>
               <button className="action-yellow" onClick={() => setScreen('new-appointment')}>NOVO AGENDAMENTO</button>
               <button className="action-blue" onClick={() => setScreen('new-quote')}>NOVO ORCAMENTO</button>
-              <button className="action-blue" onClick={() => setScreen('sales-history')}>LISTAR VENDAS</button>
               <button className="action-orange" onClick={() => setScreen('print-receipt')}>IMPRIMIR RECIBO</button>
             </aside>
           </section>
@@ -3766,11 +3767,13 @@ function App() {
       )}
 
       {screen === 'sales-history' && (
-        <main className="panel panel-form">
+        <main className="panel panel-form sales-history-panel">
           <h2 className="panel-title">LISTA DE VENDAS</h2>
           <section className="form-grid menu-single">
-            <div className="form-main">
-              <div className="financial-filters">
+            <div className="form-main sales-history-main">
+              <div className="sales-history-filter-card">
+                <div className="sales-history-filter-title">FILTROS</div>
+                <div className="financial-filters sales-history-filters-grid">
                 <input
                   className="input-look"
                   placeholder="Buscar por cliente, placa, telefone, veiculo ou numero"
@@ -3789,24 +3792,36 @@ function App() {
                   value={salesHistoryFilters.endDate}
                   onChange={(event) => setSalesHistoryFilters((prev) => ({ ...prev, endDate: event.target.value }))}
                 />
+                </div>
               </div>
 
-              {salesHistoryLoading && <div className="receipt-empty">Carregando vendas...</div>}
+              {salesHistoryLoading && <div className="receipt-empty sales-history-empty">Carregando vendas...</div>}
 
               {!salesHistoryLoading && filteredSalesHistory.length === 0 && (
-                <div className="receipt-empty">Nenhuma venda encontrada.</div>
+                <div className="receipt-empty sales-history-empty">Nenhuma venda encontrada.</div>
               )}
 
-              {!salesHistoryLoading &&
-                pagedSalesHistory.map((sale) => (
-                  <div className="menu-row editable" key={sale.id}>
-                    <span>{sale.createdAt}</span>
-                    <span>{sale.customer}</span>
-                    <span>{sale.plate || 'SEM PLACA'}</span>
-                    <span>{formatMoney(sale.total)}</span>
-                    <button className="btn-cyan" onClick={() => void selectSaleForReceipt(sale.id)}>SELECIONAR</button>
+              {!salesHistoryLoading && filteredSalesHistory.length > 0 && (
+                <div className="sales-history-list-card">
+                  <div className="sales-history-grid-header">
+                    <span>DATA</span>
+                    <span>CLIENTE</span>
+                    <span>PLACA</span>
+                    <span>TOTAL</span>
+                    <span></span>
                   </div>
-                ))}
+
+                  {pagedSalesHistory.map((sale) => (
+                    <div className="sales-history-grid-row" key={sale.id}>
+                      <span className="muted">{sale.createdAt}</span>
+                      <span className="strong">{sale.customer}</span>
+                      <span className="plate">{sale.plate || 'SEM PLACA'}</span>
+                      <span className="money">{formatMoney(sale.total)}</span>
+                      <button className="btn-cyan sales-history-select-btn" onClick={() => void selectSaleForReceipt(sale.id)}>SELECIONAR</button>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {!salesHistoryLoading && filteredSalesHistory.length > 0 && (
                 <div className="financial-pagination">
@@ -3834,13 +3849,13 @@ function App() {
               )}
 
               {selectedSalePrintable && (
-                <div className="print-config-card" style={{ marginTop: 12 }}>
+                <div className="print-config-card sales-history-preview-card" style={{ marginTop: 12 }}>
                   <h3>VENDA SELECIONADA</h3>
                   <div className="line"><strong>NUMERO:</strong> <span>{selectedSalePrintable.number}</span></div>
                   <div className="line"><strong>CLIENTE:</strong> <span>{selectedSalePrintable.customer}</span></div>
                   <div className="line"><strong>PLACA:</strong> <span>{selectedSalePrintable.plate || 'SEM PLACA'}</span></div>
                   <div className="line"><strong>TOTAL:</strong> <span>{formatMoney(selectedSalePrintable.total)}</span></div>
-                  <table className="print-doc-items" style={{ marginTop: 10 }}>
+                  <table className="print-doc-items sales-history-items-table" style={{ marginTop: 10 }}>
                     <thead>
                       <tr>
                         <th>Descricao</th>

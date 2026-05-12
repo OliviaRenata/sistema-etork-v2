@@ -1564,6 +1564,118 @@ button {
   cursor: not-allowed;
 }
 
+.sales-history-panel {
+  background:
+    radial-gradient(circle at 10% 0%, rgba(140, 140, 140, 0.12) 0%, transparent 38%),
+    linear-gradient(160deg, rgba(13, 14, 18, 0.98), rgba(8, 9, 12, 0.98));
+}
+
+.sales-history-main {
+  display: grid;
+  gap: 12px;
+}
+
+.sales-history-filter-card {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 12px;
+}
+
+.sales-history-filter-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #c9c9cf;
+  margin-bottom: 8px;
+}
+
+.sales-history-filters-grid {
+  margin-bottom: 0;
+}
+
+.sales-history-list-card {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(8, 11, 16, 0.62);
+}
+
+.sales-history-grid-header,
+.sales-history-grid-row {
+  display: grid;
+  grid-template-columns: 180px 1fr 140px 150px 130px;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+}
+
+.sales-history-grid-header {
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.sales-history-grid-header span {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #adadb7;
+}
+
+.sales-history-grid-row {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sales-history-grid-row:last-child {
+  border-bottom: 0;
+}
+
+.sales-history-grid-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.sales-history-grid-row span {
+  font-size: 13px;
+  color: #ececf1;
+}
+
+.sales-history-grid-row .muted {
+  color: #9f9fad;
+}
+
+.sales-history-grid-row .strong {
+  font-weight: 700;
+}
+
+.sales-history-grid-row .plate {
+  letter-spacing: 0.08em;
+}
+
+.sales-history-grid-row .money {
+  color: #9cf3c8;
+  font-weight: 700;
+}
+
+.sales-history-select-btn {
+  min-height: 34px;
+  border-radius: 8px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+
+.sales-history-preview-card {
+  border: 1px solid rgba(220, 220, 220, 0.2);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sales-history-items-table th {
+  background: rgba(235, 235, 235, 0.9);
+}
+
+.sales-history-empty {
+  border-radius: 10px;
+}
+
 /* Product Modal Styles */
 .modal-overlay {
   position: fixed;
@@ -2060,6 +2172,20 @@ button {
 
   .financial-row {
     grid-template-columns: 1fr !important;
+  }
+
+  .sales-history-grid-header,
+  .sales-history-grid-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .sales-history-grid-header {
+    display: none;
+  }
+
+  .sales-history-grid-row {
+    padding: 12px;
   }
 }
 
