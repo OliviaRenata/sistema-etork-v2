@@ -2928,12 +2928,43 @@ function App() {
     setScreen('print-receipt');
   }
 
-  async function selectSaleForReceipt(saleId: number) {
+  function openSaleReceiptDocument(printable: PrintableDocument, shouldPrint = false) {
+    setSaleData((prev) => ({
+      ...prev,
+      customer: printable.customer,
+      customerType: printable.customerType,
+      phone: printable.phone,
+      plate: printable.plate,
+      vehicleDetails: printable.vehicle,
+      laborRequired: printable.laborRequired ?? true,
+      timeDays: printable.serviceTimeDays,
+      items: cloneItems(printable.items),
+      discount: printable.discount,
+      surcharge: Math.max(printable.total - printable.subtotal + printable.discount, 0),
+      note: printable.note,
+    }));
+
+    const parsedId = Number(printable.number.replace('VEN-', ''));
+    if (Number.isFinite(parsedId)) {
+      setLastSavedDocumentIds((prev) => ({ ...prev, venda: parsedId }));
+    }
+
+    setSelectedPrintKind('venda');
+    setScreen('print-receipt');
+
+    if (shouldPrint) {
+      window.setTimeout(() => {
+        window.print();
+      }, 180);
+    }
+  }
+
+  async function selectSaleForReceipt(saleId: number, openReceipt = false) {
     const saleRow = salesHistory.find((row) => row.id === saleId);
     if (!saleRow) return;
 
     if (!isSupabaseConfigured || !supabase) {
-      setSelectedSalePrintable({
+      const printable: PrintableDocument = {
         kind: 'venda',
         number: `VEN-${String(saleRow.id).padStart(6, '0')}`,
         issuedAt: saleRow.createdAt,
@@ -2949,7 +2980,12 @@ function App() {
         note: saleRow.note,
         serviceTimeDays: saleRow.timeDays,
         laborRequired: saleRow.laborRequired,
-      });
+      };
+
+      setSelectedSalePrintable(printable);
+      if (openReceipt) {
+        openSaleReceiptDocument(printable);
+      }
       return;
     }
 
@@ -2966,7 +3002,7 @@ function App() {
       price: Number(item.unit_price) || 0,
     }));
 
-    setSelectedSalePrintable({
+    const printable: PrintableDocument = {
       kind: 'venda',
       number: `VEN-${String(saleRow.id).padStart(6, '0')}`,
       issuedAt: saleRow.createdAt,
@@ -2982,38 +3018,17 @@ function App() {
       note: saleRow.note,
       serviceTimeDays: saleRow.timeDays,
       laborRequired: saleRow.laborRequired,
-    });
+    };
+
+    setSelectedSalePrintable(printable);
+    if (openReceipt) {
+      openSaleReceiptDocument(printable);
+    }
   }
 
   function printSelectedSaleReceipt() {
     if (!selectedSalePrintable) return;
-
-    setSaleData((prev) => ({
-      ...prev,
-      customer: selectedSalePrintable.customer,
-      customerType: selectedSalePrintable.customerType,
-      phone: selectedSalePrintable.phone,
-      plate: selectedSalePrintable.plate,
-      vehicleDetails: selectedSalePrintable.vehicle,
-      laborRequired: selectedSalePrintable.laborRequired ?? true,
-      timeDays: selectedSalePrintable.serviceTimeDays,
-      items: cloneItems(selectedSalePrintable.items),
-      discount: selectedSalePrintable.discount,
-      surcharge: Math.max(selectedSalePrintable.total - selectedSalePrintable.subtotal + selectedSalePrintable.discount, 0),
-      note: selectedSalePrintable.note,
-    }));
-
-    const parsedId = Number(selectedSalePrintable.number.replace('VEN-', ''));
-    if (Number.isFinite(parsedId)) {
-      setLastSavedDocumentIds((prev) => ({ ...prev, venda: parsedId }));
-    }
-
-    setSelectedPrintKind('venda');
-    setScreen('print-receipt');
-
-    window.setTimeout(() => {
-      window.print();
-    }, 180);
+    openSaleReceiptDocument(selectedSalePrintable, true);
   }
 
   async function handleLogin() {
@@ -3817,7 +3832,7 @@ function App() {
                       <span className="strong">{sale.customer}</span>
                       <span className="plate">{sale.plate || 'SEM PLACA'}</span>
                       <span className="money">{formatMoney(sale.total)}</span>
-                      <button className="btn-cyan sales-history-select-btn" onClick={() => void selectSaleForReceipt(sale.id)}>SELECIONAR</button>
+                      <button className="btn-cyan sales-history-select-btn" onClick={() => void selectSaleForReceipt(sale.id, true)}>SELECIONAR</button>
                     </div>
                   ))}
                 </div>
