@@ -154,6 +154,17 @@ type SaleData = {
   note: string;
 };
 
+type QuoteData = {
+  customer: string;
+  phone: string;
+  plate: string;
+  vehicle: string;
+  items: ServiceItem[];
+  discount: number;
+  timeDays: number;
+  note: string;
+};
+
 const PRINT_SETTINGS_STORAGE_KEY = 'etork_print_settings_v1';
 
 const defaultPrintSettings: PrintSettings = {
@@ -933,6 +944,189 @@ function SaleScreen({
   );
 }
 
+function QuoteScreen({
+  quoteData,
+  setQuoteData,
+  quoteSubtotal,
+  quoteTotal,
+  addItemToQuote,
+  updateItems,
+  removeItem,
+  finalizeQuote,
+  isSaving,
+  formatMoney,
+  setScreen,
+  applyMatchedClient,
+}: {
+  quoteData: QuoteData;
+  setQuoteData: (updater: (prev: QuoteData) => QuoteData) => void;
+  quoteSubtotal: number;
+  quoteTotal: number;
+  addItemToQuote: () => void;
+  updateItems: (target: 'quote' | 'appointment' | 'sale', index: number, patch: Partial<ServiceItem>) => void;
+  removeItem: (target: 'quote' | 'appointment' | 'sale', index: number) => void;
+  finalizeQuote: () => void;
+  isSaving: boolean;
+  formatMoney: (value: number) => string;
+  setScreen: (next: Screen) => void;
+  applyMatchedClient: (target: 'quote' | 'appointment' | 'sale', customerValue: string) => void;
+}) {
+  function patchQuote(patch: Partial<QuoteData>) {
+    setQuoteData((prev) => ({ ...prev, ...patch }));
+  }
+
+  return (
+    <main className="sale-panel">
+      <div className="sale-topbar">
+        <span className="sale-topbar-title">BALCAO DE ORCAMENTO</span>
+        <div className="sale-topbar-actions">
+          <button className="sale-btn-ghost" onClick={() => setScreen('dashboard')}>VOLTAR</button>
+          <button className="sale-btn-primary" onClick={() => window.alert('Orcamento enviado para aprovacao interna.')}>ENVIAR ORCAMENTO</button>
+          <button className="sale-btn-green" onClick={finalizeQuote} disabled={isSaving}>{isSaving ? 'SALVANDO...' : 'FINALIZAR ORCAMENTO'}</button>
+        </div>
+      </div>
+
+      <div className="sale-body">
+        <div className="sale-center">
+          <div className="sale-client-section">
+            <div className="sale-field">
+              <span className="sale-field-label">Cliente</span>
+              <input
+                list="client-suggestions"
+                className="sale-field-input"
+                value={quoteData.customer}
+                onChange={(e) => patchQuote({ customer: e.target.value })}
+                onBlur={(e) => applyMatchedClient('quote', e.target.value)}
+                placeholder="Nome do cliente"
+              />
+            </div>
+            <div className="sale-field">
+              <span className="sale-field-label">Telefone</span>
+              <input
+                className="sale-field-input"
+                value={quoteData.phone}
+                onChange={(e) => patchQuote({ phone: e.target.value })}
+                placeholder="(67) 9 0000-0000"
+              />
+            </div>
+            <div className="sale-field">
+              <span className="sale-field-label">Placa</span>
+              <input
+                className="sale-field-input plate"
+                value={quoteData.plate}
+                onChange={(e) => patchQuote({ plate: e.target.value.toUpperCase() })}
+                placeholder="AAA-0000"
+              />
+            </div>
+            <div className="sale-field">
+              <span className="sale-field-label">Veiculo</span>
+              <input
+                className="sale-field-input"
+                value={quoteData.vehicle}
+                onChange={(e) => patchQuote({ vehicle: e.target.value })}
+                placeholder="Modelo do veiculo"
+              />
+            </div>
+          </div>
+
+          <div className="sale-items-area">
+            <div className="sale-items-header">
+              <span>Descricao</span>
+              <span>Qtd</span>
+              <span>Vlr Unit.</span>
+              <span>Subtotal</span>
+              <span></span>
+            </div>
+
+            {quoteData.items.map((item, index) => (
+              <div className="sale-item-row" key={`quote-item-${index}`}>
+                <input
+                  className="sale-item-input"
+                  value={item.description}
+                  onChange={(e) => updateItems('quote', index, { description: e.target.value })}
+                />
+                <input
+                  className="sale-item-input right"
+                  type="number"
+                  min={1}
+                  value={item.quantity}
+                  onChange={(e) => updateItems('quote', index, { quantity: Math.max(1, Number(e.target.value) || 1) })}
+                />
+                <input
+                  className="sale-item-input right"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={item.price}
+                  onChange={(e) => updateItems('quote', index, { price: Math.max(0, Number(e.target.value) || 0) })}
+                />
+                <span className="sale-item-total">{formatMoney(item.price * item.quantity)}</span>
+                <button className="sale-item-del" onClick={() => removeItem('quote', index)}>X</button>
+              </div>
+            ))}
+
+            <div className="sale-add-row">
+              <button className="sale-add-btn" onClick={addItemToQuote}>+ ADICIONAR SERVICO / PRODUTO</button>
+            </div>
+          </div>
+
+          <div className="sale-note-area">
+            <textarea
+              className="sale-note-input"
+              rows={2}
+              value={quoteData.note}
+              onChange={(e) => patchQuote({ note: e.target.value })}
+              placeholder="Observacoes adicionais"
+            />
+          </div>
+        </div>
+
+        <div className="sale-sidebar">
+          <div className="sale-vehicle-section">
+            <div className="sale-section-title">Dados do Servico</div>
+            <div className="sale-time-row">
+              <label>TEMPO (DIAS)</label>
+              <input
+                className="sale-time-input"
+                type="number"
+                min={1}
+                value={quoteData.timeDays}
+                onChange={(e) => patchQuote({ timeDays: Math.max(1, Number(e.target.value) || 1) })}
+              />
+            </div>
+          </div>
+
+          <div className="sale-totals-section">
+            <div className="sale-section-title">Resumo Financeiro</div>
+
+            <div className="sale-total-row">
+              <span className="sale-total-label">Subtotal</span>
+              <span className="sale-total-value">{formatMoney(quoteSubtotal)}</span>
+            </div>
+
+            <div className="sale-total-row discount">
+              <span className="sale-total-label">Desconto (-)</span>
+              <input
+                className="sale-adj-input discount"
+                type="number"
+                min={0}
+                step="0.01"
+                value={quoteData.discount}
+                onChange={(e) => patchQuote({ discount: Math.max(0, Number(e.target.value) || 0) })}
+              />
+            </div>
+
+            <div className="sale-total-row grand">
+              <span className="sale-total-label">TOTAL</span>
+              <span className="sale-total-value">{formatMoney(quoteTotal)}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
+
 function App() {
   const [screen, setScreen] = useState<Screen>('intro-brand');
   const [now, setNow] = useState(() => new Date());
@@ -950,7 +1144,7 @@ function App() {
   const [resetPasswordConfirm, setResetPasswordConfirm] = useState('');
   const [serviceCatalogData, setServiceCatalogData] = useState(defaultServiceCatalog);
   const [isSaving, setIsSaving] = useState(false);
-  const [quoteData, setQuoteData] = useState({
+  const [quoteData, setQuoteData] = useState<QuoteData>({
     customer: 'JOAO HENRIQUE DE ALMEIDA',
     phone: '67 99871-1313',
     plate: 'QAN-2H92',
@@ -3328,40 +3522,20 @@ function App() {
       )}
 
       {screen === 'new-quote' && (
-        <main className="panel panel-form">
-          <h2 className="panel-title">NOVO ORCAMENTO</h2>
-          <section className="form-grid">
-            <div className="form-main">
-              <div className="line"><strong>CLIENTE:</strong> <input list="client-suggestions" className="input-look" value={quoteData.customer} onChange={(event) => setQuoteData((prev) => ({ ...prev, customer: event.target.value }))} onBlur={(event) => applyMatchedClient('quote', event.target.value)} /></div>
-              <div className="line"><strong>TEL:</strong> <input className="input-look" value={quoteData.phone} onChange={(event) => setQuoteData((prev) => ({ ...prev, phone: event.target.value }))} /></div>
-              <div className="line"><strong>PLACA:</strong> <input className="input-look plate" value={quoteData.plate} onChange={(event) => setQuoteData((prev) => ({ ...prev, plate: event.target.value.toUpperCase() }))} /></div>
-              <div className="line"><strong>VEICULO:</strong> <input className="input-look" value={quoteData.vehicle} onChange={(event) => setQuoteData((prev) => ({ ...prev, vehicle: event.target.value }))} /></div>
-              <div className="line line-mini"><strong>LISTAR</strong> <button onClick={addItemToQuote}>+</button></div>
-              <ServiceRows
-                items={quoteData.items}
-                onChangeItem={(index, patch) => updateItems('quote', index, patch)}
-                onRemoveItem={(index) => removeItem('quote', index)}
-              />
-              <div className="line"><strong>OBSERVACAO:</strong> <textarea className="vehicle-card note-input" value={quoteData.note} onChange={(event) => setQuoteData((prev) => ({ ...prev, note: event.target.value }))} /></div>
-            </div>
-
-            <aside className="vehicle-info vehicle-empty" />
-          </section>
-
-          <footer className="panel-footer">
-            <div className="footer-left">
-              <div className="line footer-time"><strong>TEMPO DE SERVICO</strong> <input className="input-look small" type="number" min={1} value={quoteData.timeDays} onChange={(event) => setQuoteData((prev) => ({ ...prev, timeDays: Math.max(1, Number(event.target.value) || 1) }))} /></div>
-              <div className="mini-actions">
-                <button className="btn-yellow" onClick={() => askAndApplyDiscount(quoteData.discount, (next) => setQuoteData((prev) => ({ ...prev, discount: next })))}>INSERIR DESCONTO</button>
-              </div>
-              <div className="total">TOTAL: <span>{formatMoney(quoteTotal)}</span></div>
-            </div>
-            <div className="footer-right">
-              <button className="btn-back" onClick={() => setScreen('dashboard')}>←</button>
-              <button className="btn-finish" onClick={() => void finalizeQuote()}>{isSaving ? 'SALVANDO...' : 'FINALIZAR ORCAMENTO'}</button>
-            </div>
-          </footer>
-        </main>
+        <QuoteScreen
+          quoteData={quoteData}
+          setQuoteData={setQuoteData}
+          quoteSubtotal={quoteSubtotal}
+          quoteTotal={quoteTotal}
+          addItemToQuote={addItemToQuote}
+          updateItems={updateItems}
+          removeItem={removeItem}
+          finalizeQuote={() => void finalizeQuote()}
+          isSaving={isSaving}
+          formatMoney={formatMoney}
+          setScreen={setScreen}
+          applyMatchedClient={applyMatchedClient}
+        />
       )}
 
       {screen === 'new-appointment' && (

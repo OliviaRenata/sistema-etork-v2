@@ -928,9 +928,9 @@ button {
 }
 
 .sale-topbar-title {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.16em;
   color: #f59e0b;
   text-transform: uppercase;
 }
@@ -943,10 +943,10 @@ button {
 .sale-btn-ghost,
 .sale-btn-primary,
 .sale-btn-green {
-  padding: 5px 12px;
-  font-size: 10px;
+  padding: 7px 13px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.15s;
@@ -1025,11 +1025,11 @@ button {
 
 .sale-import-input,
 .sale-import-select {
-  padding: 5px 10px;
-  font-size: 10px;
+  padding: 7px 10px;
+  font-size: 12px;
   background: #131320;
   border: 1px solid #252538;
-  color: #b8b4cc;
+  color: #e7e2f7;
   border-radius: 3px;
   font-family: inherit;
   letter-spacing: 0.05em;
@@ -1050,8 +1050,8 @@ button {
 }
 
 .sale-import-btn {
-  padding: 5px 12px;
-  font-size: 10px;
+  padding: 7px 12px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.1em;
   border: 1px solid;
@@ -1106,19 +1106,19 @@ button {
 }
 
 .sale-field-label {
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.2em;
-  color: #44445a;
+  letter-spacing: 0.14em;
+  color: #9592ad;
   text-transform: uppercase;
 }
 
 .sale-field-input {
-  padding: 6px 10px;
-  font-size: 11px;
+  padding: 8px 10px;
+  font-size: 13px;
   background: #131320;
   border: 1px solid #1e1e2e;
-  color: #c8c4dc;
+  color: #f1eff8;
   border-radius: 3px;
   font-family: inherit;
 }
@@ -1155,10 +1155,10 @@ button {
 }
 
 .sale-items-header span {
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.18em;
-  color: #44445a;
+  letter-spacing: 0.12em;
+  color: #8f8ba8;
   text-transform: uppercase;
 }
 
@@ -1176,11 +1176,11 @@ button {
 }
 
 .sale-item-input {
-  padding: 5px 6px;
-  font-size: 11px;
+  padding: 6px 6px;
+  font-size: 13px;
   background: transparent;
   border: 1px solid transparent;
-  color: #c8c4dc;
+  color: #f0edf8;
   font-family: inherit;
   border-radius: 2px;
   width: 100%;
@@ -1197,7 +1197,7 @@ button {
 }
 
 .sale-item-total {
-  font-size: 11px;
+  font-size: 13px;
   color: #f59e0b;
   text-align: right;
   padding-right: 6px;
@@ -1227,8 +1227,8 @@ button {
 }
 
 .sale-add-btn {
-  padding: 5px 14px;
-  font-size: 10px;
+  padding: 7px 14px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.1em;
   border: 1px dashed #2a2a4a;
@@ -1252,11 +1252,11 @@ button {
 
 .sale-note-input {
   width: 100%;
-  padding: 7px 10px;
-  font-size: 11px;
+  padding: 8px 10px;
+  font-size: 13px;
   background: #0e0e1a;
   border: 1px solid #1e1e2e;
-  color: #8a8aaa;
+  color: #e0ddef;
   font-family: inherit;
   border-radius: 3px;
   resize: none;
@@ -1281,10 +1281,10 @@ button {
 }
 
 .sale-section-title {
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.25em;
-  color: #44445a;
+  letter-spacing: 0.16em;
+  color: #9b97b4;
   text-transform: uppercase;
   margin-bottom: 10px;
 }
@@ -1292,10 +1292,10 @@ button {
 .sale-vehicle-textarea {
   width: 100%;
   padding: 8px 10px;
-  font-size: 11px;
+  font-size: 13px;
   background: #131320;
   border: 1px solid #1e1e2e;
-  color: #9a96b0;
+  color: #ece8fa;
   font-family: inherit;
   border-radius: 3px;
   resize: none;
@@ -1312,20 +1312,20 @@ button {
 
 .sale-check-row label,
 .sale-time-row label {
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.12em;
-  color: #6a6a8a;
+  letter-spacing: 0.08em;
+  color: #a9a5c2;
   text-transform: uppercase;
 }
 
 .sale-time-input,
 .sale-adj-input {
   padding: 4px 8px;
-  font-size: 11px;
+  font-size: 13px;
   background: #131320;
   border: 1px solid #1e1e2e;
-  color: #c8c4dc;
+  color: #f3f0fb;
   font-family: inherit;
   border-radius: 3px;
 }
@@ -1355,16 +1355,16 @@ button {
 }
 
 .sale-total-label {
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.15em;
-  color: #55556a;
+  letter-spacing: 0.1em;
+  color: #a8a4bf;
   text-transform: uppercase;
 }
 
 .sale-total-value {
-  font-size: 12px;
-  color: #8a8aaa;
+  font-size: 14px;
+  color: #f2eef9;
   font-weight: 700;
 }
 
@@ -1375,12 +1375,12 @@ button {
 }
 
 .sale-total-row.grand .sale-total-label {
-  font-size: 11px;
+  font-size: 13px;
   color: #e8e4d9;
 }
 
 .sale-total-row.grand .sale-total-value {
-  font-size: 20px;
+  font-size: 24px;
   color: #10b981;
 }
 
@@ -1417,9 +1417,9 @@ button {
 }
 
 .sale-recent-name {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
-  color: #c8c4dc;
+  color: #efebf8;
   letter-spacing: 0.06em;
   white-space: nowrap;
   overflow: hidden;
@@ -1444,12 +1444,12 @@ button {
 }
 
 .sale-recent-date {
-  font-size: 9px;
-  color: #44445a;
+  font-size: 11px;
+  color: #9894ae;
 }
 
 .sale-recent-total {
-  font-size: 10px;
+  font-size: 12px;
   color: #10b981;
   font-weight: 700;
   margin-left: auto;
@@ -1457,8 +1457,8 @@ button {
 
 .sale-recent-empty {
   padding: 16px;
-  font-size: 10px;
-  color: #2a2a3a;
+  font-size: 12px;
+  color: #6f6b86;
   text-align: center;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -2139,7 +2139,7 @@ button {
   }
 
   .sale-topbar-title {
-    font-size: 10px;
+    font-size: 12px;
   }
 
   .print-doc-header,
