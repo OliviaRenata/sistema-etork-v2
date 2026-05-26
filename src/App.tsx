@@ -31,6 +31,7 @@ type ServiceItem = {
 
 type CatalogItemType = 'SERVICO' | 'PRODUTO';
 type PriceTable = 1 | 2;
+type CatalogPickerTarget = 'quote' | 'appointment' | 'sale';
 
 type SavedQuote = {
   customer: string;
@@ -594,6 +595,84 @@ function ProductModal({
         <div className="modal-footer">
           <button className="btn-cancel" onClick={onClose}>CANCELAR</button>
           <button className="btn-save" onClick={onSave}>{mode === 'add' ? 'ADICIONAR' : 'SALVAR'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CatalogPickerModal({
+  isOpen,
+  rows,
+  selectedIndex,
+  quantity,
+  priceTable,
+  onSelectedIndex,
+  onQuantity,
+  onClose,
+  onConfirm,
+  formatMoney,
+}: {
+  isOpen: boolean;
+  rows: CatalogRow[];
+  selectedIndex: number;
+  quantity: number;
+  priceTable: PriceTable;
+  onSelectedIndex: (index: number) => void;
+  onQuantity: (quantity: number) => void;
+  onClose: () => void;
+  onConfirm: () => void;
+  formatMoney: (value: number) => string;
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <h3 className="modal-title">ADICIONAR SERVICO / PRODUTO</h3>
+        <div className="modal-body">
+          <div className="form-field">
+            <label>ITEM</label>
+            <select
+              className="modal-input"
+              value={selectedIndex}
+              onChange={(e) => onSelectedIndex(Math.max(0, Number(e.target.value) || 0))}
+            >
+              {rows.map((item, index) => (
+                <option key={`${item.id ?? 'local'}-${item.description}-${index}`} value={index}>
+                  [{item.itemType}] {item.description} | T1 {formatMoney(item.priceTable1)} | T2 {formatMoney(item.priceTable2)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-field">
+            <label>QUANTIDADE</label>
+            <input
+              type="number"
+              min={1}
+              className="modal-input"
+              value={quantity}
+              onChange={(e) => onQuantity(Math.max(1, Number(e.target.value) || 1))}
+            />
+          </div>
+
+          {rows[selectedIndex] && (
+            <div className="form-field">
+              <label>PRECO APLICADO</label>
+              <input
+                type="text"
+                className="modal-input"
+                readOnly
+                value={`${priceTable === 2 ? 'TABELA 2' : 'TABELA 1'} - ${formatMoney(getCatalogPrice(rows[selectedIndex], priceTable))}`}
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="modal-footer">
+          <button className="btn-cancel" onClick={onClose}>CANCELAR</button>
+          <button className="btn-save" onClick={onConfirm}>ADICIONAR</button>
         </div>
       </div>
     </div>
@@ -1309,7 +1388,12 @@ function App() {
     priceTable1: 0,
     priceTable2: 0,
   });
+    const [isLocalMode, setIsLocalMode] = useState(false);
   const [productEditingIndex, setProductEditingIndex] = useState<number | null>(null);
+  const [catalogPickerOpen, setCatalogPickerOpen] = useState(false);
+  const [catalogPickerTarget, setCatalogPickerTarget] = useState<CatalogPickerTarget>('sale');
+  const [catalogPickerIndex, setCatalogPickerIndex] = useState(0);
+  const [catalogPickerQuantity, setCatalogPickerQuantity] = useState(1);
   const [calendarEditData, setCalendarEditData] = useState<CalendarAppointment | null>(null);
   const [appointmentQuoteSearch, setAppointmentQuoteSearch] = useState('');
   const [appointmentQuoteResults, setAppointmentQuoteResults] = useState<ImportDocumentRow[]>([]);
@@ -1437,7 +1521,7 @@ function App() {
   }, [screen]);
 
   useEffect(() => {
-    if (!isSupabaseConfigured || !supabase) return;
+    if (!isAuthenticated || isLocalMode || !isSupabaseConfigured || !supabase) return;
 
     const sb = supabase;
     let active = true;
@@ -1559,7 +1643,7 @@ function App() {
     return () => {
       active = false;
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isLocalMode]);
 
   const quoteSubtotal = useMemo(
     () => quoteData.items.reduce((acc, item) => acc + item.price * item.quantity, 0),
@@ -2183,51 +2267,59 @@ function App() {
     window.alert('Orcamento importado para o agendamento.');
   }
 
-  function pickServiceItem(priceTable: PriceTable) {
-    const menu = serviceCatalogData
-      .map((item, idx) => {
-        const selectedPrice = getCatalogPrice(item, priceTable);
-        return `${idx + 1}. [${item.itemType}] ${item.description} - T1 ${formatMoney(item.priceTable1)} | T2 ${formatMoney(item.priceTable2)} | SELECIONADO ${formatMoney(selectedPrice)}`;
-      })
-      .join('\n');
-    const pick = window.prompt(`Selecione o servico pelo numero:\n\n${menu}`);
-    if (!pick) return null;
-    const index = Number(pick) - 1;
-    if (!Number.isInteger(index) || !serviceCatalogData[index]) {
-      window.alert('Servico invalido.');
-      return null;
+  function openCatalogPicker(target: CatalogPickerTarget) {
+    if (serviceCatalogData.length === 0) {
+      window.alert('Cadastre ao menos um item antes de adicionar.');
+      return;
+    }
+    setCatalogPickerTarget(target);
+    setCatalogPickerIndex(0);
+    setCatalogPickerQuantity(1);
+    setCatalogPickerOpen(true);
+  }
+
+  function confirmCatalogPicker() {
+    const picked = serviceCatalogData[catalogPickerIndex];
+    if (!picked) {
+      window.alert('Item invalido.');
+      return;
     }
 
-    const qtyRaw = window.prompt('Quantidade', '1');
-    const qty = Number(qtyRaw);
-    if (!Number.isFinite(qty) || qty <= 0) {
-      window.alert('Quantidade invalida.');
-      return null;
+    const priceTable = getSelectedPriceTable(
+      catalogPickerTarget === 'quote'
+        ? quoteData.customerType
+        : catalogPickerTarget === 'appointment'
+          ? appointmentData.customerType
+          : saleData.customerType
+    );
+
+    const nextItem: ServiceItem = {
+      description: picked.description,
+      quantity: Math.max(1, Number(catalogPickerQuantity) || 1),
+      price: getCatalogPrice(picked, priceTable),
+    };
+
+    if (catalogPickerTarget === 'quote') {
+      setQuoteData((prev) => ({ ...prev, items: [...prev.items, nextItem] }));
+    } else if (catalogPickerTarget === 'appointment') {
+      setAppointmentData((prev) => ({ ...prev, items: [...prev.items, nextItem] }));
+    } else {
+      setSaleData((prev) => ({ ...prev, items: [...prev.items, nextItem] }));
     }
 
-    return {
-      description: serviceCatalogData[index].description,
-      quantity: qty,
-      price: getCatalogPrice(serviceCatalogData[index], priceTable),
-    } as ServiceItem;
+    setCatalogPickerOpen(false);
   }
 
   function addItemToQuote() {
-    const selected = pickServiceItem(getSelectedPriceTable(quoteData.customerType));
-    if (!selected) return;
-    setQuoteData((prev) => ({ ...prev, items: [...prev.items, selected] }));
+    openCatalogPicker('quote');
   }
 
   function addItemToAppointment() {
-    const selected = pickServiceItem(getSelectedPriceTable(appointmentData.customerType));
-    if (!selected) return;
-    setAppointmentData((prev) => ({ ...prev, items: [...prev.items, selected] }));
+    openCatalogPicker('appointment');
   }
 
   function addItemToSale() {
-    const selected = pickServiceItem(getSelectedPriceTable(saleData.customerType));
-    if (!selected) return;
-    setSaleData((prev) => ({ ...prev, items: [...prev.items, selected] }));
+    openCatalogPicker('sale');
   }
 
   function updateItems(
@@ -2347,6 +2439,8 @@ function App() {
   }
 
   async function addClient() {
+    const nextLocalClientId = Math.max(nextClientId, ...clients.map((client) => client.id)) + 1;
+
     if (isSupabaseConfigured && supabase) {
       const sb = supabase;
       const payload = {
@@ -2358,28 +2452,30 @@ function App() {
 
       const { data, error } = await sb.from('clients_v2').insert(payload).select('id, name, phone, plate, price_table').single();
       if (!error && data) {
+        const candidateId = Number(data.id);
+        const safeId = clients.some((client) => client.id === candidateId) ? nextLocalClientId : candidateId;
         const dbClient: ClientRow = {
-          id: Number(data.id),
+          id: safeId,
           name: data.name || payload.name,
           phone: data.phone || payload.phone,
           plate: data.plate || payload.plate,
           priceTable: Number(data.price_table) === 2 ? 2 : 1,
         };
         setClients((prev) => [dbClient, ...prev]);
-        setNextClientId((prev) => Math.max(prev, dbClient.id + 1));
+        setNextClientId((prev) => Math.max(prev, nextLocalClientId + 1, dbClient.id + 1));
         return;
       }
     }
 
     const newClient: ClientRow = {
-      id: nextClientId,
+      id: nextLocalClientId,
       name: 'NOVO CLIENTE',
       phone: '67 90000-0000',
       plate: 'AAA-0000',
       priceTable: 1,
     };
     setClients((prev) => [newClient, ...prev]);
-    setNextClientId((prev) => prev + 1);
+    setNextClientId((prev) => Math.max(prev + 1, nextLocalClientId + 1));
   }
 
   async function removeClient(id: number) {
@@ -3137,6 +3233,7 @@ function App() {
     }
 
     if (!isSupabaseConfigured || !supabase) {
+      setIsLocalMode(true);
       setIsAuthenticated(true);
       setAuthMessage('Supabase nao configurado. Entrando em modo local.');
       setScreen('dashboard');
@@ -3157,6 +3254,7 @@ function App() {
     }
 
     setIsAuthenticated(true);
+    setIsLocalMode(false);
     setScreen('dashboard');
   }
 
@@ -3274,8 +3372,16 @@ function App() {
       const sb = supabase;
       await sb.auth.signOut();
     }
+    setIsLocalMode(false);
     setIsAuthenticated(false);
     setScreen('auth-login');
+  }
+
+  function enterLocalMode() {
+    setIsLocalMode(true);
+    setIsAuthenticated(true);
+    setAuthMessage('Modo local ativo. Dados podem ser salvos apenas localmente quando o Supabase falhar.');
+    setScreen('dashboard');
   }
 
   function exportReceiptCSV() {
@@ -3358,6 +3464,7 @@ function App() {
           <div className="auth-links">
             <button onClick={() => setScreen('auth-register')}>Criar conta</button>
             <button onClick={() => setScreen('auth-forgot')}>Esqueci a senha</button>
+            <button onClick={enterLocalMode}>Entrar em modo local</button>
           </div>
           {authMessage && <p className="auth-message">{authMessage}</p>}
         </section>
@@ -3551,8 +3658,8 @@ function App() {
               <div className="mini-actions receipt-actions">
                 <button className="btn-cyan lg" onClick={addClient}>NOVO CLIENTE</button>
               </div>
-              {clients.map((client) => (
-                <div className="menu-row editable" key={client.id}>
+              {clients.map((client, index) => (
+                <div className="menu-row editable" key={`${client.id}-${index}`}>
                   <input className="input-look" value={client.name} onChange={(event) => updateClient(client.id, { name: event.target.value })} />
                   <input className="input-look" value={client.phone} onChange={(event) => updateClient(client.id, { phone: event.target.value })} />
                   <input className="input-look plate" value={client.plate} onChange={(event) => updateClient(client.id, { plate: event.target.value.toUpperCase() })} />
@@ -4371,6 +4478,25 @@ function App() {
         onDataChange={(patch) => setProductModalData((prev) => ({ ...prev, ...patch }))}
       />
 
+      <CatalogPickerModal
+        isOpen={catalogPickerOpen}
+        rows={serviceCatalogData}
+        selectedIndex={catalogPickerIndex}
+        quantity={catalogPickerQuantity}
+        priceTable={getSelectedPriceTable(
+          catalogPickerTarget === 'quote'
+            ? quoteData.customerType
+            : catalogPickerTarget === 'appointment'
+              ? appointmentData.customerType
+              : saleData.customerType
+        )}
+        onSelectedIndex={setCatalogPickerIndex}
+        onQuantity={setCatalogPickerQuantity}
+        onClose={() => setCatalogPickerOpen(false)}
+        onConfirm={confirmCatalogPicker}
+        formatMoney={formatMoney}
+      />
+
       <AppointmentEditModal
         isOpen={calendarEditData !== null}
         data={calendarEditData}
@@ -4380,8 +4506,8 @@ function App() {
       />
 
       <datalist id="client-suggestions">
-        {clients.map((client) => (
-          <option key={client.id} value={client.name}>{`${client.phone} | ${client.plate}`}</option>
+        {clients.map((client, index) => (
+          <option key={`${client.id}-${index}-suggestion`} value={client.name}>{`${client.phone} | ${client.plate}`}</option>
         ))}
       </datalist>
 
