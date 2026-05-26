@@ -299,7 +299,18 @@ const defaultFinancialEntries: FinancialEntry[] = [
 ];
 
 function formatMoney(value: number) {
+  if (!Number.isFinite(value) || value === 0) return 'N/A';
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function formatNumberValue(value: number) {
+  if (!Number.isFinite(value) || value === 0) return 'N/A';
+  return String(value);
+}
+
+function formatDaysValue(value: number) {
+  if (!Number.isFinite(value) || value === 0) return 'N/A';
+  return `${value} dia(s)`;
 }
 
 function getCustomerPriceTable(customerType: string): PriceTable {
@@ -1067,7 +1078,7 @@ function SaleScreen({
           <div className="sale-recent-section">
             <div className="sale-recent-header">
               <span className="sale-section-title" style={{ marginBottom: 0 }}>Lancamentos Recentes</span>
-              <span style={{ fontSize: '9px', color: '#44445a', letterSpacing: '0.1em' }}>{receipts.length} registros</span>
+              <span style={{ fontSize: '9px', color: '#44445a', letterSpacing: '0.1em' }}>{formatNumberValue(receipts.length)} registros</span>
             </div>
 
             <div className="sale-recent-list">
@@ -3710,7 +3721,7 @@ function App() {
                       <span className="product-name">{item.itemType}</span>
                       <span className="product-name">{item.description}</span>
                       <span className={`product-qty ${isOutOfStock ? 'out-of-stock' : ''}`}>
-                        QTD: {item.quantity}
+                        QTD: {formatNumberValue(item.quantity)}
                         {isOutOfStock && <strong className="stock-alert">SEM ESTOQUE</strong>}
                       </span>
                       <span className="product-price">T1 {formatMoney(item.priceTable1)}</span>
@@ -3859,9 +3870,9 @@ function App() {
           <h2 className="panel-title">RELATORIOS</h2>
           <section className="form-grid menu-single">
             <div className="form-main">
-              <div className="line"><strong>CLIENTES CADASTRADOS:</strong> <span>{clients.length}</span></div>
-              <div className="line"><strong>ITENS CADASTRADOS:</strong> <span>{serviceCatalogData.length}</span></div>
-              <div className="line"><strong>RECIBOS GERADOS:</strong> <span>{receipts.length}</span></div>
+              <div className="line"><strong>CLIENTES CADASTRADOS:</strong> <span>{formatNumberValue(clients.length)}</span></div>
+              <div className="line"><strong>ITENS CADASTRADOS:</strong> <span>{formatNumberValue(serviceCatalogData.length)}</span></div>
+              <div className="line"><strong>RECIBOS GERADOS:</strong> <span>{formatNumberValue(receipts.length)}</span></div>
               <div className="line"><strong>FATURAMENTO:</strong> <span>{formatMoney(financialTotal)}</span></div>
               <div className="mini-actions">
                 <button className="btn-yellow lg" onClick={() => window.print()}>IMPRIMIR RELATORIO</button>
@@ -3920,7 +3931,7 @@ function App() {
             <aside className="calendar-side">
               <div className="calendar-side-header">
                 <strong>{new Date(`${calendarSelectedDate}T12:00:00`).toLocaleDateString('pt-BR')}</strong>
-                <span>{calendarSelectedAppointments.length} agendamento(s)</span>
+                <span>{formatNumberValue(calendarSelectedAppointments.length)} agendamento(s)</span>
               </div>
 
               <div className="calendar-side-list">
@@ -4095,7 +4106,7 @@ function App() {
                       {selectedSalePrintable.items.map((item, index) => (
                         <tr key={`${item.description}-${index}`}>
                           <td>{item.description}</td>
-                          <td>{item.quantity}</td>
+                          <td>{formatNumberValue(item.quantity)}</td>
                           <td>{formatMoney(item.price)}</td>
                           <td>{formatMoney(item.price * item.quantity)}</td>
                         </tr>
@@ -4368,7 +4379,7 @@ function App() {
                     <div>
                       <h4>Dados do Veiculo e Servico</h4>
                       <p><strong>Veiculo:</strong> {selectedPrintableDocument.vehicle || 'NAO INFORMADO'}</p>
-                      <p><strong>Tempo estimado:</strong> {selectedPrintableDocument.serviceTimeDays} dia(s)</p>
+                      <p><strong>Tempo estimado:</strong> {formatDaysValue(selectedPrintableDocument.serviceTimeDays)}</p>
                       {selectedPrintableDocument.laborRequired !== null && (
                         <p><strong>Mao de obra:</strong> {selectedPrintableDocument.laborRequired ? 'SIM' : 'NAO'}</p>
                       )}
@@ -4388,7 +4399,7 @@ function App() {
                       {selectedPrintableDocument.items.map((item, index) => (
                         <tr key={`${item.description}-${index}`}>
                           <td>{item.description}</td>
-                          <td>{item.quantity}</td>
+                          <td>{formatNumberValue(item.quantity)}</td>
                           <td>{formatMoney(item.price)}</td>
                           <td>{formatMoney(item.price * item.quantity)}</td>
                         </tr>
@@ -4410,8 +4421,8 @@ function App() {
                   <section className="print-doc-commercial">
                     <h4>Informacoes Comerciais</h4>
                     <p><strong>Forma de pagamento:</strong> {printSettings.paymentMethod}</p>
-                    <p><strong>Garantia:</strong> {printSettings.warrantyDays} dia(s)</p>
-                    <p><strong>Validade do orcamento:</strong> {printSettings.validityDays} dia(s)</p>
+                    <p><strong>Garantia:</strong> {formatDaysValue(printSettings.warrantyDays)}</p>
+                    <p><strong>Validade do orcamento:</strong> {formatDaysValue(printSettings.validityDays)}</p>
                     <p><strong>Responsavel:</strong> {printSettings.responsibleName}</p>
                   </section>
 
