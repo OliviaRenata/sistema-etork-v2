@@ -29,8 +29,12 @@ type ServiceItem = {
   price: number;
 };
 
+type CatalogItemType = 'SERVICO' | 'PRODUTO';
+type PriceTable = 1 | 2;
+
 type SavedQuote = {
   customer: string;
+  customerType: string;
   phone: string;
   plate: string;
   vehicle: string;
@@ -52,6 +56,7 @@ type ImportDocumentRow = {
 type SavedAppointment = {
   date: string;
   customer: string;
+  customerType: string;
   phone: string;
   plate: string;
   vehicleDetails: string;
@@ -86,6 +91,7 @@ type ClientRow = {
   name: string;
   phone: string;
   plate: string;
+  priceTable: PriceTable;
 };
 
 type FinancialEntry = {
@@ -107,8 +113,10 @@ const SALES_HISTORY_PAGE_SIZE = 20;
 
 type CatalogRow = {
   id: number | null;
+  itemType: CatalogItemType;
   description: string;
-  price: number;
+  priceTable1: number;
+  priceTable2: number;
   quantity: number;
 };
 
@@ -158,6 +166,7 @@ type SaleData = {
 
 type QuoteData = {
   customer: string;
+  customerType: string;
   phone: string;
   plate: string;
   vehicle: string;
@@ -267,19 +276,19 @@ const receiptRows: ReceiptRow[] = [
 ];
 
 const defaultServiceCatalog: CatalogRow[] = [
-  { id: null, description: 'REMAP STAGE 1', price: 1800, quantity: 1 },
-  { id: null, description: 'REMAP STG2 DPF/EGR', price: 2000, quantity: 1 },
-  { id: null, description: 'DIFUSOR INOX 2,5" POLEGADAS', price: 1400, quantity: 1 },
-  { id: null, description: 'DIFUSOR INOX 3" POLEGADAS', price: 1500, quantity: 1 },
-  { id: null, description: 'ESCAPE FINAL 4" POLEGADAS', price: 1800, quantity: 1 },
-  { id: null, description: 'ADD HARDCUT', price: 400, quantity: 1 },
-  { id: null, description: 'DOWNPIPE + INTERMEDIARIO AMAROK V6', price: 2200, quantity: 1 },
+  { id: null, itemType: 'SERVICO', description: 'REMAP STAGE 1', priceTable1: 1800, priceTable2: 1800, quantity: 1 },
+  { id: null, itemType: 'SERVICO', description: 'REMAP STG2 DPF/EGR', priceTable1: 2000, priceTable2: 2000, quantity: 1 },
+  { id: null, itemType: 'PRODUTO', description: 'DIFUSOR INOX 2,5" POLEGADAS', priceTable1: 1400, priceTable2: 1400, quantity: 1 },
+  { id: null, itemType: 'PRODUTO', description: 'DIFUSOR INOX 3" POLEGADAS', priceTable1: 1500, priceTable2: 1500, quantity: 1 },
+  { id: null, itemType: 'PRODUTO', description: 'ESCAPE FINAL 4" POLEGADAS', priceTable1: 1800, priceTable2: 1800, quantity: 1 },
+  { id: null, itemType: 'SERVICO', description: 'ADD HARDCUT', priceTable1: 400, priceTable2: 400, quantity: 1 },
+  { id: null, itemType: 'SERVICO', description: 'DOWNPIPE + INTERMEDIARIO AMAROK V6', priceTable1: 2200, priceTable2: 2200, quantity: 1 },
 ];
 
 const defaultClients: ClientRow[] = [
-  { id: 1, name: 'JOAO HENRIQUE DE ALMEIDA', phone: '67 99871-1313', plate: 'QAN-2H92' },
-  { id: 2, name: 'MILENNA DE OLIVEIRA FELICIANO', phone: '67 99260-0928', plate: 'QUA-9J17' },
-  { id: 3, name: 'CLEBER ANTUNES RICARDO FREITAS', phone: '67 99111-2233', plate: 'QAU-1V55' },
+  { id: 1, name: 'JOAO HENRIQUE DE ALMEIDA', phone: '67 99871-1313', plate: 'QAN-2H92', priceTable: 1 },
+  { id: 2, name: 'MILENNA DE OLIVEIRA FELICIANO', phone: '67 99260-0928', plate: 'QUA-9J17', priceTable: 1 },
+  { id: 3, name: 'CLEBER ANTUNES RICARDO FREITAS', phone: '67 99111-2233', plate: 'QAU-1V55', priceTable: 2 },
 ];
 
 const defaultFinancialEntries: FinancialEntry[] = [
@@ -290,6 +299,19 @@ const defaultFinancialEntries: FinancialEntry[] = [
 
 function formatMoney(value: number) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function getCustomerPriceTable(customerType: string): PriceTable {
+  const normalized = customerType.trim().toUpperCase();
+  return normalized.includes('2') || normalized.includes('FRANQUEADO') ? 2 : 1;
+}
+
+function getCustomerTypeLabel(priceTable: PriceTable) {
+  return priceTable === 2 ? 'TABELA 2 - FRANQUEADO' : 'TABELA 1 - CLIENTE FINAL';
+}
+
+function getCatalogPrice(item: CatalogRow, priceTable: PriceTable) {
+  return priceTable === 2 ? item.priceTable2 : item.priceTable1;
 }
 
 function parseBrDate(value: string) {
@@ -497,28 +519,40 @@ function ProductModal({
 }: {
   isOpen: boolean;
   mode: 'add' | 'edit';
-  data: { description: string; quantity: number; price: number };
+  data: { description: string; quantity: number; itemType: CatalogItemType; priceTable1: number; priceTable2: number };
   onSave: () => void;
   onClose: () => void;
-  onDataChange: (patch: Partial<{ description: string; quantity: number; price: number }>) => void;
+  onDataChange: (patch: Partial<{ description: string; quantity: number; itemType: CatalogItemType; priceTable1: number; priceTable2: number }>) => void;
 }) {
   if (!isOpen) return null;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <h3 className="modal-title">{mode === 'add' ? 'NOVO PRODUTO' : 'EDITAR PRODUTO'}</h3>
+        <h3 className="modal-title">{mode === 'add' ? 'NOVO CADASTRO' : 'EDITAR CADASTRO'}</h3>
         
         <div className="modal-body">
           <div className="form-field">
-            <label>NOME DO PRODUTO</label>
+            <label>NOME DO ITEM</label>
             <input
               type="text"
               className="modal-input"
               value={data.description}
               onChange={(e) => onDataChange({ description: e.target.value })}
-              placeholder="Digite o nome do produto"
+              placeholder="Digite o nome do item"
             />
+          </div>
+
+          <div className="form-field">
+            <label>TIPO</label>
+            <select
+              className="modal-input"
+              value={data.itemType}
+              onChange={(e) => onDataChange({ itemType: e.target.value === 'PRODUTO' ? 'PRODUTO' : 'SERVICO' })}
+            >
+              <option value="SERVICO">SERVICO</option>
+              <option value="PRODUTO">PRODUTO</option>
+            </select>
           </div>
 
           <div className="form-field">
@@ -533,14 +567,26 @@ function ProductModal({
           </div>
 
           <div className="form-field">
-            <label>VALOR UNITÁRIO</label>
+            <label>PREÇO TABELA 1</label>
             <input
               type="number"
               className="modal-input"
-              value={data.price}
+              value={data.priceTable1}
               min={0}
               step="0.01"
-              onChange={(e) => onDataChange({ price: Math.max(0, Number(e.target.value) || 0) })}
+              onChange={(e) => onDataChange({ priceTable1: Math.max(0, Number(e.target.value) || 0) })}
+            />
+          </div>
+
+          <div className="form-field">
+            <label>PREÇO TABELA 2</label>
+            <input
+              type="number"
+              className="modal-input"
+              value={data.priceTable2}
+              min={0}
+              step="0.01"
+              onChange={(e) => onDataChange({ priceTable2: Math.max(0, Number(e.target.value) || 0) })}
             />
           </div>
         </div>
@@ -729,7 +775,6 @@ function SaleScreen({
 
       <div className="sale-body">
         <div className="sale-center">
-          <div className="sale-import-bar">
             <div className="sale-import-row">
               <input
                 className="sale-import-input"
@@ -773,7 +818,6 @@ function SaleScreen({
               <button className="sale-import-btn amber" onClick={importAppointmentToSaleBySearch}>IMPORTAR</button>
               <button className="sale-import-btn amber" onClick={importAppointmentToSale}>ULTIMO</button>
             </div>
-          </div>
 
           <div className="sale-client-section">
             <div className="sale-field">
@@ -789,12 +833,14 @@ function SaleScreen({
             </div>
             <div className="sale-field">
               <span className="sale-field-label">Tipo</span>
-              <input
+              <select
                 className="sale-field-input"
                 value={saleData.customerType}
                 onChange={(e) => patchSale({ customerType: e.target.value })}
-                placeholder="CLIENTE FINAL"
-              />
+              >
+                <option value={getCustomerTypeLabel(1)}>{getCustomerTypeLabel(1)}</option>
+                <option value={getCustomerTypeLabel(2)}>{getCustomerTypeLabel(2)}</option>
+              </select>
             </div>
             <div className="sale-field">
               <span className="sale-field-label">Telefone</span>
@@ -1026,6 +1072,13 @@ function QuoteScreen({
               />
             </div>
             <div className="sale-field">
+              <span className="sale-field-label">Tipo</span>
+              <select className="sale-field-input" value={quoteData.customerType} onChange={(e) => patchQuote({ customerType: e.target.value })}>
+                <option value={getCustomerTypeLabel(1)}>{getCustomerTypeLabel(1)}</option>
+                <option value={getCustomerTypeLabel(2)}>{getCustomerTypeLabel(2)}</option>
+              </select>
+            </div>
+            <div className="sale-field">
               <span className="sale-field-label">Telefone</span>
               <input
                 className="sale-field-input"
@@ -1171,6 +1224,7 @@ function App() {
   const [isSaving, setIsSaving] = useState(false);
   const [quoteData, setQuoteData] = useState<QuoteData>({
     customer: 'JOAO HENRIQUE DE ALMEIDA',
+    customerType: getCustomerTypeLabel(1),
     phone: '67 99871-1313',
     plate: 'QAN-2H92',
     vehicle: 'RAM 1500 CLASSIC 2023',
@@ -1182,6 +1236,7 @@ function App() {
   const [appointmentData, setAppointmentData] = useState({
     date: toDateTimeLocalValue(new Date()),
     customer: 'MILENNA DE OLIVEIRA FELICIANO',
+    customerType: getCustomerTypeLabel(1),
     phone: '67 99260-0928',
     plate: 'QUA-9J17',
     vehicleDetails: 'HYUNDAI H20 1.0\nMANUAL\n2019/2019\nFLEX',
@@ -1192,7 +1247,7 @@ function App() {
   });
   const [saleData, setSaleData] = useState<SaleData>({
     customer: 'JOAO HENRIQUE DE ALMEIDA',
-    customerType: 'CLIENTE FINAL',
+    customerType: getCustomerTypeLabel(1),
     phone: '67 99871-1313',
     plate: 'QAN-2H92',
     vehicleDetails: 'VW AMAROK 3.0 V6\nAUTO\n2020/2021\nDIESEL',
@@ -1247,7 +1302,13 @@ function App() {
   // Product Modal State
   const [productModalOpen, setProductModalOpen] = useState(false);
   const [productModalMode, setProductModalMode] = useState<'add' | 'edit'>('add');
-  const [productModalData, setProductModalData] = useState({ description: '', quantity: 1, price: 0 });
+  const [productModalData, setProductModalData] = useState({
+    description: '',
+    quantity: 1,
+    itemType: 'SERVICO' as CatalogItemType,
+    priceTable1: 0,
+    priceTable2: 0,
+  });
   const [productEditingIndex, setProductEditingIndex] = useState<number | null>(null);
   const [calendarEditData, setCalendarEditData] = useState<CalendarAppointment | null>(null);
   const [appointmentQuoteSearch, setAppointmentQuoteSearch] = useState('');
@@ -1385,7 +1446,7 @@ function App() {
       const [catalogResult, receiptResult, clientsResult, financialResult, appointmentResult] = await Promise.all([
         sb
           .from('service_catalog_v2')
-          .select('id, name, default_price, quantity, is_active')
+          .select('*')
           .eq('is_active', true)
           .order('name', { ascending: true }),
         sb
@@ -1413,9 +1474,11 @@ function App() {
       if (!catalogResult.error && catalogResult.data && catalogResult.data.length > 0) {
         setServiceCatalogData(
           catalogResult.data.map((item) => ({
-            id: item.id,
-            description: item.name,
-            price: Number(item.default_price) || 0,
+            id: Number(item.id),
+            itemType: item.item_type === 'PRODUTO' ? 'PRODUTO' : 'SERVICO',
+            description: item.name || '',
+            priceTable1: Number(item.price_table_1 ?? item.default_price) || 0,
+            priceTable2: Number(item.price_table_2 ?? item.default_price) || 0,
             quantity: Number(item.quantity) || 1,
           }))
         );
@@ -1440,6 +1503,7 @@ function App() {
           name: item.name || '',
           phone: item.phone || '',
           plate: item.plate || '',
+          priceTable: Number(item.price_table) === 2 ? 2 : 1,
         }));
         setClients(mappedClients);
         setNextClientId(Math.max(...mappedClients.map((client) => client.id)) + 1);
@@ -1756,7 +1820,7 @@ function App() {
         number: quoteNumber,
         issuedAt: nowStamp,
         customer: quoteSource.customer,
-        customerType: 'CLIENTE FINAL',
+        customerType: quoteSource.customerType,
         phone: quoteSource.phone,
         plate: quoteSource.plate,
         vehicle: quoteSource.vehicle,
@@ -1969,14 +2033,20 @@ function App() {
     );
   }
 
+  function getSelectedPriceTable(customerType: string) {
+    return getCustomerPriceTable(customerType);
+  }
+
   function applyMatchedClient(target: 'quote' | 'appointment' | 'sale', customerValue: string) {
     const client = findClientMatch(customerValue);
     if (!client) return;
+    const customerType = getCustomerTypeLabel(client.priceTable);
 
     if (target === 'quote') {
       setQuoteData((prev) => ({
         ...prev,
         customer: client.name,
+        customerType,
         phone: client.phone,
         plate: client.plate,
       }));
@@ -1987,6 +2057,7 @@ function App() {
       setAppointmentData((prev) => ({
         ...prev,
         customer: client.name,
+        customerType,
         phone: client.phone,
         plate: client.plate,
       }));
@@ -1996,6 +2067,7 @@ function App() {
     setSaleData((prev) => ({
       ...prev,
       customer: client.name,
+      customerType,
       phone: client.phone,
       plate: client.plate,
     }));
@@ -2111,8 +2183,13 @@ function App() {
     window.alert('Orcamento importado para o agendamento.');
   }
 
-  function pickServiceItem() {
-    const menu = serviceCatalogData.map((item, idx) => `${idx + 1}. ${item.description} - ${formatMoney(item.price)}`).join('\n');
+  function pickServiceItem(priceTable: PriceTable) {
+    const menu = serviceCatalogData
+      .map((item, idx) => {
+        const selectedPrice = getCatalogPrice(item, priceTable);
+        return `${idx + 1}. [${item.itemType}] ${item.description} - T1 ${formatMoney(item.priceTable1)} | T2 ${formatMoney(item.priceTable2)} | SELECIONADO ${formatMoney(selectedPrice)}`;
+      })
+      .join('\n');
     const pick = window.prompt(`Selecione o servico pelo numero:\n\n${menu}`);
     if (!pick) return null;
     const index = Number(pick) - 1;
@@ -2131,24 +2208,24 @@ function App() {
     return {
       description: serviceCatalogData[index].description,
       quantity: qty,
-      price: serviceCatalogData[index].price,
+      price: getCatalogPrice(serviceCatalogData[index], priceTable),
     } as ServiceItem;
   }
 
   function addItemToQuote() {
-    const selected = pickServiceItem();
+    const selected = pickServiceItem(getSelectedPriceTable(quoteData.customerType));
     if (!selected) return;
     setQuoteData((prev) => ({ ...prev, items: [...prev.items, selected] }));
   }
 
   function addItemToAppointment() {
-    const selected = pickServiceItem();
+    const selected = pickServiceItem(getSelectedPriceTable(appointmentData.customerType));
     if (!selected) return;
     setAppointmentData((prev) => ({ ...prev, items: [...prev.items, selected] }));
   }
 
   function addItemToSale() {
-    const selected = pickServiceItem();
+    const selected = pickServiceItem(getSelectedPriceTable(saleData.customerType));
     if (!selected) return;
     setSaleData((prev) => ({ ...prev, items: [...prev.items, selected] }));
   }
@@ -2194,11 +2271,11 @@ function App() {
     setSaleData((prev) => ({ ...prev, items: prev.items.filter((_, idx) => idx !== index) }));
   }
 
-  function handleMenuAction(name: 'Pesquisar' | 'Clientes' | 'Financeiro' | 'Produtos' | 'Relatorios' | 'Agenda' | 'Vendas') {
+  function handleMenuAction(name: 'Pesquisar' | 'Clientes' | 'Financeiro' | 'Cadastro' | 'Relatorios' | 'Agenda' | 'Vendas') {
     if (name === 'Pesquisar') setScreen('menu-search');
     if (name === 'Clientes') setScreen('menu-clients');
     if (name === 'Financeiro') setScreen('menu-financial');
-    if (name === 'Produtos') setScreen('menu-products');
+    if (name === 'Cadastro') setScreen('menu-products');
     if (name === 'Relatorios') setScreen('menu-reports');
     if (name === 'Vendas') setScreen('sales-history');
     if (name === 'Agenda') {
@@ -2264,6 +2341,7 @@ function App() {
         name: patch.name,
         phone: patch.phone,
         plate: patch.plate,
+        price_table: patch.priceTable,
       })
       .eq('id', id);
   }
@@ -2275,15 +2353,17 @@ function App() {
         name: 'NOVO CLIENTE',
         phone: '67 90000-0000',
         plate: 'AAA-0000',
+        price_table: 1,
       };
 
-      const { data, error } = await sb.from('clients_v2').insert(payload).select('id, name, phone, plate').single();
+      const { data, error } = await sb.from('clients_v2').insert(payload).select('id, name, phone, plate, price_table').single();
       if (!error && data) {
         const dbClient: ClientRow = {
           id: Number(data.id),
           name: data.name || payload.name,
           phone: data.phone || payload.phone,
           plate: data.plate || payload.plate,
+          priceTable: Number(data.price_table) === 2 ? 2 : 1,
         };
         setClients((prev) => [dbClient, ...prev]);
         setNextClientId((prev) => Math.max(prev, dbClient.id + 1));
@@ -2296,6 +2376,7 @@ function App() {
       name: 'NOVO CLIENTE',
       phone: '67 90000-0000',
       plate: 'AAA-0000',
+      priceTable: 1,
     };
     setClients((prev) => [newClient, ...prev]);
     setNextClientId((prev) => prev + 1);
@@ -2320,15 +2401,18 @@ function App() {
       .from('service_catalog_v2')
       .update({
         name: patch.description,
-        default_price: patch.price,
+        default_price: patch.priceTable1,
+        price_table_1: patch.priceTable1,
+        price_table_2: patch.priceTable2,
         quantity: patch.quantity,
+        item_type: patch.itemType,
       })
       .eq('id', id);
   }
 
   async function addProduct() {
     setProductModalMode('add');
-    setProductModalData({ description: '', quantity: 1, price: 0 });
+    setProductModalData({ description: '', quantity: 1, itemType: 'SERVICO', priceTable1: 0, priceTable2: 0 });
     setProductEditingIndex(null);
     setProductModalOpen(true);
   }
@@ -2344,23 +2428,28 @@ function App() {
         const sb = supabase;
         const payload = {
           name: productModalData.description,
-          default_price: productModalData.price,
+          default_price: productModalData.priceTable1,
+          price_table_1: productModalData.priceTable1,
+          price_table_2: productModalData.priceTable2,
           quantity: productModalData.quantity,
+          item_type: productModalData.itemType,
           is_active: true,
         };
 
         const { data, error } = await sb
           .from('service_catalog_v2')
           .insert(payload)
-          .select('id, name, default_price, quantity')
+          .select('id, name, default_price, price_table_1, price_table_2, quantity, item_type')
           .single();
 
         if (!error && data) {
           setServiceCatalogData((prev) => [
             {
               id: Number(data.id),
+              itemType: data.item_type === 'PRODUTO' ? 'PRODUTO' : 'SERVICO',
               description: data.name,
-              price: Number(data.default_price) || 0,
+              priceTable1: Number(data.price_table_1 ?? data.default_price) || 0,
+              priceTable2: Number(data.price_table_2 ?? data.default_price) || 0,
               quantity: Number(data.quantity) || productModalData.quantity,
             },
             ...prev,
@@ -2373,8 +2462,10 @@ function App() {
       setServiceCatalogData((prev) => [
         {
           id: null,
+          itemType: productModalData.itemType,
           description: productModalData.description,
-          price: productModalData.price,
+          priceTable1: productModalData.priceTable1,
+          priceTable2: productModalData.priceTable2,
           quantity: productModalData.quantity,
         },
         ...prev,
@@ -2384,7 +2475,9 @@ function App() {
       const product = serviceCatalogData[productEditingIndex];
       await updateProduct(product.id, productEditingIndex, {
         description: productModalData.description,
-        price: productModalData.price,
+        itemType: productModalData.itemType,
+        priceTable1: productModalData.priceTable1,
+        priceTable2: productModalData.priceTable2,
         quantity: productModalData.quantity,
       });
     }
@@ -2398,7 +2491,9 @@ function App() {
     setProductModalData({
       description: product.description,
       quantity: product.quantity,
-      price: product.price,
+      itemType: product.itemType,
+      priceTable1: product.priceTable1,
+      priceTable2: product.priceTable2,
     });
     setProductEditingIndex(index);
     setProductModalOpen(true);
@@ -2619,6 +2714,7 @@ function App() {
   async function finalizeQuote() {
     const payload: SavedQuote = {
       customer: quoteData.customer,
+      customerType: quoteData.customerType,
       phone: quoteData.phone,
       plate: quoteData.plate,
       vehicle: quoteData.vehicle,
@@ -2666,6 +2762,7 @@ function App() {
     const payload: SavedAppointment = {
       date: displayDate,
       customer: appointmentData.customer,
+      customerType: appointmentData.customerType,
       phone: appointmentData.phone,
       plate: appointmentData.plate,
       vehicleDetails: appointmentData.vehicleDetails,
@@ -2718,6 +2815,7 @@ function App() {
     const source = dbQuote
       ? {
           customer: dbQuote.customer,
+          customerType: savedQuote?.customerType || quoteData.customerType,
           phone: dbQuote.phone,
           plate: dbQuote.plate,
           vehicle: dbQuote.vehicleSnapshot,
@@ -2728,6 +2826,7 @@ function App() {
         }
       : savedQuote || {
       customer: quoteData.customer,
+      customerType: quoteData.customerType,
       phone: quoteData.phone,
       plate: quoteData.plate,
       vehicle: quoteData.vehicle,
@@ -2740,6 +2839,7 @@ function App() {
     setSaleData((prev) => ({
       ...prev,
       customer: source.customer,
+      customerType: source.customerType,
       phone: source.phone,
       plate: source.plate,
       items: cloneItems(source.items),
@@ -2765,6 +2865,7 @@ function App() {
     setSaleData((prev) => ({
       ...prev,
       customer: selected.customer,
+      customerType: quoteData.customerType,
       phone: selected.phone,
       plate: selected.plate,
       vehicleDetails: selected.vehicleSnapshot,
@@ -2790,6 +2891,7 @@ function App() {
     setSaleData((prev) => ({
       ...prev,
       customer: selected.customer,
+      customerType: appointmentData.customerType,
       phone: selected.phone,
       plate: selected.plate,
       vehicleDetails: selected.vehicleSnapshot,
@@ -2808,6 +2910,7 @@ function App() {
       ? {
           date: dbAppointment.scheduledFor ? new Date(dbAppointment.scheduledFor).toLocaleString('pt-BR', { hour: '2-digit', minute: '2-digit' }).replace(',', '') : appointmentData.date,
           customer: dbAppointment.customer,
+          customerType: savedAppointment?.customerType || appointmentData.customerType,
           phone: dbAppointment.phone,
           plate: dbAppointment.plate,
           vehicleDetails: dbAppointment.vehicleSnapshot,
@@ -2818,6 +2921,7 @@ function App() {
       : savedAppointment || {
       date: appointmentData.date,
       customer: appointmentData.customer,
+      customerType: appointmentData.customerType,
       phone: appointmentData.phone,
       plate: appointmentData.plate,
       vehicleDetails: appointmentData.vehicleDetails,
@@ -2829,6 +2933,7 @@ function App() {
     setSaleData((prev) => ({
       ...prev,
       customer: source.customer,
+      customerType: source.customerType,
       phone: source.phone,
       plate: source.plate,
       vehicleDetails: source.vehicleDetails,
@@ -2966,7 +3071,7 @@ function App() {
       number: `VEN-${saleRow.id.slice(0, 8).toUpperCase()}`,
       issuedAt: saleRow.createdAt,
       customer: saleRow.customer,
-      customerType: 'CLIENTE FINAL',
+      customerType: getCustomerTypeLabel(1),
       phone: saleRow.phone,
       plate: saleRow.plate,
       vehicle: saleRow.vehicle,
@@ -3407,11 +3512,13 @@ function App() {
               </div>
 
               <div className="menu-block">
-                <div className="line"><strong>PRODUTOS</strong></div>
+                <div className="line"><strong>CADASTRO</strong></div>
                 {filteredProducts.map((item, index) => (
                   <div className="menu-row" key={`${item.description}-${index}`}>
+                    <span>{item.itemType}</span>
                     <span>{item.description}</span>
-                    <span>{formatMoney(item.price)}</span>
+                    <span>{formatMoney(item.priceTable1)}</span>
+                    <span>{formatMoney(item.priceTable2)}</span>
                   </div>
                 ))}
               </div>
@@ -3449,6 +3556,10 @@ function App() {
                   <input className="input-look" value={client.name} onChange={(event) => updateClient(client.id, { name: event.target.value })} />
                   <input className="input-look" value={client.phone} onChange={(event) => updateClient(client.id, { phone: event.target.value })} />
                   <input className="input-look plate" value={client.plate} onChange={(event) => updateClient(client.id, { plate: event.target.value.toUpperCase() })} />
+                  <select className="input-look" value={client.priceTable} onChange={(event) => updateClient(client.id, { priceTable: Number(event.target.value) as PriceTable })}>
+                    <option value={1}>TABELA 1 - CLIENTE FINAL</option>
+                    <option value={2}>TABELA 2 - FRANQUEADO</option>
+                  </select>
                   <button className="item-delete" onClick={() => removeClient(client.id)}>X</button>
                 </div>
               ))}
@@ -3464,7 +3575,7 @@ function App() {
 
       {screen === 'menu-products' && (
         <main className="panel panel-form">
-          <h2 className="panel-title">PRODUTOS</h2>
+          <h2 className="panel-title">CADASTRO</h2>
           <section className="form-grid menu-single">
             <div className="form-main">
               <div className="line search-bar">
@@ -3473,28 +3584,30 @@ function App() {
                   className="input-look" 
                   value={productSearchQuery} 
                   onChange={(event) => setProductSearchQuery(event.target.value)} 
-                  placeholder="nome do produto..."
+                  placeholder="nome do item..."
                 />
               </div>
               <div className="mini-actions receipt-actions">
-                <button className="btn-cyan lg" onClick={addProduct}>NOVO PRODUTO</button>
+                <button className="btn-cyan lg" onClick={addProduct}>NOVO CADASTRO</button>
               </div>
               {filteredProducts.length === 0 ? (
-                <div className="no-results">Nenhum produto encontrado</div>
+                <div className="no-results">Nenhum item encontrado</div>
               ) : (
                 filteredProducts.map((item, index) => {
                   const actualIndex = serviceCatalogData.findIndex(
-                    (p) => p.description === item.description && p.price === item.price
+                    (p) => p.id === item.id || (p.description === item.description && p.itemType === item.itemType)
                   );
                   const isOutOfStock = item.quantity <= 0;
                   return (
                     <div className={`menu-row editable ${isOutOfStock ? 'out-of-stock' : ''}`} key={`${item.description}-${index}`}>
+                      <span className="product-name">{item.itemType}</span>
                       <span className="product-name">{item.description}</span>
                       <span className={`product-qty ${isOutOfStock ? 'out-of-stock' : ''}`}>
                         QTD: {item.quantity}
                         {isOutOfStock && <strong className="stock-alert">SEM ESTOQUE</strong>}
                       </span>
-                      <span className="product-price">{formatMoney(item.price)}</span>
+                      <span className="product-price">T1 {formatMoney(item.priceTable1)}</span>
+                      <span className="product-price">T2 {formatMoney(item.priceTable2)}</span>
                       <div className="item-actions">
                         <button className="item-edit" onClick={() => openEditProductModal(actualIndex)}>✎</button>
                         <button className="item-delete" onClick={() => void removeProduct(item.id, actualIndex)}>✕</button>
@@ -3640,7 +3753,7 @@ function App() {
           <section className="form-grid menu-single">
             <div className="form-main">
               <div className="line"><strong>CLIENTES CADASTRADOS:</strong> <span>{clients.length}</span></div>
-              <div className="line"><strong>PRODUTOS CADASTRADOS:</strong> <span>{serviceCatalogData.length}</span></div>
+              <div className="line"><strong>ITENS CADASTRADOS:</strong> <span>{serviceCatalogData.length}</span></div>
               <div className="line"><strong>RECIBOS GERADOS:</strong> <span>{receipts.length}</span></div>
               <div className="line"><strong>FATURAMENTO:</strong> <span>{formatMoney(financialTotal)}</span></div>
               <div className="mini-actions">
@@ -3738,7 +3851,7 @@ function App() {
               <button onClick={() => handleMenuAction('Pesquisar')}>PESQUISAR</button>
               <button onClick={() => handleMenuAction('Clientes')}>CLIENTES</button>
               <button onClick={() => handleMenuAction('Financeiro')}>FINANCEIRO</button>
-              <button onClick={() => handleMenuAction('Produtos')}>PRODUTOS</button>
+              <button onClick={() => handleMenuAction('Cadastro')}>CADASTRO</button>
               <button onClick={() => handleMenuAction('Agenda')}>AGENDA</button>
               <button onClick={() => handleMenuAction('Relatorios')}>RELATORIOS</button>
               <button onClick={() => handleMenuAction('Vendas')}>LISTAR VENDAS</button>
@@ -3932,7 +4045,7 @@ function App() {
           <section className="form-grid">
             <div className="form-main">
               <div className="line"><strong>DATA:</strong> <input type="datetime-local" className="input-look" value={appointmentData.date} onChange={(event) => setAppointmentData((prev) => ({ ...prev, date: event.target.value }))} title={toDisplayAppointmentDate(appointmentData.date)} /></div>
-              <div className="line"><strong>CLIENTE:</strong> <input list="client-suggestions" className="input-look" value={appointmentData.customer} onChange={(event) => setAppointmentData((prev) => ({ ...prev, customer: event.target.value }))} onBlur={(event) => applyMatchedClient('appointment', event.target.value)} /> <small className="badge">CLIENTE FINAL</small></div>
+              <div className="line"><strong>CLIENTE:</strong> <input list="client-suggestions" className="input-look" value={appointmentData.customer} onChange={(event) => setAppointmentData((prev) => ({ ...prev, customer: event.target.value }))} onBlur={(event) => applyMatchedClient('appointment', event.target.value)} /> <select className="input-look" value={appointmentData.customerType} onChange={(event) => setAppointmentData((prev) => ({ ...prev, customerType: event.target.value }))}><option value={getCustomerTypeLabel(1)}>{getCustomerTypeLabel(1)}</option><option value={getCustomerTypeLabel(2)}>{getCustomerTypeLabel(2)}</option></select></div>
               <div className="line line-mini"><strong>LISTAR</strong> <button onClick={addItemToAppointment}>+</button></div>
               <ServiceRows
                 items={appointmentData.items}

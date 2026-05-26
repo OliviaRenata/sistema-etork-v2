@@ -24,6 +24,7 @@ create table if not exists public.clients_v2 (
   name text not null,
   phone text,
   plate text,
+  price_table integer not null default 1,
   created_by uuid references auth.users(id),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -31,6 +32,10 @@ create table if not exists public.clients_v2 (
 
 create index if not exists idx_clients_v2_name on public.clients_v2 (name);
 create index if not exists idx_clients_v2_plate on public.clients_v2 (plate);
+create index if not exists idx_clients_v2_price_table on public.clients_v2 (price_table);
+
+alter table public.clients_v2
+  add column if not exists price_table integer not null default 1;
 
 drop trigger if exists trg_clients_v2_updated_at on public.clients_v2;
 create trigger trg_clients_v2_updated_at
@@ -44,6 +49,9 @@ create table if not exists public.service_catalog_v2 (
   id bigserial primary key,
   name text not null,
   default_price numeric(12,2) not null default 0,
+  item_type text not null default 'SERVICO',
+  price_table_1 numeric(12,2) not null default 0,
+  price_table_2 numeric(12,2) not null default 0,
   is_active boolean not null default true,
   created_by uuid references auth.users(id),
   created_at timestamptz not null default now(),
@@ -52,6 +60,16 @@ create table if not exists public.service_catalog_v2 (
 
 create index if not exists idx_service_catalog_v2_name on public.service_catalog_v2 (name);
 create index if not exists idx_service_catalog_v2_is_active on public.service_catalog_v2 (is_active);
+create index if not exists idx_service_catalog_v2_item_type on public.service_catalog_v2 (item_type);
+
+alter table public.service_catalog_v2
+  add column if not exists item_type text not null default 'SERVICO';
+
+alter table public.service_catalog_v2
+  add column if not exists price_table_1 numeric(12,2) not null default 0;
+
+alter table public.service_catalog_v2
+  add column if not exists price_table_2 numeric(12,2) not null default 0;
 
 drop trigger if exists trg_service_catalog_v2_updated_at on public.service_catalog_v2;
 create trigger trg_service_catalog_v2_updated_at
