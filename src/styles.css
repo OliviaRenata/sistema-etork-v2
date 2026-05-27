@@ -23,6 +23,7 @@ body,
 #root {
   margin: 0;
   min-height: 100%;
+  width: 100%;
 }
 
 body {
@@ -31,6 +32,7 @@ body {
   letter-spacing: 0.15px;
   color: var(--white);
   background: radial-gradient(circle at 52% 0%, #4a4a4a 0%, var(--bg-2) 28%, var(--bg-1) 62%, #040404 100%);
+  overflow-x: hidden;
 }
 
 button {
@@ -38,6 +40,23 @@ button {
   font-weight: 700;
   cursor: pointer;
   border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  text-align: center;
+  line-height: 1.15;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+img,
+svg,
+canvas,
+video {
+  max-width: 100%;
+  height: auto;
 }
 
 button,
@@ -243,6 +262,8 @@ button,
 .panel {
   min-height: calc(100vh - 92px);
   padding: 16px 16px 20px;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 .panel-title {
@@ -579,6 +600,8 @@ button,
   justify-content: space-between;
   align-items: flex-end;
   margin-top: 18px;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .mini-actions {
@@ -589,7 +612,7 @@ button,
 .mini-actions button {
   border: 0;
   min-height: 42px;
-  padding: 0 14px;
+  padding: 8px 14px;
   font-size: 11px;
   letter-spacing: 0.8px;
   text-transform: uppercase;
@@ -606,6 +629,7 @@ button,
   border-radius: 20px;
   min-height: 58px;
   min-width: 170px;
+  padding: 10px 14px;
   font-size: 12px;
   letter-spacing: 0.8px;
   text-transform: uppercase;
@@ -645,6 +669,7 @@ button,
   border-radius: 20px;
   min-height: 58px;
   min-width: 220px;
+  padding: 10px 16px;
   background: linear-gradient(145deg, #3d3d3d, #232323);
   color: #e0e0e0;
   font-size: 12px;
@@ -664,7 +689,7 @@ button,
   border-radius: 12px;
   min-height: 44px;
   font-size: 11px;
-  padding: 0 16px;
+  padding: 8px 16px;
   letter-spacing: 0.8px;
   text-transform: uppercase;
   color: #111;
@@ -2174,6 +2199,7 @@ select option {
   padding: 10px;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 4px;
+  flex-wrap: wrap;
 }
 
 .search-bar strong {
@@ -2222,6 +2248,7 @@ select option {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 14px;
+  flex-wrap: wrap;
 }
 
 .calendar-month-label {
@@ -2459,6 +2486,17 @@ select option {
     grid-template-columns: 1fr;
   }
 
+  .menu-row.editable,
+  .client-row,
+  .receipt-row,
+  .receipt-row.editable {
+    grid-template-columns: 1fr !important;
+  }
+
+  .search-bar strong {
+    white-space: normal;
+  }
+
   .sale-tools-search {
     grid-template-columns: 1fr;
   }
@@ -2569,6 +2607,7 @@ select option {
   .left-actions button,
   .right-actions button {
     min-height: 72px;
+    padding: 10px 12px;
   }
 
   .et-logout {
@@ -2603,6 +2642,8 @@ select option {
 
   .sale-topbar-actions button {
     flex: 1 1 48%;
+    min-width: 0;
+    padding: 9px 10px;
   }
 
   .sale-client-section {
