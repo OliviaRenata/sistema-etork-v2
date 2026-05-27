@@ -216,7 +216,7 @@ const FINANCIAL_PAGE_SIZE = 25;
 const SALES_HISTORY_PAGE_SIZE = 20;
 
 type CatalogRow = {
-  id: number | null;
+  id: string | null;
   itemType: CatalogItemType;
   description: string;
   priceTable1: number;
@@ -533,6 +533,14 @@ function toBrDate(value: string) {
 
 function normalizeCatalogKey(value: string) {
   return value.trim().toUpperCase();
+}
+
+function normalizeEntityId(value: unknown) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return null;
+  const lowered = raw.toLowerCase();
+  if (lowered === 'nan' || lowered === 'undefined' || lowered === 'null') return null;
+  return raw;
 }
 
 function parseMoneyInput(raw: string) {
@@ -1947,7 +1955,7 @@ function App() {
       if (!catalogResult.error && catalogResult.data && catalogResult.data.length > 0) {
         setServiceCatalogData(
           catalogResult.data.map((item) => ({
-            id: Number(item.id),
+            id: normalizeEntityId(item.id),
             itemType: item.item_type === 'PRODUTO' ? 'PRODUTO' : 'SERVICO',
             description: item.name || '',
             priceTable1: Number(item.price_table_1 ?? item.default_price) || 0,
@@ -3055,11 +3063,8 @@ function App() {
       });
 
       if (rpcResult.error) {
-        await sb
-          .from('documents_v2')
-          .update({ status: nextStatus })
-          .eq('id', selected.sourceDocumentId)
-          .eq('doc_type', 'agendamento');
+        console.error('Falha ao atualizar status via RPC update_document_status_safe', rpcResult.error);
+        window.alert('Nao foi possivel salvar o status no Supabase. Verifique se a funcao update_document_status_safe foi criada no banco.');
       }
     }
 
@@ -3329,7 +3334,7 @@ function App() {
   }
 
   async function updateProduct(
-    id: number | null,
+    id: string | null,
     index: number,
     patch: Partial<{ description: string; itemType: CatalogItemType; priceTable1: number; priceTable2: number; quantity: number }>
   ) {
@@ -3386,7 +3391,7 @@ function App() {
         if (!error && data) {
           setServiceCatalogData((prev) => [
             {
-              id: Number(data.id),
+              id: normalizeEntityId(data.id),
               itemType: data.item_type === 'PRODUTO' ? 'PRODUTO' : 'SERVICO',
               description: data.name,
               priceTable1: Number(data.price_table_1 ?? data.default_price) || 0,
@@ -3427,6 +3432,11 @@ function App() {
   }
 
   function openEditProductModal(index: number) {
+    if (index < 0 || index >= serviceCatalogData.length) {
+      window.alert('Item nao encontrado para edicao. Atualize a lista e tente novamente.');
+      return;
+    }
+
     const product = serviceCatalogData[index];
     setProductModalMode('edit');
     setProductModalData({
@@ -3445,7 +3455,7 @@ function App() {
     setProductEditingIndex(null);
   }
 
-  async function removeProduct(id: number | null, index: number) {
+  async function removeProduct(id: string | null, index: number) {
     setServiceCatalogData((prev) => prev.filter((_, idx) => idx !== index));
 
     if (!isSupabaseConfigured || !supabase || id === null) return;
@@ -3970,7 +3980,7 @@ function App() {
             sb
               .from('service_catalog_v2')
               .update({ quantity: item.quantity })
-              .eq('id', item.id as number)
+              .eq('id', item.id as string)
           )
       );
     }
