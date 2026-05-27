@@ -2859,12 +2859,13 @@ function App() {
   }
 
   async function addFinancialEntry() {
+    const initialAmount = financialFilters.kind === 'despesa' ? -0.01 : 0;
     if (isSupabaseConfigured && supabase) {
       const sb = supabase;
       const payload = {
         entry_date: new Date().toISOString().slice(0, 10),
         description: 'LANCAMENTO',
-        amount: 0,
+        amount: initialAmount,
       };
 
       const { data, error } = await sb
@@ -2878,7 +2879,7 @@ function App() {
           id: Number(data.id),
           date: data.entry_date,
           description: data.description,
-          amount: Number(data.amount) || 0,
+          amount: Number(data.amount) || initialAmount,
           sourceType: null,
           sourceId: null,
         };
@@ -2892,7 +2893,7 @@ function App() {
       id: nextFinancialId,
       date: new Date().toISOString().slice(0, 10),
       description: 'LANCAMENTO',
-      amount: 0,
+      amount: initialAmount,
       sourceType: null,
       sourceId: null,
     };
