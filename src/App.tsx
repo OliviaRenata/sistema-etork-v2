@@ -1150,8 +1150,8 @@ function SaleScreen({
   }
 
   return (
-    <main className="sales-premium">
-      <section className="sales-premium-header card border-0">
+    <main className="sales-premium sales-premium-panel">
+      <section className="sales-premium-header sales-premium-header-compact card border-0">
         <div className="sales-premium-header-top">
           <div>
             <p className="sales-premium-eyebrow mb-1">ETORK BRASIL PERFORMANCE HUB</p>
@@ -1197,12 +1197,12 @@ function SaleScreen({
         </div>
       </section>
 
-      <section className="container-fluid sales-premium-content px-0">
-        <div className="row g-3">
-          <div className="col-12 col-xxl-8">
-            <div className="card sales-premium-card border-0 h-100">
-              <div className="card-body p-3 p-lg-4">
-                <div className="row g-3 mb-3">
+      <section className="container-fluid sales-premium-content sales-premium-content-grid px-0">
+        <div className="row g-2 h-100">
+          <div className="col-12 col-xl-8 sales-premium-col">
+            <div className="card sales-premium-card sales-premium-main-card border-0 h-100">
+              <div className="card-body p-3 sales-premium-main-body">
+                <div className="row g-2 sales-premium-client-vehicle">
                   <div className="col-12 col-md-7">
                     <div className="card sales-premium-inner border-0 h-100">
                       <div className="card-body p-3">
@@ -1261,7 +1261,7 @@ function SaleScreen({
                   </div>
                 </div>
 
-                <div className="card sales-premium-inner border-0 mb-3">
+                <div className="card sales-premium-inner sales-premium-import-card border-0">
                   <div className="card-body p-3">
                     <h6 className="sales-premium-section-title mb-3"><Search size={15} /> Importar Orcamento e Agendamento</h6>
                     <div className="row g-2 align-items-center mb-2">
@@ -1316,14 +1316,14 @@ function SaleScreen({
                   </div>
                 </div>
 
-                <div className="card sales-premium-inner border-0 mb-3">
+                <div className="card sales-premium-inner sales-premium-services-card border-0">
                   <div className="card-body p-3">
                     <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                       <h6 className="sales-premium-section-title mb-0"><Wrench size={15} /> Servicos</h6>
                       <button className="sales-premium-btn ghost" onClick={addItemToSale}><Plus size={15} /> Adicionar item</button>
                     </div>
 
-                    <div className="sales-premium-table-wrap">
+                    <div className="sales-premium-table-wrap sales-premium-table-scroller">
                       <div className="sales-premium-table-head">
                         <span>Descricao</span>
                         <span>Qtd</span>
@@ -1364,7 +1364,7 @@ function SaleScreen({
                   </div>
                 </div>
 
-                <div className="card sales-premium-inner border-0">
+                <div className="card sales-premium-inner sales-premium-note-card border-0">
                   <div className="card-body p-3">
                     <h6 className="sales-premium-section-title mb-3">Observacoes</h6>
                     <div className="form-floating">
@@ -1377,9 +1377,10 @@ function SaleScreen({
             </div>
           </div>
 
-          <div className="col-12 col-xxl-4">
-            <div className="card sales-premium-card border-0 mb-3">
-              <div className="card-body p-3 p-lg-4">
+          <div className="col-12 col-xl-4 sales-premium-col">
+            <div className="sales-premium-side-stack">
+            <div className="card sales-premium-card sales-premium-side-card border-0">
+              <div className="card-body p-3">
                 <h6 className="sales-premium-section-title mb-3"><CircleDollarSign size={15} /> Financeiro</h6>
                 <div className="sales-premium-total-box">
                   <small>Total da OS</small>
@@ -1415,8 +1416,8 @@ function SaleScreen({
               </div>
             </div>
 
-            <div className="card sales-premium-card border-0 mb-3">
-              <div className="card-body p-3 p-lg-4">
+            <div className="card sales-premium-card sales-premium-side-card border-0">
+              <div className="card-body p-3">
                 <h6 className="sales-premium-section-title mb-3"><CarFront size={15} /> Dados do Veiculo</h6>
                 <div className="form-floating mb-2">
                   <textarea id="sales-vehicle-details" className="form-control sales-premium-input sales-premium-note" value={saleData.vehicleDetails} onChange={(e) => patchSale({ vehicleDetails: e.target.value })} placeholder="Veiculo" />
@@ -1435,8 +1436,8 @@ function SaleScreen({
               </div>
             </div>
 
-            <div className="card sales-premium-card border-0">
-              <div className="card-body p-3 p-lg-4">
+            <div className="card sales-premium-card sales-premium-side-card sales-premium-timeline-card border-0">
+              <div className="card-body p-3">
                 <h6 className="sales-premium-section-title mb-3"><History size={15} /> Lancamentos recentes</h6>
                 <div className="sales-premium-timeline">
                   {receipts.length === 0 ? (
@@ -1461,6 +1462,7 @@ function SaleScreen({
                   )}
                 </div>
               </div>
+            </div>
             </div>
           </div>
         </div>
