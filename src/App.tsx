@@ -5,7 +5,6 @@ import {
   CalendarClock,
   CarFront,
   CircleDollarSign,
-  Clock3,
   Gauge,
   Plus,
   Search,
@@ -747,12 +746,10 @@ function ProductModal({
 
 function CatalogPickerModal({
   isOpen,
-  rows,
   selectedIndex,
   quantity,
   priceTable,
   onSelectedIndex,
-  onQuantity,
   onClose,
   onConfirm,
   formatMoney,
@@ -1064,7 +1061,6 @@ function SaleScreen({
   formatMoney,
   setScreen,
   applyMatchedClient,
-  now,
 }: {
   saleData: SaleData;
   setSaleData: (updater: (prev: SaleData) => SaleData) => void;
@@ -1094,16 +1090,12 @@ function SaleScreen({
   formatMoney: (value: number) => string;
   setScreen: (next: Screen) => void;
   applyMatchedClient: (target: 'quote' | 'appointment' | 'sale', customerValue: string) => void;
-  now: Date;
 }) {
   const [globalSearch, setGlobalSearch] = useState('');
 
   function patchSale(patch: Partial<SaleData>) {
     setSaleData((prev) => ({ ...prev, ...patch }));
   }
-
-  const clockLabel = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-  const dateLabel = now.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
 
   const vehicleLines = saleData.vehicleDetails
     .split('\n')
@@ -1153,11 +1145,6 @@ function SaleScreen({
           <div>
             <p className="sales-premium-eyebrow mb-1">ETORK BRASIL PERFORMANCE HUB</p>
             <h2 className="sales-premium-title mb-0">Balcao de Vendas</h2>
-          </div>
-          <div className="sales-premium-clock">
-            <Clock3 size={16} />
-            <strong>{clockLabel}</strong>
-            <span>{dateLabel}</span>
           </div>
         </div>
 
@@ -5331,7 +5318,6 @@ function App() {
           formatMoney={formatMoney}
           setScreen={setScreen}
           applyMatchedClient={applyMatchedClient}
-          now={now}
         />
       )}
 
