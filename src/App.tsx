@@ -1891,7 +1891,7 @@ function App() {
         setFinancialSalesRows(mappedSales);
       }
 
-      if (!appointmentResult.error && appointmentResult.data && appointmentResult.data.length > 0) {
+      if (!appointmentResult.error && appointmentResult.data) {
         const mappedAppointments = appointmentResult.data.map((item) => {
           const scheduledDate = item.scheduled_for ? new Date(item.scheduled_for) : null;
 
@@ -1937,16 +1937,7 @@ function App() {
             status: 'CONFIRMADO',
           },
         ]);
-        setDashboardServices([
-          {
-            id: 'appt-local-saved-appointment',
-            title: savedAppointment.vehicleDetails.split('\n')[0] || savedAppointment.customer || 'SERVICO',
-            plate: savedAppointment.plate || 'SEM PLACA',
-            status: 'EM ABERTO',
-            tone: dashboardToneByStatus('EM ABERTO'),
-            sourceDocumentId: null,
-          },
-        ]);
+        setDashboardServices([]);
       }
     }
 
