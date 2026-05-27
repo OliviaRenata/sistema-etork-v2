@@ -267,6 +267,71 @@ button {
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+.dashboard-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.dashboard-kpi-card {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.07);
+  padding: 8px 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.dashboard-kpi-card strong {
+  font-size: 11px;
+  letter-spacing: 0.7px;
+  color: var(--gray-1);
+}
+
+.dashboard-kpi-card span {
+  font-size: 18px;
+}
+
+.dashboard-kpi-card.warning {
+  border-color: rgba(220, 38, 38, 0.45);
+  background: rgba(220, 38, 38, 0.14);
+}
+
+.dashboard-kpi-card.money {
+  border-color: rgba(22, 163, 74, 0.45);
+  background: rgba(22, 163, 74, 0.14);
+}
+
+.stock-warning-panel {
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  background: rgba(245, 158, 11, 0.14);
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 14px;
+}
+
+.stock-warning-panel strong {
+  font-size: 12px;
+  letter-spacing: 0.8px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.stock-warning-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.stock-warning-list span {
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 12px;
+}
+
 .service-chips {
   display: flex;
   flex-wrap: wrap;
@@ -2269,6 +2334,18 @@ select option {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.calendar-card-actions {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.calendar-card-actions .btn-cyan {
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: 11px;
+}
+
 .calendar-card-title {
   font-size: 15px;
   margin-bottom: 6px;
@@ -2347,6 +2424,10 @@ select option {
 
   .dashboard-layout {
     grid-template-columns: 120px 1fr 120px;
+  }
+
+  .dashboard-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .left-actions button,

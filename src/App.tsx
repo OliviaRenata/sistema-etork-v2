@@ -821,6 +821,7 @@ function AppointmentEditModal({
   onCancel,
   onDelete,
   onPrint,
+  onWhatsapp,
   onClose,
   onDataChange,
 }: {
@@ -830,6 +831,7 @@ function AppointmentEditModal({
   onCancel: () => void;
   onDelete: () => void;
   onPrint: () => void;
+  onWhatsapp: () => void;
   onClose: () => void;
   onDataChange: (patch: Partial<CalendarAppointment>) => void;
 }) {
@@ -934,6 +936,7 @@ function AppointmentEditModal({
 
         <div className="modal-footer">
           <button className="btn-yellow" onClick={onPrint}>IMPRIMIR VIA</button>
+          <button className="btn-cyan" onClick={onWhatsapp}>ENVIAR WHATSAPP</button>
           <button className="btn-red" onClick={onCancel}>CANCELAR AGEND.</button>
           <button className="btn-dark" onClick={onDelete}>EXCLUIR</button>
           <button className="btn-cancel" onClick={onClose}>CANCELAR</button>
@@ -2478,6 +2481,31 @@ function App() {
   const financialTotal = useMemo(
     () => financialEntries.reduce((acc, entry) => acc + entry.amount, 0),
     [financialEntries]
+  );
+
+  const dashboardKpis = useMemo(() => {
+    const todayKey = toInputDateValue(new Date());
+    const todayAppointments = calendarAppointments.filter((appointment) => appointment.dayKey === todayKey);
+    const confirmedToday = todayAppointments.filter((appointment) => appointment.status === 'CONFIRMADO').length;
+    const canceledToday = todayAppointments.filter((appointment) => appointment.status === 'CANCELADO').length;
+    const todayRevenue = financialEntries.reduce((acc, entry) => {
+      if (resolveFinancialKind(entry) !== 'receita') return acc;
+      const dateKey = toInputDateValue(new Date(`${entry.date}T12:00:00`));
+      if (dateKey !== todayKey) return acc;
+      return acc + Math.abs(Number(entry.amount) || 0);
+    }, 0);
+
+    return {
+      todayAppointments: todayAppointments.length,
+      confirmedToday,
+      canceledToday,
+      todayRevenue,
+    };
+  }, [calendarAppointments, financialEntries]);
+
+  const lowStockItems = useMemo(
+    () => serviceCatalogData.filter((item) => Number(item.quantity) <= 2).slice(0, 6),
+    [serviceCatalogData]
   );
 
   const filteredReportEntries = useMemo(() => {
@@ -4049,6 +4077,56 @@ function App() {
     URL.revokeObjectURL(url);
   }
 
+  function exportReportsGroupedByDayCSV() {
+    const grouped = filteredReportEntries.reduce<Record<string, { receitas: number; despesas: number; saldo: number; qtd: number }>>((acc, entry) => {
+      const day = entry.date || 'SEM DATA';
+      if (!acc[day]) {
+        acc[day] = { receitas: 0, despesas: 0, saldo: 0, qtd: 0 };
+      }
+      const amount = Number(entry.amount) || 0;
+      const kind = resolveFinancialKind(entry);
+      if (kind === 'despesa') {
+        acc[day].despesas += Math.abs(amount);
+        acc[day].saldo -= Math.abs(amount);
+      } else {
+        acc[day].receitas += Math.abs(amount);
+        acc[day].saldo += Math.abs(amount);
+      }
+      acc[day].qtd += 1;
+      return acc;
+    }, {});
+
+    const header = 'Data,Qtd Lancamentos,Receitas,Despesas,Saldo\n';
+    const body = Object.entries(grouped)
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([date, values]) => `${date},${values.qtd},${values.receitas.toFixed(2)},${values.despesas.toFixed(2)},${values.saldo.toFixed(2)}`)
+      .join('\n');
+
+    const blob = new Blob([header + body], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `relatorio-resumo-diario-${Date.now()}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function openWhatsappAppointment(target: Pick<CalendarAppointment, 'customer' | 'phone' | 'date' | 'status'>) {
+    const digits = (target.phone || '').replace(/\D/g, '');
+    if (!digits) {
+      window.alert('Telefone do agendamento nao informado.');
+      return;
+    }
+
+    const message = `Olá ${target.customer || 'cliente'}, seu agendamento está ${target.status.toLowerCase()} para ${target.date}.`;
+    window.open(`https://wa.me/55${digits}?text=${encodeURIComponent(message)}`, '_blank');
+  }
+
+  function openCalendarAppointmentWhatsapp() {
+    if (!calendarEditData) return;
+    openWhatsappAppointment(calendarEditData);
+  }
+
   if (screen === 'intro-brand') {
     return (
       <main className="intro-screen intro-brand">
@@ -4625,6 +4703,7 @@ function App() {
               <div className="mini-actions">
                 <button className="btn-yellow lg" onClick={() => window.print()}>IMPRIMIR RELATORIO</button>
                 <button className="btn-cyan lg" onClick={exportReportsCSV}>EXPORTAR CSV FILTRADO</button>
+                <button className="btn-cyan lg" onClick={exportReportsGroupedByDayCSV}>EXPORTAR RESUMO DIARIO</button>
                 <button className="btn-cyan lg" onClick={() => setScreen('print-receipt')}>VER RECIBOS</button>
               </div>
             </div>
@@ -4695,6 +4774,17 @@ function App() {
                       <div className="calendar-card-line">{appointment.vehicleDetails.split('\n')[0] || 'SEM VEICULO'}</div>
                       <div className="calendar-card-line">{appointment.date}</div>
                       <div className="calendar-card-line">{formatMoney(appointment.total)}</div>
+                      <div className="calendar-card-actions">
+                        <button
+                          className="btn-cyan"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openWhatsappAppointment(appointment);
+                          }}
+                        >
+                          WHATSAPP
+                        </button>
+                      </div>
                       {appointment.note && <div className="calendar-card-note">OBS: {appointment.note}</div>}
                     </article>
                   ))
@@ -4725,6 +4815,36 @@ function App() {
             </aside>
 
             <section className="dashboard-center">
+              <div className="dashboard-kpi-grid">
+                <article className="dashboard-kpi-card">
+                  <strong>AGENDADOS HOJE</strong>
+                  <span>{dashboardKpis.todayAppointments}</span>
+                </article>
+                <article className="dashboard-kpi-card">
+                  <strong>CONFIRMADOS</strong>
+                  <span>{dashboardKpis.confirmedToday}</span>
+                </article>
+                <article className="dashboard-kpi-card warning">
+                  <strong>CANCELADOS</strong>
+                  <span>{dashboardKpis.canceledToday}</span>
+                </article>
+                <article className="dashboard-kpi-card money">
+                  <strong>RECEITA HOJE</strong>
+                  <span>{formatMoney(dashboardKpis.todayRevenue)}</span>
+                </article>
+              </div>
+
+              {lowStockItems.length > 0 && (
+                <div className="stock-warning-panel">
+                  <strong>ALERTA DE ESTOQUE BAIXO</strong>
+                  <div className="stock-warning-list">
+                    {lowStockItems.map((item) => (
+                      <span key={`${item.id ?? 'local'}-${item.description}`}>{item.description} ({item.quantity})</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="service-chips">
                 {dashboardServices.map((service) => (
                   <article
@@ -5276,6 +5396,7 @@ function App() {
         onCancel={() => void cancelCalendarAppointment()}
         onDelete={() => void deleteCalendarAppointment()}
         onPrint={printCalendarAppointmentServiceSlip}
+        onWhatsapp={openCalendarAppointmentWhatsapp}
         onClose={() => setCalendarEditData(null)}
         onDataChange={(patch) => setCalendarEditData((prev) => prev ? { ...prev, ...patch } : prev)}
       />
