@@ -642,6 +642,16 @@ button,
 .btn-yellow { background: #c8c8c8; color: #101010; }
 .btn-cyan { background: #ababab; color: #101010; }
 .btn-red { background: #c0392b; color: #fff; }
+.btn-yellow,
+.btn-cyan,
+.btn-red {
+  border: 0;
+  min-height: 40px;
+  padding: 9px 14px;
+  font-size: 11px;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+}
 .btn-dark {
   background: linear-gradient(145deg, #404040, #222);
   color: #fff;
@@ -2079,6 +2089,19 @@ select option {
   gap: 10px;
   justify-content: flex-end;
   flex-wrap: wrap;
+}
+
+.modal-footer button {
+  min-height: 40px;
+}
+
+.modal-footer button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.service-status-modal-actions button {
+  line-height: 1.1;
 }
 
 .modal-content-wide {

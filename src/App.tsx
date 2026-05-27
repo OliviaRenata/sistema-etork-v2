@@ -1014,7 +1014,7 @@ function ServiceStatusModal({
           <p className="service-modal-help">Selecione o status para atualizar o andamento do servico. Exemplo: CONCLUIDO fica em verde.</p>
         </div>
 
-        <div className="modal-footer">
+        <div className="modal-footer service-status-modal-actions">
           <button className="btn-yellow" disabled={!hasLinkedAppointment} onClick={onPrint}>IMPRIMIR VIA</button>
           <button className="btn-cyan" disabled={!hasLinkedAppointment} onClick={onWhatsapp}>ENVIAR WHATSAPP</button>
           <button className="btn-red" disabled={!hasLinkedAppointment} onClick={onCancelAppointment}>CANCELAR AGEND.</button>
@@ -1682,12 +1682,12 @@ function App() {
 
   useEffect(() => {
     if (screen === 'intro-brand') {
-      const timer = window.setTimeout(() => setScreen('intro-system'), 1800);
+      const timer = window.setTimeout(() => setScreen('auth-login'), 1800);
       return () => window.clearTimeout(timer);
     }
 
     if (screen === 'intro-system') {
-      const timer = window.setTimeout(() => setScreen('auth-login'), 1600);
+      const timer = window.setTimeout(() => setScreen('auth-login'), 50);
       return () => window.clearTimeout(timer);
     }
   }, [screen]);
@@ -4233,8 +4233,8 @@ function App() {
 
   if (screen === 'intro-system') {
     return (
-      <main className="intro-screen intro-system">
-        <img src={logoEtork} alt="Etork" className="intro-logo-lg" />
+      <main className="intro-screen intro-brand">
+        <img src={logoEtorkBrasil} alt="Etork Brasil" className="intro-logo-lg" />
       </main>
     );
   }
