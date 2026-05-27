@@ -4260,42 +4260,57 @@ function App() {
     setScreen('dashboard');
   }
 
-  function exportReceiptCSV() {
-    const header = 'Data,Cliente,Veiculo,Placa,Total\n';
-    const body = filteredReceipts
-      .map((row) => `${row.date},"${row.customer}","${row.car}",${row.plate},${row.total.toFixed(2)}`)
-      .join('\n');
-    const blob = new Blob([header + body], { type: 'text/csv;charset=utf-8;' });
+  function escapeCsv(value: unknown) {
+    return `"${String(value ?? '')
+      .replaceAll('"', '""')
+      .replaceAll('\r\n', '\n')
+      .replaceAll('\r', '\n')}"`;
+  }
+
+  function downloadCsv(fileName: string, headers: string[], rows: Array<Array<unknown>>) {
+    const lines = [
+      headers.map((header) => escapeCsv(header)).join(','),
+      ...rows.map((row) => row.map((cell) => escapeCsv(cell)).join(',')),
+    ];
+    const csvContent = `\uFEFF${lines.join('\r\n')}`;
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `recibos-${Date.now()}.csv`;
+    anchor.download = fileName;
     anchor.click();
     URL.revokeObjectURL(url);
   }
 
-  function exportClientsCSV() {
-    const escapeCsv = (value: string | number | boolean) => `"${String(value ?? '').replaceAll('"', '""')}"`;
-    const header = ['ID', 'Nome', 'Telefone', 'Placa', 'TabelaPreco'].join(',');
-    const body = filteredClients
-      .map((client) =>
-        [
-          client.id,
-          escapeCsv(client.name),
-          escapeCsv(client.phone),
-          escapeCsv(client.plate),
-          escapeCsv(client.priceTable === 2 ? 'TABELA 2 - FRANQUEADO' : 'TABELA 1 - CLIENTE FINAL'),
-        ].join(',')
-      )
-      .join('\n');
+  function escapeHtml(value: unknown) {
+    return String(value ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
 
-    const blob = new Blob([`${header}\n${body}`], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `clientes-filtrados-${Date.now()}.csv`;
-    anchor.click();
-    URL.revokeObjectURL(url);
+  function exportReceiptCSV() {
+    downloadCsv(
+      `recibos-${Date.now()}.csv`,
+      ['ID', 'Data', 'Cliente', 'Veiculo', 'Placa', 'Total'],
+      filteredReceipts.map((row) => [row.id, row.date, row.customer, row.car, row.plate, row.total.toFixed(2)])
+    );
+  }
+
+  function exportClientsCSV() {
+    downloadCsv(
+      `clientes-filtrados-${Date.now()}.csv`,
+      ['ID', 'Nome', 'Telefone', 'Placa', 'Tabela Preco'],
+      filteredClients.map((client) => [
+        client.id,
+        client.name,
+        client.phone,
+        client.plate,
+        client.priceTable === 2 ? 'TABELA 2 - FRANQUEADO' : 'TABELA 1 - CLIENTE FINAL',
+      ])
+    );
   }
 
   function printFilteredClients() {
@@ -4309,10 +4324,10 @@ function App() {
       .map(
         (client) => `
           <tr>
-            <td>${client.id}</td>
-            <td>${client.name || '-'}</td>
-            <td>${client.phone || '-'}</td>
-            <td>${client.plate || '-'}</td>
+            <td>${escapeHtml(client.id)}</td>
+            <td>${escapeHtml(client.name || '-')}</td>
+            <td>${escapeHtml(client.phone || '-')}</td>
+            <td>${escapeHtml(client.plate || '-')}</td>
             <td>${client.priceTable === 2 ? 'TABELA 2 - FRANQUEADO' : 'TABELA 1 - CLIENTE FINAL'}</td>
           </tr>
         `
@@ -4335,8 +4350,8 @@ function App() {
         </style>
       </head>
       <body>
-        <h1>CLIENTES FILTRADOS (${filteredClients.length})</h1>
-        <div class="meta">Busca: ${searchQuery || 'SEM FILTRO'} | Gerado em ${new Date().toLocaleString('pt-BR')}</div>
+        <h1>CLIENTES FILTRADOS (${escapeHtml(filteredClients.length)})</h1>
+        <div class="meta">Busca: ${escapeHtml(searchQuery || 'SEM FILTRO')} | Gerado em ${escapeHtml(new Date().toLocaleString('pt-BR'))}</div>
         <table>
           <thead>
             <tr>
@@ -4361,29 +4376,19 @@ function App() {
   }
 
   function exportProductsCSV() {
-    const escapeCsv = (value: string | number | boolean) => `"${String(value ?? '').replaceAll('"', '""')}"`;
-    const header = ['ID', 'Tipo', 'Descricao', 'Quantidade', 'PrecoTabela1', 'PrecoTabela2', 'SemEstoque'].join(',');
-    const body = filteredProducts
-      .map((item) =>
-        [
-          item.id ?? '',
-          escapeCsv(item.itemType),
-          escapeCsv(item.description),
-          item.quantity,
-          item.priceTable1.toFixed(2),
-          item.priceTable2.toFixed(2),
-          escapeCsv(item.quantity <= 0 ? 'SIM' : 'NAO'),
-        ].join(',')
-      )
-      .join('\n');
-
-    const blob = new Blob([`${header}\n${body}`], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `cadastro-filtrado-${Date.now()}.csv`;
-    anchor.click();
-    URL.revokeObjectURL(url);
+    downloadCsv(
+      `cadastro-filtrado-${Date.now()}.csv`,
+      ['ID', 'Tipo', 'Descricao', 'Quantidade', 'Preco Tabela 1', 'Preco Tabela 2', 'Sem Estoque'],
+      filteredProducts.map((item) => [
+        item.id ?? '',
+        item.itemType,
+        item.description,
+        item.quantity,
+        item.priceTable1.toFixed(2),
+        item.priceTable2.toFixed(2),
+        item.quantity <= 0 ? 'SIM' : 'NAO',
+      ])
+    );
   }
 
   function printFilteredProducts() {
@@ -4397,11 +4402,11 @@ function App() {
       .map(
         (item) => `
           <tr>
-            <td>${item.itemType}</td>
-            <td>${item.description || '-'}</td>
-            <td>${formatNumberValue(item.quantity)}</td>
-            <td>${formatMoney(item.priceTable1)}</td>
-            <td>${formatMoney(item.priceTable2)}</td>
+            <td>${escapeHtml(item.itemType)}</td>
+            <td>${escapeHtml(item.description || '-')}</td>
+            <td>${escapeHtml(formatNumberValue(item.quantity))}</td>
+            <td>${escapeHtml(formatMoney(item.priceTable1))}</td>
+            <td>${escapeHtml(formatMoney(item.priceTable2))}</td>
             <td>${item.quantity <= 0 ? 'SIM' : 'NAO'}</td>
           </tr>
         `
@@ -4424,8 +4429,8 @@ function App() {
         </style>
       </head>
       <body>
-        <h1>CADASTRO FILTRADO (${filteredProducts.length})</h1>
-        <div class="meta">Busca: ${productSearchQuery || 'SEM FILTRO'} | Gerado em ${new Date().toLocaleString('pt-BR')}</div>
+        <h1>CADASTRO FILTRADO (${escapeHtml(filteredProducts.length)})</h1>
+        <div class="meta">Busca: ${escapeHtml(productSearchQuery || 'SEM FILTRO')} | Gerado em ${escapeHtml(new Date().toLocaleString('pt-BR'))}</div>
         <table>
           <thead>
             <tr>
@@ -4451,21 +4456,23 @@ function App() {
   }
 
   function exportFinancialCSV() {
-    const header = 'ID,Data,Descricao,Tipo,Valor\n';
-    const body = filteredFinancialEntries
-      .map((row) => {
+    downloadCsv(
+      `financeiro-filtrado-${Date.now()}.csv`,
+      ['ID', 'Data', 'Descricao', 'Tipo', 'Valor', 'Vinculado Venda', 'Origem', 'ID Origem'],
+      filteredFinancialEntries.map((row) => {
         const type = row.amount < 0 ? 'DESPESA' : 'RECEITA';
-        return `${row.id},${row.date},"${row.description.replaceAll('"', '""')}",${type},${row.amount.toFixed(2)}`;
+        return [
+          row.id,
+          row.date,
+          row.description,
+          type,
+          row.amount.toFixed(2),
+          row.sourceType === 'venda' ? 'SIM' : 'NAO',
+          row.sourceType || '',
+          row.sourceId || '',
+        ];
       })
-      .join('\n');
-
-    const blob = new Blob([header + body], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `financeiro-filtrado-${Date.now()}.csv`;
-    anchor.click();
-    URL.revokeObjectURL(url);
+    );
   }
 
   function printFilteredFinancial() {
@@ -4480,11 +4487,11 @@ function App() {
         const kind = resolveFinancialKind(row) === 'despesa' ? 'DESPESA' : 'RECEITA';
         return `
           <tr>
-            <td>${row.id}</td>
-            <td>${row.date || '-'}</td>
-            <td>${row.description || '-'}</td>
+            <td>${escapeHtml(row.id)}</td>
+            <td>${escapeHtml(row.date || '-')}</td>
+            <td>${escapeHtml(row.description || '-')}</td>
             <td>${kind}</td>
-            <td>${formatMoney(row.amount)}</td>
+            <td>${escapeHtml(formatMoney(row.amount))}</td>
           </tr>
         `;
       })
@@ -4506,8 +4513,8 @@ function App() {
         </style>
       </head>
       <body>
-        <h1>FINANCEIRO FILTRADO (${filteredFinancialEntries.length})</h1>
-        <div class="meta">Periodo: ${financialFilters.startDate || 'INICIO'} ate ${financialFilters.endDate || 'HOJE'} | Gerado em ${new Date().toLocaleString('pt-BR')}</div>
+        <h1>FINANCEIRO FILTRADO (${escapeHtml(filteredFinancialEntries.length)})</h1>
+        <div class="meta">Periodo: ${escapeHtml(financialFilters.startDate || 'INICIO')} ate ${escapeHtml(financialFilters.endDate || 'HOJE')} | Gerado em ${escapeHtml(new Date().toLocaleString('pt-BR'))}</div>
         <table>
           <thead>
             <tr>
@@ -4532,21 +4539,14 @@ function App() {
   }
 
   function exportReportsCSV() {
-    const header = 'ID,Data,Descricao,Tipo,Valor\n';
-    const body = filteredReportEntries
-      .map((entry) => {
+    downloadCsv(
+      `relatorio-filtrado-${Date.now()}.csv`,
+      ['ID', 'Data', 'Descricao', 'Tipo', 'Valor'],
+      filteredReportEntries.map((entry) => {
         const type = resolveFinancialKind(entry) === 'despesa' ? 'DESPESA' : 'RECEITA';
-        return `${entry.id},${entry.date},"${entry.description.replaceAll('"', '""')}",${type},${entry.amount.toFixed(2)}`;
+        return [entry.id, entry.date, entry.description, type, entry.amount.toFixed(2)];
       })
-      .join('\n');
-
-    const blob = new Blob([header + body], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `relatorio-filtrado-${Date.now()}.csv`;
-    anchor.click();
-    URL.revokeObjectURL(url);
+    );
   }
 
   function exportReportsGroupedByDayCSV() {
@@ -4568,67 +4568,35 @@ function App() {
       return acc;
     }, {});
 
-    const header = 'Data,Qtd Lancamentos,Receitas,Despesas,Saldo\n';
-    const body = Object.entries(grouped)
-      .sort((a, b) => b[0].localeCompare(a[0]))
-      .map(([date, values]) => `${date},${values.qtd},${values.receitas.toFixed(2)},${values.despesas.toFixed(2)},${values.saldo.toFixed(2)}`)
-      .join('\n');
-
-    const blob = new Blob([header + body], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `relatorio-resumo-diario-${Date.now()}.csv`;
-    anchor.click();
-    URL.revokeObjectURL(url);
+    downloadCsv(
+      `relatorio-resumo-diario-${Date.now()}.csv`,
+      ['Data', 'Qtd Lancamentos', 'Receitas', 'Despesas', 'Saldo'],
+      Object.entries(grouped)
+        .sort((a, b) => b[0].localeCompare(a[0]))
+        .map(([date, values]) => [date, values.qtd, values.receitas.toFixed(2), values.despesas.toFixed(2), values.saldo.toFixed(2)])
+    );
   }
 
   function exportSalesHistoryCSV() {
-    const escapeCsv = (value: string | number | boolean) => `"${String(value ?? '').replaceAll('"', '""')}"`;
-    const header = [
-      'ID',
-      'Data',
-      'Cliente',
-      'Telefone',
-      'Placa',
-      'Veiculo',
-      'Subtotal',
-      'Desconto',
-      'Acrescimo',
-      'Total',
-      'PrazoDias',
-      'MaoDeObra',
-      'Observacao',
-    ].join(',');
-
-    const body = filteredSalesHistory
-      .map((row) =>
-        [
-          escapeCsv(row.id),
-          escapeCsv(row.createdAt),
-          escapeCsv(row.customer),
-          escapeCsv(row.phone),
-          escapeCsv(row.plate),
-          escapeCsv(row.vehicle),
-          row.subtotal.toFixed(2),
-          row.discount.toFixed(2),
-          row.surcharge.toFixed(2),
-          row.total.toFixed(2),
-          row.timeDays,
-          escapeCsv(row.laborRequired ? 'SIM' : 'NAO'),
-          escapeCsv(row.note),
-        ].join(',')
-      )
-      .join('\n');
-
-    const csvContent = `${header}\n${body}`;
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `vendas-filtradas-${Date.now()}.csv`;
-    anchor.click();
-    URL.revokeObjectURL(url);
+    downloadCsv(
+      `vendas-filtradas-${Date.now()}.csv`,
+      ['ID', 'Data', 'Cliente', 'Telefone', 'Placa', 'Veiculo', 'Subtotal', 'Desconto', 'Acrescimo', 'Total', 'Prazo Dias', 'Mao de Obra', 'Observacao'],
+      filteredSalesHistory.map((row) => [
+        row.id,
+        row.createdAt,
+        row.customer,
+        row.phone,
+        row.plate,
+        row.vehicle,
+        row.subtotal.toFixed(2),
+        row.discount.toFixed(2),
+        row.surcharge.toFixed(2),
+        row.total.toFixed(2),
+        row.timeDays,
+        row.laborRequired ? 'SIM' : 'NAO',
+        row.note,
+      ])
+    );
   }
 
   function printFilteredSalesHistory() {
@@ -4642,19 +4610,19 @@ function App() {
       .map(
         (row) => `
           <tr>
-            <td>${row.createdAt}</td>
-            <td>${row.id}</td>
-            <td>${row.customer || 'SEM CLIENTE'}</td>
-            <td>${row.phone || 'SEM TELEFONE'}</td>
-            <td>${row.plate || 'SEM PLACA'}</td>
-            <td>${row.vehicle || 'SEM VEICULO'}</td>
-            <td>${formatMoney(row.subtotal)}</td>
-            <td>${formatMoney(row.discount)}</td>
-            <td>${formatMoney(row.surcharge)}</td>
-            <td>${formatMoney(row.total)}</td>
-            <td>${row.timeDays}</td>
+            <td>${escapeHtml(row.createdAt)}</td>
+            <td>${escapeHtml(row.id)}</td>
+            <td>${escapeHtml(row.customer || 'SEM CLIENTE')}</td>
+            <td>${escapeHtml(row.phone || 'SEM TELEFONE')}</td>
+            <td>${escapeHtml(row.plate || 'SEM PLACA')}</td>
+            <td>${escapeHtml(row.vehicle || 'SEM VEICULO')}</td>
+            <td>${escapeHtml(formatMoney(row.subtotal))}</td>
+            <td>${escapeHtml(formatMoney(row.discount))}</td>
+            <td>${escapeHtml(formatMoney(row.surcharge))}</td>
+            <td>${escapeHtml(formatMoney(row.total))}</td>
+            <td>${escapeHtml(row.timeDays)}</td>
             <td>${row.laborRequired ? 'SIM' : 'NAO'}</td>
-            <td>${row.note || '-'}</td>
+            <td>${escapeHtml(row.note || '-')}</td>
           </tr>
         `
       )
@@ -4678,8 +4646,8 @@ function App() {
         </style>
       </head>
       <body>
-        <h1>${title}</h1>
-        <div class="meta">Periodo: ${salesHistoryFilters.startDate || 'INICIO'} ate ${salesHistoryFilters.endDate || 'HOJE'} | Gerado em ${new Date().toLocaleString('pt-BR')}</div>
+        <h1>${escapeHtml(title)}</h1>
+        <div class="meta">Periodo: ${escapeHtml(salesHistoryFilters.startDate || 'INICIO')} ate ${escapeHtml(salesHistoryFilters.endDate || 'HOJE')} | Gerado em ${escapeHtml(new Date().toLocaleString('pt-BR'))}</div>
         <table>
           <thead>
             <tr>
@@ -4712,30 +4680,22 @@ function App() {
   }
 
   function exportCalendarAppointmentsCSV() {
-    const escapeCsv = (value: string | number | boolean) => `"${String(value ?? '').replaceAll('"', '""')}"`;
-    const header = ['Data', 'Cliente', 'Telefone', 'Placa', 'Veiculo', 'Status', 'Total', 'Observacao'].join(',');
-    const body = calendarSelectedAppointments
-      .map((row) =>
-        [
-          escapeCsv(row.date),
-          escapeCsv(row.customer),
-          escapeCsv(row.phone),
-          escapeCsv(row.plate),
-          escapeCsv(row.vehicleDetails),
-          escapeCsv(row.status),
-          row.total.toFixed(2),
-          escapeCsv(row.note),
-        ].join(',')
-      )
-      .join('\n');
-
-    const blob = new Blob([`${header}\n${body}`], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `agenda-${calendarSelectedDate}-${Date.now()}.csv`;
-    anchor.click();
-    URL.revokeObjectURL(url);
+    downloadCsv(
+      `agenda-${calendarSelectedDate}-${Date.now()}.csv`,
+      ['ID', 'Dia', 'Data', 'Cliente', 'Telefone', 'Placa', 'Veiculo', 'Status', 'Total', 'Observacao'],
+      calendarSelectedAppointments.map((row) => [
+        row.id,
+        row.dayKey,
+        row.date,
+        row.customer,
+        row.phone,
+        row.plate,
+        row.vehicleDetails,
+        row.status,
+        row.total.toFixed(2),
+        row.note,
+      ])
+    );
   }
 
   function printCalendarAppointments() {
@@ -4749,14 +4709,14 @@ function App() {
       .map(
         (row) => `
           <tr>
-            <td>${row.date}</td>
-            <td>${row.customer || '-'}</td>
-            <td>${row.phone || '-'}</td>
-            <td>${row.plate || '-'}</td>
-            <td>${(row.vehicleDetails || '-').split('\n')[0]}</td>
-            <td>${row.status}</td>
-            <td>${formatMoney(row.total)}</td>
-            <td>${row.note || '-'}</td>
+            <td>${escapeHtml(row.date)}</td>
+            <td>${escapeHtml(row.customer || '-')}</td>
+            <td>${escapeHtml(row.phone || '-')}</td>
+            <td>${escapeHtml(row.plate || '-')}</td>
+            <td>${escapeHtml((row.vehicleDetails || '-').split('\n')[0])}</td>
+            <td>${escapeHtml(row.status)}</td>
+            <td>${escapeHtml(formatMoney(row.total))}</td>
+            <td>${escapeHtml(row.note || '-')}</td>
           </tr>
         `
       )
@@ -4778,8 +4738,8 @@ function App() {
         </style>
       </head>
       <body>
-        <h1>AGENDA DO DIA (${calendarSelectedAppointments.length})</h1>
-        <div class="meta">Data selecionada: ${new Date(`${calendarSelectedDate}T12:00:00`).toLocaleDateString('pt-BR')} | Gerado em ${new Date().toLocaleString('pt-BR')}</div>
+        <h1>AGENDA DO DIA (${escapeHtml(calendarSelectedAppointments.length)})</h1>
+        <div class="meta">Data selecionada: ${escapeHtml(new Date(`${calendarSelectedDate}T12:00:00`).toLocaleDateString('pt-BR'))} | Gerado em ${escapeHtml(new Date().toLocaleString('pt-BR'))}</div>
         <table>
           <thead>
             <tr>
