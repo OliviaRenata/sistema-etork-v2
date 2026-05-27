@@ -103,6 +103,8 @@ type FinancialEntry = {
   date: string;
   description: string;
   amount: number;
+  sourceType?: string | null;
+  sourceId?: string | null;
 };
 
 type FinancialSaleRow = {
@@ -1600,7 +1602,7 @@ function App() {
           .order('id', { ascending: false }),
         sb
           .from('financial_entries_v2')
-          .select('id, entry_date, description, amount')
+          .select('id, entry_date, description, amount, source_type, source_id')
           .order('id', { ascending: false }),
         sb
           .from('documents_v2')
@@ -1662,6 +1664,8 @@ function App() {
           date: item.entry_date || new Date().toISOString().slice(0, 10),
           description: item.description || '',
           amount: Number(item.amount) || 0,
+          sourceType: item.source_type || null,
+          sourceId: item.source_id ? String(item.source_id) : null,
         }));
         setFinancialEntries(mappedEntries);
         setNextFinancialId(Math.max(...mappedEntries.map((entry) => entry.id)) + 1);
@@ -2172,6 +2176,7 @@ function App() {
         ...entry,
         kindLabel: entry.amount < 0 ? 'DESPESA' : 'RECEITA',
         runningBalance: financialRunningBalanceById.get(entry.id) ?? entry.amount,
+        isSaleLinked: entry.sourceType === 'venda' && Boolean(entry.sourceId),
       })),
     [financialRunningBalanceById, pagedFinancialEntries]
   );
@@ -2823,6 +2828,11 @@ function App() {
   }
 
   function updateFinancialEntry(id: number, patch: Partial<FinancialEntry>) {
+    const current = financialEntries.find((entry) => entry.id === id);
+    if (current?.sourceType === 'venda' && current?.sourceId) {
+      return;
+    }
+
     setFinancialEntries((prev) => prev.map((entry) => (entry.id === id ? { ...entry, ...patch } : entry)));
 
     if (patch.description !== undefined && patch.description.trim() === '') {
@@ -2833,6 +2843,7 @@ function App() {
   async function persistFinancialEntry(id: number) {
     const current = financialEntries.find((entry) => entry.id === id);
     if (!current) return;
+    if (current.sourceType === 'venda' && current.sourceId) return;
 
     if (!isSupabaseConfigured || !supabase) return;
 
@@ -2868,6 +2879,8 @@ function App() {
           date: data.entry_date,
           description: data.description,
           amount: Number(data.amount) || 0,
+          sourceType: null,
+          sourceId: null,
         };
         setFinancialEntries((prev) => [dbEntry, ...prev]);
         setNextFinancialId((prev) => Math.max(prev, dbEntry.id + 1));
@@ -2880,12 +2893,20 @@ function App() {
       date: new Date().toISOString().slice(0, 10),
       description: 'LANCAMENTO',
       amount: 0,
+      sourceType: null,
+      sourceId: null,
     };
     setFinancialEntries((prev) => [newEntry, ...prev]);
     setNextFinancialId((prev) => prev + 1);
   }
 
   async function removeFinancialEntry(id: number) {
+    const current = financialEntries.find((entry) => entry.id === id);
+    if (current?.sourceType === 'venda' && current?.sourceId) {
+      window.alert('Lancamento vinculado a venda nao pode ser removido manualmente.');
+      return;
+    }
+
     setFinancialEntries((prev) => prev.filter((entry) => entry.id !== id));
 
     if (!isSupabaseConfigured || !supabase) return;
@@ -4060,17 +4081,19 @@ function App() {
                 <button className="btn-yellow lg" onClick={exportFinancialCSV}>EXPORTAR CSV FILTRADO</button>
               </div>
               {pagedFinancialRows.map((entry) => (
-                <div className="menu-row editable financial-row" key={entry.id}>
+                <div className={`menu-row editable financial-row ${entry.isSaleLinked ? 'locked' : ''}`} key={entry.id}>
                   <input
                     className="input-look"
                     type="date"
                     value={entry.date}
+                    disabled={entry.isSaleLinked}
                     onChange={(event) => updateFinancialEntry(entry.id, { date: event.target.value })}
                     onBlur={() => void persistFinancialEntry(entry.id)}
                   />
                   <input
                     className="input-look"
                     value={entry.description}
+                    disabled={entry.isSaleLinked}
                     onChange={(event) => updateFinancialEntry(entry.id, { description: event.target.value })}
                     onBlur={() => void persistFinancialEntry(entry.id)}
                   />
@@ -4079,12 +4102,17 @@ function App() {
                     type="number"
                     step="0.01"
                     value={entry.amount}
+                    disabled={entry.isSaleLinked}
                     onChange={(event) => updateFinancialEntry(entry.id, { amount: Number(event.target.value) || 0 })}
                     onBlur={() => void persistFinancialEntry(entry.id)}
                   />
-                  <span className={`financial-kind ${entry.amount < 0 ? 'expense' : 'income'}`}>{entry.kindLabel}</span>
+                  <span className={`financial-kind ${entry.amount < 0 ? 'expense' : 'income'}`}>
+                    {entry.isSaleLinked ? 'RECEITA VENDA' : entry.kindLabel}
+                  </span>
                   <span className="financial-balance-cell">{formatMoney(entry.runningBalance)}</span>
-                  <button className="item-delete" onClick={() => void removeFinancialEntry(entry.id)}>X</button>
+                  <button className="item-delete" disabled={entry.isSaleLinked} onClick={() => void removeFinancialEntry(entry.id)}>
+                    {entry.isSaleLinked ? '-' : 'X'}
+                  </button>
                 </div>
               ))}
               {filteredFinancialEntries.length === 0 && (

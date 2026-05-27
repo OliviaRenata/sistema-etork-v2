@@ -1622,6 +1622,25 @@ select option {
   grid-template-columns: 150px 1fr 140px 110px 160px 48px !important;
 }
 
+.financial-row.locked {
+  border: 1px solid rgba(0, 191, 255, 0.35);
+  background: rgba(0, 191, 255, 0.08);
+}
+
+.financial-row.locked .input-look:disabled {
+  opacity: 0.92;
+  border: 1px solid rgba(0, 191, 255, 0.35);
+  color: #e8f7ff;
+  cursor: not-allowed;
+}
+
+.financial-row .item-delete:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #bdbdbd;
+}
+
 .financial-kind {
   display: inline-flex;
   align-items: center;
