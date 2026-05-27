@@ -324,14 +324,6 @@ function sanitizePrintSettings(input: unknown): PrintSettings {
   };
 }
 
-const dashboardServicesDefault: DashboardService[] = [
-  { id: 'svc-1', title: 'AMAROK V6', plate: 'NSA-6J85', status: 'EM ANDAMENTO', tone: 'warning' },
-  { id: 'svc-2', title: 'HILUX SRX', plate: 'SDR-F435', status: 'ATRASADO', tone: 'danger' },
-  { id: 'svc-3', title: 'S10 LTZ', plate: 'KJD-3D45', status: 'CONCLUIDO', tone: 'success' },
-  { id: 'svc-4', title: 'UP TSI', plate: 'MNS-5D43', status: 'EM ABERTO', tone: 'neutral' },
-  { id: 'svc-5', title: 'GOLF GTI', plate: 'SXC-9G56', status: 'AVISAR CLIENTE', tone: 'info' },
-];
-
 const quoteItems: ServiceItem[] = [
   { description: "REMAP STAGE 1 + LIMITADOR OFF + CODING'S", quantity: 1, price: 1800 },
   { description: 'DIFUSOR INOX 3" POLEGADAS', quantity: 1, price: 1500 },
@@ -1672,7 +1664,7 @@ function App() {
     endDate: '',
   });
   const [salesHistoryPage, setSalesHistoryPage] = useState(1);
-  const [dashboardServices, setDashboardServices] = useState<DashboardService[]>(dashboardServicesDefault);
+  const [dashboardServices, setDashboardServices] = useState<DashboardService[]>([]);
   const [selectedDashboardService, setSelectedDashboardService] = useState<DashboardService | null>(null);
 
   useEffect(() => {
@@ -1929,9 +1921,7 @@ function App() {
             sourceDocumentId: appointment.id,
           };
         });
-        if (mappedDashboardServices.length > 0) {
-          setDashboardServices(mappedDashboardServices);
-        }
+        setDashboardServices(mappedDashboardServices);
       } else if (savedAppointment) {
         setCalendarAppointments([
           {
@@ -4961,6 +4951,9 @@ function App() {
                     <small className={`tone-${service.tone}`}>{service.status}</small>
                   </article>
                 ))}
+                {dashboardServices.length === 0 && (
+                  <div className="receipt-empty">Nenhum servico em andamento no momento.</div>
+                )}
               </div>
 
               <div className="next-title">PROXIMOS AGENDAMENTOS</div>
