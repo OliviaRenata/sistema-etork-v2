@@ -105,6 +105,7 @@ type FinancialEntry = {
   amount: number;
   sourceType?: string | null;
   sourceId?: string | null;
+  isNew?: boolean;
 };
 
 type FinancialSaleRow = {
@@ -2105,6 +2106,7 @@ function App() {
 
         const amount = Number(entry.amount) || 0;
         const matchesKind =
+          entry.isNew ||
           financialFilters.kind === 'all' ||
           (financialFilters.kind === 'receita' && amount >= 0) ||
           (financialFilters.kind === 'despesa' && amount < 0);
@@ -2845,6 +2847,8 @@ function App() {
     if (!current) return;
     if (current.sourceType === 'venda' && current.sourceId) return;
 
+    setFinancialEntries((prev) => prev.map((e) => e.id === id ? { ...e, isNew: false } : e));
+
     if (!isSupabaseConfigured || !supabase) return;
 
     const sb = supabase;
@@ -2858,14 +2862,14 @@ function App() {
       .eq('id', id);
   }
 
-  async function addFinancialEntry() {
-    const initialAmount = financialFilters.kind === 'despesa' ? -0.01 : 0;
+  async function addFinancialEntry(kind: 'receita' | 'despesa') {
+    const label = kind === 'despesa' ? 'DESPESA' : 'RECEITA';
     if (isSupabaseConfigured && supabase) {
       const sb = supabase;
       const payload = {
         entry_date: new Date().toISOString().slice(0, 10),
-        description: 'LANCAMENTO',
-        amount: initialAmount,
+        description: label,
+        amount: 0,
       };
 
       const { data, error } = await sb
@@ -2879,9 +2883,10 @@ function App() {
           id: Number(data.id),
           date: data.entry_date,
           description: data.description,
-          amount: Number(data.amount) || initialAmount,
+          amount: 0,
           sourceType: null,
           sourceId: null,
+          isNew: true,
         };
         setFinancialEntries((prev) => [dbEntry, ...prev]);
         setNextFinancialId((prev) => Math.max(prev, dbEntry.id + 1));
@@ -2892,10 +2897,11 @@ function App() {
     const newEntry: FinancialEntry = {
       id: nextFinancialId,
       date: new Date().toISOString().slice(0, 10),
-      description: 'LANCAMENTO',
-      amount: initialAmount,
+      description: label,
+      amount: 0,
       sourceType: null,
       sourceId: null,
+      isNew: true,
     };
     setFinancialEntries((prev) => [newEntry, ...prev]);
     setNextFinancialId((prev) => prev + 1);
@@ -4078,8 +4084,9 @@ function App() {
 
               <div className="line"><strong>TOTAL GERAL (BASE COMPLETA):</strong> <span>{formatMoney(financialTotal)}</span></div>
               <div className="mini-actions receipt-actions">
-                <button className="btn-cyan lg" onClick={addFinancialEntry}>NOVO LANCAMENTO</button>
-                <button className="btn-yellow lg" onClick={exportFinancialCSV}>EXPORTAR CSV FILTRADO</button>
+                 <button className="btn-cyan lg" onClick={() => void addFinancialEntry('receita')}>ADICIONAR RECEITA</button>
+                 <button className="btn-red lg" onClick={() => void addFinancialEntry('despesa')}>ADICIONAR DESPESA</button>
+                 <button className="btn-yellow lg" onClick={exportFinancialCSV}>EXPORTAR CSV FILTRADO</button>
               </div>
               {pagedFinancialRows.map((entry) => (
                 <div className={`menu-row editable financial-row ${entry.isSaleLinked ? 'locked' : ''}`} key={entry.id}>
@@ -4101,10 +4108,11 @@ function App() {
                   <input
                     className="input-look"
                     type="number"
-                    step="0.01"
-                    value={entry.amount}
+                    step="any"
+                    placeholder="0.00"
+                    value={entry.amount === 0 && entry.isNew ? '' : entry.amount}
                     disabled={entry.isSaleLinked}
-                    onChange={(event) => updateFinancialEntry(entry.id, { amount: Number(event.target.value) || 0 })}
+                    onChange={(event) => updateFinancialEntry(entry.id, { amount: parseFloat(event.target.value) || 0 })}
                     onBlur={() => void persistFinancialEntry(entry.id)}
                   />
                   <span className={`financial-kind ${entry.amount < 0 ? 'expense' : 'income'}`}>

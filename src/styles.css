@@ -499,6 +499,7 @@ button {
 
 .btn-yellow { background: #c8c8c8; color: #101010; }
 .btn-cyan { background: #ababab; color: #101010; }
+.btn-red { background: #c0392b; color: #fff; }
 .btn-dark {
   background: linear-gradient(145deg, #404040, #222);
   color: #fff;
@@ -666,6 +667,10 @@ select option {
 }
 
 .btn-yellow.lg {
+  min-width: 140px;
+}
+
+.btn-red.lg {
   min-width: 140px;
 }
 
