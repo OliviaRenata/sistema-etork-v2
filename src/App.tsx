@@ -3048,11 +3048,19 @@ function App() {
 
     if (selected.sourceDocumentId && isSupabaseConfigured && supabase) {
       const sb = supabase;
-      await sb
-        .from('documents_v2')
-        .update({ status: mapDashboardStatusToDocumentStatus(selected.status) })
-        .eq('id', selected.sourceDocumentId)
-        .eq('doc_type', 'agendamento');
+      const nextStatus = mapDashboardStatusToDocumentStatus(selected.status);
+      const rpcResult = await sb.rpc('update_document_status_safe', {
+        p_document_id: String(selected.sourceDocumentId),
+        p_status: nextStatus,
+      });
+
+      if (rpcResult.error) {
+        await sb
+          .from('documents_v2')
+          .update({ status: nextStatus })
+          .eq('id', selected.sourceDocumentId)
+          .eq('doc_type', 'agendamento');
+      }
     }
 
     setSelectedDashboardService(null);
