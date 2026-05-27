@@ -2867,6 +2867,89 @@ select option {
   margin-bottom: 8px;
 }
 
+.cadastro-panel {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(0, 191, 255, 0.12), transparent 35%),
+    linear-gradient(165deg, rgba(12, 16, 24, 0.98), rgba(8, 10, 14, 0.98));
+}
+
+.cadastro-main {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: rgba(11, 16, 24, 0.78);
+  padding: 14px;
+}
+
+.cadastro-search-bar {
+  border: 1px solid rgba(0, 191, 255, 0.2);
+  border-radius: 10px;
+  background: linear-gradient(145deg, rgba(16, 24, 36, 0.9), rgba(12, 17, 25, 0.9));
+}
+
+.cadastro-search-bar strong {
+  color: #bfe7ff;
+  letter-spacing: 0.9px;
+}
+
+.cadastro-actions {
+  margin-bottom: 10px;
+}
+
+.cadastro-list {
+  display: grid;
+  gap: 8px;
+}
+
+.cadastro-row {
+  grid-template-columns: 112px minmax(220px, 1fr) 140px 130px 130px auto !important;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: linear-gradient(150deg, rgba(19, 25, 37, 0.78), rgba(12, 17, 25, 0.78));
+  padding: 10px;
+  margin-bottom: 0;
+}
+
+.cadastro-row .product-name,
+.cadastro-row .product-qty,
+.cadastro-row .product-price {
+  line-height: 1.25;
+}
+
+.cadastro-type {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 10px;
+  font-weight: 800;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 191, 255, 0.35);
+  color: #bfe7ff;
+  background: rgba(0, 191, 255, 0.12);
+  min-height: 30px;
+  padding: 0 10px;
+}
+
+.cadastro-row .product-price {
+  color: #cfe7ff;
+  font-weight: 700;
+}
+
+.cadastro-row .product-qty {
+  color: #d8e6f4;
+}
+
+.cadastro-row .item-actions {
+  gap: 8px;
+}
+
+.cadastro-row:hover {
+  border-color: rgba(0, 191, 255, 0.28);
+  box-shadow: 0 8px 20px rgba(2, 10, 22, 0.28);
+}
+
 .menu-row.editable.out-of-stock {
   background: rgba(255, 80, 80, 0.1);
   border: 1px solid rgba(255, 80, 80, 0.25);
@@ -3421,6 +3504,25 @@ select option {
     justify-content: center;
     text-align: center;
     white-space: nowrap;
+  }
+
+  .cadastro-main {
+    padding: 10px;
+  }
+
+  .cadastro-row {
+    grid-template-columns: 1fr !important;
+    gap: 7px;
+    padding: 10px;
+  }
+
+  .cadastro-type {
+    justify-self: flex-start;
+  }
+
+  .cadastro-row .item-actions {
+    justify-content: flex-end;
+    margin-left: 0;
   }
 
   .sale-client-section {

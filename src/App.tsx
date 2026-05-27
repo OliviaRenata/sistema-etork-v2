@@ -4653,11 +4653,11 @@ function App() {
       )}
 
       {screen === 'menu-products' && (
-        <main className="panel panel-form">
+        <main className="panel panel-form cadastro-panel">
           <h2 className="panel-title">CADASTRO</h2>
           <section className="form-grid menu-single">
-            <div className="form-main">
-              <div className="line search-bar">
+            <div className="form-main cadastro-main">
+              <div className="line search-bar cadastro-search-bar">
                 <strong>BUSCA:</strong> 
                 <input 
                   className="input-look" 
@@ -4666,9 +4666,10 @@ function App() {
                   placeholder="nome do item..."
                 />
               </div>
-              <div className="mini-actions receipt-actions">
+              <div className="mini-actions receipt-actions cadastro-actions">
                 <button className="btn-cyan lg" onClick={addProduct}>NOVO CADASTRO</button>
               </div>
+              <div className="cadastro-list">
               {filteredProducts.length === 0 ? (
                 <div className="no-results">Nenhum item encontrado</div>
               ) : (
@@ -4678,8 +4679,8 @@ function App() {
                   );
                   const isOutOfStock = item.quantity <= 0;
                   return (
-                    <div className={`menu-row editable ${isOutOfStock ? 'out-of-stock' : ''}`} key={`${item.description}-${index}`}>
-                      <span className="product-name">{item.itemType}</span>
+                    <div className={`menu-row editable cadastro-row ${isOutOfStock ? 'out-of-stock' : ''}`} key={`${item.description}-${index}`}>
+                      <span className="product-name cadastro-type">{item.itemType}</span>
                       <span className="product-name">{item.description}</span>
                       <span className={`product-qty ${isOutOfStock ? 'out-of-stock' : ''}`}>
                         QTD: {formatNumberValue(item.quantity)}
@@ -4695,6 +4696,7 @@ function App() {
                   );
                 })
               )}
+              </div>
             </div>
           </section>
           <footer className="panel-footer">
