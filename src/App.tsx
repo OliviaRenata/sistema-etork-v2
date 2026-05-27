@@ -105,6 +105,18 @@ type FinancialEntry = {
   amount: number;
 };
 
+type FinancialSaleRow = {
+  id: string;
+  date: string;
+  createdAtIso: string;
+  customer: string;
+  phone: string;
+  plate: string;
+  vehicle: string;
+  note: string;
+  total: number;
+};
+
 type FinancialFilters = {
   query: string;
   startDate: string;
@@ -1411,6 +1423,7 @@ function App() {
   const [clients, setClients] = useState<ClientRow[]>(defaultClients);
   const [nextClientId, setNextClientId] = useState(defaultClients.length + 1);
   const [financialEntries, setFinancialEntries] = useState<FinancialEntry[]>(defaultFinancialEntries);
+  const [financialSalesRows, setFinancialSalesRows] = useState<FinancialSaleRow[]>([]);
   const [nextFinancialId, setNextFinancialId] = useState(defaultFinancialEntries.length + 1);
   const [financialFilters, setFinancialFilters] = useState<FinancialFilters>({
     query: '',
@@ -1571,7 +1584,7 @@ function App() {
     let active = true;
 
     async function loadFromDatabase() {
-      const [catalogResult, receiptResult, clientsResult, financialResult, appointmentResult] = await Promise.all([
+      const [catalogResult, receiptResult, clientsResult, financialResult, appointmentResult, salesResult] = await Promise.all([
         sb
           .from('service_catalog_v2')
           .select('*')
@@ -1595,6 +1608,12 @@ function App() {
           .eq('doc_type', 'agendamento')
           .order('scheduled_for', { ascending: true, nullsFirst: false })
           .order('created_at', { ascending: false }),
+        sb
+          .from('documents_v2')
+          .select('id, customer_name_snapshot, phone_snapshot, plate_snapshot, vehicle_snapshot, notes, total_amount, created_at')
+          .eq('doc_type', 'venda')
+          .order('created_at', { ascending: false })
+          .limit(250),
       ]);
 
       if (!active) return;
@@ -1646,6 +1665,21 @@ function App() {
         }));
         setFinancialEntries(mappedEntries);
         setNextFinancialId(Math.max(...mappedEntries.map((entry) => entry.id)) + 1);
+      }
+
+      if (!salesResult.error && salesResult.data) {
+        const mappedSales: FinancialSaleRow[] = salesResult.data.map((item) => ({
+          id: String(item.id),
+          date: toBrDate(item.created_at || ''),
+          createdAtIso: item.created_at || '',
+          customer: item.customer_name_snapshot || 'SEM CLIENTE',
+          phone: item.phone_snapshot || '',
+          plate: item.plate_snapshot || '',
+          vehicle: item.vehicle_snapshot || '',
+          note: item.notes || '',
+          total: Number(item.total_amount) || 0,
+        }));
+        setFinancialSalesRows(mappedSales);
       }
 
       if (!appointmentResult.error && appointmentResult.data && appointmentResult.data.length > 0) {
@@ -2140,6 +2174,66 @@ function App() {
         runningBalance: financialRunningBalanceById.get(entry.id) ?? entry.amount,
       })),
     [financialRunningBalanceById, pagedFinancialEntries]
+  );
+
+  const effectiveFinancialSalesRows = useMemo(() => {
+    if (financialSalesRows.length > 0) return financialSalesRows;
+
+    return receipts.map((row) => ({
+      id: `local-${row.id}`,
+      date: row.date,
+      createdAtIso: '',
+      customer: row.customer,
+      phone: '',
+      plate: row.plate,
+      vehicle: row.car,
+      note: '',
+      total: row.total,
+    }));
+  }, [financialSalesRows, receipts]);
+
+  const filteredFinancialSalesRows = useMemo(() => {
+    if (financialFilters.kind === 'despesa') return [];
+
+    const query = financialFilters.query.trim();
+    const start = financialFilters.startDate ? new Date(`${financialFilters.startDate}T00:00:00`) : null;
+    const end = financialFilters.endDate ? new Date(`${financialFilters.endDate}T23:59:59.999`) : null;
+
+    return effectiveFinancialSalesRows
+      .filter((row) => {
+        const rowDate = row.createdAtIso ? new Date(row.createdAtIso) : parseBrDate(row.date);
+
+        if ((start || end) && !rowDate) return false;
+        if (start && rowDate && rowDate < start) return false;
+        if (end && rowDate && rowDate > end) return false;
+
+        if (!query) return true;
+
+        return matchesSearchTokens(
+          [
+            row.id,
+            row.date,
+            row.createdAtIso,
+            row.customer,
+            row.phone,
+            row.plate,
+            row.vehicle,
+            row.note,
+            ...getMoneySearchValues(row.total),
+          ],
+          query
+        );
+      })
+      .sort((a, b) => {
+        const aDate = a.createdAtIso ? new Date(a.createdAtIso).getTime() : parseBrDate(a.date)?.getTime() || 0;
+        const bDate = b.createdAtIso ? new Date(b.createdAtIso).getTime() : parseBrDate(b.date)?.getTime() || 0;
+        return bDate - aDate;
+      });
+  }, [effectiveFinancialSalesRows, financialFilters.endDate, financialFilters.kind, financialFilters.query, financialFilters.startDate]);
+
+  const financialSalesTotal = useMemo(
+    () => filteredFinancialSalesRows.reduce((acc, row) => acc + row.total, 0),
+    [filteredFinancialSalesRows]
   );
 
   const financialPageRangeLabel = useMemo(() => {
@@ -3931,7 +4025,7 @@ function App() {
               <div className="financial-filters">
                 <input
                   className="input-look"
-                  placeholder="Buscar por descricao, data ou id"
+                  placeholder="Buscar por descricao, cliente, placa, veiculo, data, valor ou id"
                   value={financialFilters.query}
                   onChange={(event) => setFinancialFilters((prev) => ({ ...prev, query: event.target.value }))}
                 />
@@ -4017,6 +4111,33 @@ function App() {
                   </div>
                 </div>
               )}
+
+              <div className="financial-sales-section">
+                <div className="line"><strong>VENDAS FILTRADAS:</strong> <span>{formatMoney(financialSalesTotal)}</span></div>
+                <div className="line"><strong>QTD VENDAS:</strong> <span>{formatNumberValue(filteredFinancialSalesRows.length)}</span></div>
+
+                <div className="financial-sales-table">
+                  <div className="financial-sales-header">
+                    <span>DATA</span>
+                    <span>CLIENTE</span>
+                    <span>PLACA</span>
+                    <span>VEICULO</span>
+                    <span>TOTAL</span>
+                  </div>
+                  {filteredFinancialSalesRows.map((sale) => (
+                    <div className="financial-sales-row" key={sale.id}>
+                      <span>{sale.date}</span>
+                      <span>{sale.customer}</span>
+                      <span>{sale.plate || 'SEM PLACA'}</span>
+                      <span>{sale.vehicle || 'SEM VEICULO'}</span>
+                      <span>{formatMoney(sale.total)}</span>
+                    </div>
+                  ))}
+                  {filteredFinancialSalesRows.length === 0 && (
+                    <div className="receipt-empty">Nenhuma venda encontrada para os filtros aplicados.</div>
+                  )}
+                </div>
+              </div>
             </div>
           </section>
           <footer className="panel-footer">

@@ -618,6 +618,23 @@ button {
   font-size: 14px;
 }
 
+.input-look,
+.sale-import-input,
+.sale-import-select,
+.modal-input,
+select {
+  color: #fff;
+  background-color: #111;
+}
+
+.input-look option,
+.sale-import-select option,
+.modal-input option,
+select option {
+  background: #fff;
+  color: #111;
+}
+
 .input-look:focus {
   outline: 1px solid rgba(185, 185, 185, 0.6);
 }
@@ -1512,6 +1529,7 @@ button {
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 10px;
   padding: 10px;
+  overflow-x: auto;
 }
 
 .clients-table-card > header {
@@ -1534,6 +1552,22 @@ button {
 
 .client-row {
   grid-template-columns: minmax(220px, 1.3fr) minmax(170px, 0.9fr) 140px minmax(220px, 1fr) 44px !important;
+}
+
+.menu-row,
+.menu-row.editable,
+.financial-row,
+.client-row,
+.sales-history-grid-row,
+.sales-history-grid-header,
+.receipt-row {
+  width: 100%;
+  min-width: 0;
+}
+
+.menu-row.editable input,
+.menu-row.editable select {
+  min-width: 0;
 }
 
 .menu-block {
@@ -1639,6 +1673,56 @@ button {
 .financial-pagination .mini-actions button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.financial-sales-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.financial-sales-table {
+  margin-top: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  overflow: auto;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.financial-sales-header,
+.financial-sales-row {
+  display: grid;
+  grid-template-columns: 140px minmax(220px, 1fr) 130px minmax(220px, 1fr) 130px;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+}
+
+.financial-sales-header {
+  background: rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.financial-sales-header span {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--gray-1);
+}
+
+.financial-sales-row {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.financial-sales-row:last-child {
+  border-bottom: 0;
+}
+
+.financial-sales-row span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
 }
 
 .sales-history-panel {
@@ -2254,6 +2338,11 @@ button {
 
   .financial-row {
     grid-template-columns: 1fr !important;
+  }
+
+  .financial-sales-header,
+  .financial-sales-row {
+    grid-template-columns: 1fr;
   }
 
   .sales-history-grid-header,
