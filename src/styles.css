@@ -1618,6 +1618,66 @@ select option {
     padding: 7px 7px calc(54px + var(--floating-footer-clearance));
   }
 
+  .panel {
+    padding-inline: 12px;
+  }
+
+  .dashboard-layout {
+    grid-template-columns: 150px 1fr 150px;
+    gap: 12px;
+  }
+
+  .financial-filters {
+    grid-template-columns: minmax(200px, 1.4fr) repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .financial-row {
+    grid-template-columns: 120px minmax(0, 1fr) 112px 88px 118px 40px !important;
+    gap: 8px;
+  }
+
+  .financial-sales-header,
+  .financial-sales-row {
+    grid-template-columns: 108px minmax(140px, 1fr) 98px minmax(150px, 1fr) 108px;
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .financial-sales-row span {
+    font-size: 12px;
+  }
+
+  .sales-history-list-card {
+    overflow-x: hidden;
+  }
+
+  .sales-history-grid-header,
+  .sales-history-grid-row {
+    grid-template-columns: 132px minmax(150px, 1fr) 102px 108px minmax(110px, auto);
+    min-width: 0;
+    gap: 8px;
+    padding: 8px 10px;
+  }
+
+  .sales-history-grid-row span {
+    font-size: 12px;
+  }
+
+  .sales-history-select-btn {
+    min-width: 84px;
+    min-height: 32px;
+    padding-inline: 10px;
+  }
+
+  .receipt-row {
+    grid-template-columns: 112px minmax(120px, 1fr) 180px 112px 128px;
+  }
+
+  .client-row {
+    grid-template-columns: minmax(170px, 1fr) minmax(132px, 0.8fr) 102px minmax(150px, 0.9fr) 40px !important;
+  }
+
   .sales-premium-main-body .card-body,
   .sales-premium-side-stack .card-body {
     padding: 7px !important;
@@ -2674,17 +2734,19 @@ select option {
 .sales-history-list-card {
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 12px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   background: rgba(8, 11, 16, 0.62);
 }
 
 .sales-history-grid-header,
 .sales-history-grid-row {
   display: grid;
-  grid-template-columns: 180px 1fr 140px 150px 130px;
+  grid-template-columns: 180px minmax(220px, 1fr) 140px 150px minmax(220px, auto);
   gap: 10px;
   align-items: center;
   padding: 10px 12px;
+  min-width: 860px;
 }
 
 .sales-history-grid-header {
@@ -2733,8 +2795,15 @@ select option {
   font-weight: 700;
 }
 
+.sales-history-grid-row .mini-actions {
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+}
+
 .sales-history-select-btn {
   min-height: 34px;
+  min-width: 98px;
+  padding-inline: 12px;
   border-radius: 8px;
   font-size: 10px;
   letter-spacing: 0.1em;

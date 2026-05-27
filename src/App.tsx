@@ -139,7 +139,12 @@ type FinancialSaleRow = {
   plate: string;
   vehicle: string;
   note: string;
+  subtotal: number;
+  discount: number;
+  surcharge: number;
   total: number;
+  timeDays: number;
+  laborRequired: boolean | null;
 };
 
 type FinancialFilters = {
@@ -1947,7 +1952,7 @@ function App() {
           .order('created_at', { ascending: false }),
         sb
           .from('documents_v2')
-          .select('id, customer_name_snapshot, phone_snapshot, plate_snapshot, vehicle_snapshot, notes, total_amount, created_at')
+          .select('id, customer_name_snapshot, phone_snapshot, plate_snapshot, vehicle_snapshot, notes, subtotal_amount, discount_amount, surcharge_amount, total_amount, service_time_days, labor_required, created_at')
           .eq('doc_type', 'venda')
           .order('created_at', { ascending: false })
           .limit(250),
@@ -2028,7 +2033,12 @@ function App() {
           plate: item.plate_snapshot || '',
           vehicle: item.vehicle_snapshot || '',
           note: item.notes || '',
+          subtotal: Number(item.subtotal_amount) || 0,
+          discount: Number(item.discount_amount) || 0,
+          surcharge: Number(item.surcharge_amount) || 0,
           total: Number(item.total_amount) || 0,
+          timeDays: Number(item.service_time_days) || 0,
+          laborRequired: typeof item.labor_required === 'boolean' ? item.labor_required : null,
         }));
         setFinancialSalesRows(mappedSales);
       }
@@ -2576,7 +2586,12 @@ function App() {
       plate: row.plate,
       vehicle: row.car,
       note: '',
+      subtotal: row.total,
+      discount: 0,
+      surcharge: 0,
       total: row.total,
+      timeDays: 0,
+      laborRequired: null,
     }));
   }, [financialSalesRows, receipts]);
 
@@ -2607,6 +2622,11 @@ function App() {
             row.plate,
             row.vehicle,
             row.note,
+            row.timeDays,
+            row.laborRequired === null ? '' : row.laborRequired ? 'SIM' : 'NAO',
+            ...getMoneySearchValues(row.subtotal),
+            ...getMoneySearchValues(row.discount),
+            ...getMoneySearchValues(row.surcharge),
             ...getMoneySearchValues(row.total),
           ],
           query
@@ -4606,12 +4626,63 @@ function App() {
   }
 
   function exportReportsCSV() {
+    const saleById = new Map(effectiveFinancialSalesRows.map((row) => [row.id, row]));
     downloadCsv(
       `relatorio-filtrado-${Date.now()}.csv`,
-      ['ID', 'Data', 'Descricao', 'Tipo', 'Valor'],
+      [
+        'ID Lancamento',
+        'Data Lancamento',
+        'Tipo',
+        'Descricao',
+        'Valor Lancamento',
+        'Origem',
+        'ID Origem',
+        'ID Venda',
+        'Data Venda',
+        'Cliente',
+        'Telefone',
+        'Placa',
+        'Veiculo',
+        'Subtotal Venda',
+        'Desconto Venda',
+        'Acrescimo Venda',
+        'Total Venda',
+        'Prazo Dias',
+        'Mao de Obra',
+        'Observacao',
+      ],
       filteredReportEntries.map((entry) => {
         const type = resolveFinancialKind(entry) === 'despesa' ? 'DESPESA' : 'RECEITA';
-        return [entry.id, entry.date, entry.description, type, entry.amount.toFixed(2)];
+        const sourceType = entry.sourceType || '';
+        const sourceId = entry.sourceId || '';
+        const linkedSale = sourceType === 'venda' && sourceId ? saleById.get(String(sourceId)) : undefined;
+
+        return [
+          entry.id,
+          entry.date,
+          type,
+          entry.description,
+          entry.amount.toFixed(2),
+          sourceType || '-',
+          sourceId || '-',
+          linkedSale?.id || '-',
+          linkedSale?.date || '-',
+          linkedSale?.customer || '-',
+          linkedSale?.phone || '-',
+          linkedSale?.plate || '-',
+          linkedSale?.vehicle || '-',
+          linkedSale ? linkedSale.subtotal.toFixed(2) : '-',
+          linkedSale ? linkedSale.discount.toFixed(2) : '-',
+          linkedSale ? linkedSale.surcharge.toFixed(2) : '-',
+          linkedSale ? linkedSale.total.toFixed(2) : '-',
+          linkedSale ? linkedSale.timeDays : '-',
+          linkedSale?.laborRequired === null || linkedSale?.laborRequired === undefined
+            ? '-'
+            : linkedSale.laborRequired
+              ? 'SIM'
+              : 'NAO',
+          linkedSale?.note || '-',
+        ];
       })
     );
   }
@@ -4642,6 +4713,121 @@ function App() {
         .sort((a, b) => b[0].localeCompare(a[0]))
         .map(([date, values]) => [date, values.qtd, values.receitas.toFixed(2), values.despesas.toFixed(2), values.saldo.toFixed(2)])
     );
+  }
+
+  function printDetailedReports() {
+    const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=1600,height=900');
+    if (!printWindow) {
+      window.alert('Nao foi possivel abrir a janela de impressao. Verifique se o bloqueador de pop-up esta ativo.');
+      return;
+    }
+
+    const saleById = new Map(effectiveFinancialSalesRows.map((row) => [row.id, row]));
+
+    const rows = filteredReportEntries
+      .map((entry) => {
+        const type = resolveFinancialKind(entry) === 'despesa' ? 'DESPESA' : 'RECEITA';
+        const sourceType = entry.sourceType || '';
+        const sourceId = entry.sourceId || '';
+        const linkedSale = sourceType === 'venda' && sourceId ? saleById.get(String(sourceId)) : undefined;
+
+        return `
+          <tr>
+            <td>${escapeHtml(entry.id)}</td>
+            <td>${escapeHtml(entry.date || '-')}</td>
+            <td>${type}</td>
+            <td>${escapeHtml(entry.description || '-')}</td>
+            <td>${escapeHtml(formatMoney(entry.amount))}</td>
+            <td>${escapeHtml(sourceType || '-')}</td>
+            <td>${escapeHtml(sourceId || '-')}</td>
+            <td>${escapeHtml(linkedSale?.id || '-')}</td>
+            <td>${escapeHtml(linkedSale?.date || '-')}</td>
+            <td>${escapeHtml(linkedSale?.customer || '-')}</td>
+            <td>${escapeHtml(linkedSale?.phone || '-')}</td>
+            <td>${escapeHtml(linkedSale?.plate || '-')}</td>
+            <td>${escapeHtml(linkedSale?.vehicle || '-')}</td>
+            <td>${escapeHtml(linkedSale ? formatMoney(linkedSale.subtotal) : '-')}</td>
+            <td>${escapeHtml(linkedSale ? formatMoney(linkedSale.discount) : '-')}</td>
+            <td>${escapeHtml(linkedSale ? formatMoney(linkedSale.surcharge) : '-')}</td>
+            <td>${escapeHtml(linkedSale ? formatMoney(linkedSale.total) : '-')}</td>
+            <td>${escapeHtml(linkedSale ? String(linkedSale.timeDays) : '-')}</td>
+            <td>${escapeHtml(
+              linkedSale?.laborRequired === null || linkedSale?.laborRequired === undefined
+                ? '-'
+                : linkedSale.laborRequired
+                  ? 'SIM'
+                  : 'NAO'
+            )}</td>
+            <td>${escapeHtml(linkedSale?.note || '-')}</td>
+          </tr>
+        `;
+      })
+      .join('');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head>
+        <meta charset="UTF-8" />
+        <title>RELATORIO DETALHADO</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; color: #111; }
+          h1 { margin: 0 0 8px; font-size: 18px; }
+          .meta { margin-bottom: 10px; font-size: 12px; }
+          .summary { margin-bottom: 12px; font-size: 12px; font-weight: 600; }
+          .table-wrap { overflow-x: auto; }
+          table { width: 100%; border-collapse: collapse; min-width: 1900px; }
+          th, td { border: 1px solid #bbb; padding: 5px; font-size: 11px; text-align: left; vertical-align: top; }
+          th { background: #f2f2f2; text-transform: uppercase; }
+          @media print {
+            body { margin: 10mm; }
+            .table-wrap { overflow: visible; }
+            table { min-width: 0; }
+          }
+        </style>
+      </head>
+      <body>
+        <h1>RELATORIO DETALHADO (${escapeHtml(filteredReportEntries.length)})</h1>
+        <div class="meta">Periodo: ${escapeHtml(reportFilters.startDate || 'INICIO')} ate ${escapeHtml(reportFilters.endDate || 'HOJE')} | Tipo: ${escapeHtml(reportFilters.kind.toUpperCase())} | Gerado em ${escapeHtml(new Date().toLocaleString('pt-BR'))}</div>
+        <div class="summary">Receitas: ${escapeHtml(formatMoney(reportIncomeTotal))} | Despesas: ${escapeHtml(formatMoney(reportExpenseTotal))} | Saldo: ${escapeHtml(formatMoney(reportBalance))}</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID Lancamento</th>
+                <th>Data Lancamento</th>
+                <th>Tipo</th>
+                <th>Descricao</th>
+                <th>Valor Lancamento</th>
+                <th>Origem</th>
+                <th>ID Origem</th>
+                <th>ID Venda</th>
+                <th>Data Venda</th>
+                <th>Cliente</th>
+                <th>Telefone</th>
+                <th>Placa</th>
+                <th>Veiculo</th>
+                <th>Subtotal Venda</th>
+                <th>Desconto Venda</th>
+                <th>Acrescimo Venda</th>
+                <th>Total Venda</th>
+                <th>Prazo Dias</th>
+                <th>Mao de Obra</th>
+                <th>Observacao</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows || '<tr><td colspan="20">Nenhum lancamento encontrado para os filtros aplicados.</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+      </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
   }
 
   function exportSalesHistoryCSV() {
@@ -5448,7 +5634,7 @@ function App() {
               <div className="line"><strong>FATURAMENTO:</strong> <span>{formatMoney(financialTotal)}</span></div>
               <div className="line"><strong>REGISTROS FILTRADOS:</strong> <span>{formatNumberValue(filteredReportEntries.length)}</span></div>
               <div className="mini-actions">
-                <button className="btn-yellow lg" onClick={() => window.print()}>IMPRIMIR RELATORIO</button>
+                <button className="btn-yellow lg" onClick={printDetailedReports}>IMPRIMIR RELATORIO</button>
                 <button className="btn-cyan lg" onClick={exportReportsCSV}>EXPORTAR CSV FILTRADO</button>
                 <button className="btn-cyan lg" onClick={exportReportsGroupedByDayCSV}>EXPORTAR RESUMO DIARIO</button>
                 <button className="btn-cyan lg" onClick={() => setScreen('print-receipt')}>VER RECIBOS</button>
