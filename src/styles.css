@@ -1378,6 +1378,31 @@ select option {
   font-size: 12px;
 }
 
+.sales-premium-pdv-lines {
+  display: grid;
+  gap: 5px;
+  font-size: 11px;
+}
+
+.sales-premium-pdv-lines > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid #25344b;
+}
+
+.sales-premium-pdv-lines span {
+  color: #9ca3af;
+}
+
+.sales-premium-pdv-lines strong {
+  color: #e2e8f0;
+  font-weight: 700;
+}
+
 .sales-premium-inline-actions {
   display: flex;
   gap: 8px;

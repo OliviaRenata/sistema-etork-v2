@@ -7,7 +7,6 @@ import {
   CircleDollarSign,
   Clock3,
   Gauge,
-  History,
   Plus,
   Search,
   Send,
@@ -1063,7 +1062,6 @@ function SaleScreen({
   finalizeSale,
   isSaving,
   formatMoney,
-  receipts,
   setScreen,
   applyMatchedClient,
   now,
@@ -1094,7 +1092,6 @@ function SaleScreen({
   finalizeSale: () => void;
   isSaving: boolean;
   formatMoney: (value: number) => string;
-  receipts: ReceiptRow[];
   setScreen: (next: Screen) => void;
   applyMatchedClient: (target: 'quote' | 'appointment' | 'sale', customerValue: string) => void;
   now: Date;
@@ -1117,7 +1114,7 @@ function SaleScreen({
   const vehicleYear = vehicleLines[2] || '2024/2024';
   const vehicleFuel = vehicleLines[3] || 'DIESEL';
 
-  const paymentStatusLabel = saleTotal > 0 ? 'PENDENTE' : 'SEM VALOR';
+  const paymentStatusLabel = saleTotal > 0 ? 'EM ABERTO' : 'SEM VALOR';
 
   async function handleSendService() {
     await Swal.fire({
@@ -1244,11 +1241,13 @@ function SaleScreen({
                     <div className="card sales-premium-inner border-0 h-100">
                       <div className="card-body p-3">
                         <h6 className="sales-premium-section-title mb-3"><CarFront size={15} /> Veiculo</h6>
-                        <div className="sales-premium-vehicle-media mb-2">
-                          <img src="https://images.unsplash.com/photo-1619405399517-d7fce0f13302?auto=format&fit=crop&w=1200&q=60" alt="Veiculo em destaque" />
-                        </div>
                         <strong className="sales-premium-vehicle-title d-block">{vehicleModel}</strong>
                         <small className="sales-premium-muted d-block mb-2">{vehicleGear} • {vehicleYear}</small>
+                        <div className="sales-premium-pdv-lines mb-2">
+                          <div><span>Atendimento:</span><strong>Balcao PDV</strong></div>
+                          <div><span>Operador:</span><strong>ADMIN</strong></div>
+                          <div><span>Placa:</span><strong>{saleData.plate || 'N/A'}</strong></div>
+                        </div>
                         <div className="sales-premium-chip-list">
                           <span className="chip orange">{vehicleFuel}</span>
                           <span className="chip blue">AUTOMATICO</span>
@@ -1410,8 +1409,7 @@ function SaleScreen({
 
                 <div className="sales-premium-status-grid mt-3">
                   <span className="chip green">EM ANDAMENTO</span>
-                  <span className="chip orange">{paymentStatusLabel}</span>
-                  <span className="chip blue">PAGAMENTO PIX</span>
+                  <span className="chip blue">CAIXA ABERTO</span>
                 </div>
               </div>
             </div>
@@ -1436,30 +1434,14 @@ function SaleScreen({
               </div>
             </div>
 
-            <div className="card sales-premium-card sales-premium-side-card sales-premium-timeline-card border-0">
+            <div className="card sales-premium-card sales-premium-side-card border-0">
               <div className="card-body p-3">
-                <h6 className="sales-premium-section-title mb-3"><History size={15} /> Lancamentos recentes</h6>
-                <div className="sales-premium-timeline">
-                  {receipts.length === 0 ? (
-                    <div className="sales-premium-muted">Nenhum lancamento recente.</div>
-                  ) : (
-                    receipts.slice(0, 6).map((row) => (
-                      <article className="sales-premium-timeline-item" key={row.id}>
-                        <div className="sales-premium-dot" />
-                        <div>
-                          <div className="sales-premium-timeline-top">
-                            <strong>{row.customer}</strong>
-                            <span className="chip neutral">{row.plate}</span>
-                          </div>
-                          <p className="mb-1 sales-premium-muted">{row.car}</p>
-                          <div className="sales-premium-timeline-bottom">
-                            <span>{row.date}</span>
-                            <span className="chip green">{formatMoney(row.total)}</span>
-                          </div>
-                        </div>
-                      </article>
-                    ))
-                  )}
+                <h6 className="sales-premium-section-title mb-3"><Wrench size={15} /> Operacao de Balcao</h6>
+                <div className="sales-premium-pdv-lines">
+                  <div><span>Status da OS:</span><strong>{paymentStatusLabel}</strong></div>
+                  <div><span>Fluxo:</span><strong>Atendimento {'>'} Servico {'>'} Fechamento</strong></div>
+                  <div><span>Pagamento:</span><strong>Definir no fechamento</strong></div>
+                  <div><span>Prioridade:</span><strong>Padrao</strong></div>
                 </div>
               </div>
             </div>
@@ -5341,7 +5323,6 @@ function App() {
           finalizeSale={() => void finalizeSale()}
           isSaving={isSaving}
           formatMoney={formatMoney}
-          receipts={receipts}
           setScreen={setScreen}
           applyMatchedClient={applyMatchedClient}
           now={now}
