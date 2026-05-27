@@ -1058,6 +1058,7 @@ function SaleScreen({
   addItemToSale,
   updateItems,
   removeItem,
+  onCancelSale,
   finalizeSale,
   isSaving,
   formatMoney,
@@ -1087,6 +1088,7 @@ function SaleScreen({
   addItemToSale: () => void;
   updateItems: (target: 'quote' | 'appointment' | 'sale', index: number, patch: Partial<ServiceItem>) => void;
   removeItem: (target: 'quote' | 'appointment' | 'sale', index: number) => void;
+  onCancelSale: () => void;
   finalizeSale: () => void;
   isSaving: boolean;
   formatMoney: (value: number) => string;
@@ -1173,6 +1175,15 @@ function SaleScreen({
         <div className="sales-premium-header-actions">
           <button className="sales-premium-btn ghost sales-premium-btn-back" onClick={() => setScreen('dashboard')}>
             <CalendarClock size={16} /> Voltar
+          </button>
+          <button
+            className="sales-premium-btn ghost"
+            onClick={() => {
+              onCancelSale();
+              setGlobalSearch('');
+            }}
+          >
+            Cancelar Venda
           </button>
           <button className="sales-premium-btn primary" onClick={() => void handleSendService()}>
             <Send size={16} /> Enviar Servico
@@ -3888,6 +3899,16 @@ function App() {
     window.alert(dbAppointment ? 'Agendamento importado do banco.' : 'Agendamento importado para a venda.');
   }
 
+  function clearSaleForm() {
+    setSaleData(createEmptySaleData());
+    setSaleQuoteSearch('');
+    setSaleQuoteResults([]);
+    setSaleSelectedQuoteId('');
+    setSaleAppointmentSearch('');
+    setSaleAppointmentResults([]);
+    setSaleSelectedAppointmentId('');
+  }
+
   async function finalizeSale() {
     const soldByDescription = saleData.items.reduce<Record<string, number>>((acc, item) => {
       const key = normalizeCatalogKey(item.description);
@@ -5315,6 +5336,7 @@ function App() {
           addItemToSale={addItemToSale}
           updateItems={updateItems}
           removeItem={removeItem}
+          onCancelSale={clearSaleForm}
           finalizeSale={() => void finalizeSale()}
           isSaving={isSaving}
           formatMoney={formatMoney}
