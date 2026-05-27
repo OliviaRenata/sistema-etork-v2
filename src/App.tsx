@@ -4118,6 +4118,43 @@ function App() {
     openSaleReceiptDocument(selectedSalePrintable, true);
   }
 
+  async function deleteSaleFromHistory(saleId: string) {
+    const confirmResult = await Swal.fire({
+      title: 'Excluir venda?',
+      text: 'Essa acao remove a venda da lista.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Excluir',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#334155',
+      background: '#111827',
+      color: '#f3f4f6',
+    });
+
+    if (!confirmResult.isConfirmed) return;
+
+    if (isSupabaseConfigured && supabase) {
+      const sb = supabase;
+      const { error } = await sb
+        .from('documents_v2')
+        .delete()
+        .eq('id', saleId)
+        .eq('doc_type', 'venda');
+
+      if (error) {
+        window.alert(`Nao foi possivel excluir a venda: ${error.message}`);
+        return;
+      }
+    }
+
+    setSalesHistory((prev) => prev.filter((sale) => sale.id !== saleId));
+    setSelectedSalePrintable((current) => {
+      if (!current) return current;
+      return current.number.includes(String(saleId).slice(0, 8).toUpperCase()) ? null : current;
+    });
+  }
+
   async function handleLogin() {
     setAuthMessage('');
 
@@ -5650,7 +5687,7 @@ function App() {
                     <span>CLIENTE</span>
                     <span>PLACA</span>
                     <span>TOTAL</span>
-                    <span></span>
+                    <span>ACOES</span>
                   </div>
 
                   {pagedSalesHistory.map((sale) => (
@@ -5659,7 +5696,10 @@ function App() {
                       <span className="strong">{sale.customer}</span>
                       <span className="plate">{sale.plate || 'SEM PLACA'}</span>
                       <span className="money">{formatMoney(sale.total)}</span>
-                      <button className="btn-cyan sales-history-select-btn" onClick={() => void selectSaleForReceipt(sale.id, true)}>SELECIONAR</button>
+                      <div className="mini-actions">
+                        <button className="btn-cyan sales-history-select-btn" onClick={() => void selectSaleForReceipt(sale.id, true)}>SELECIONAR</button>
+                        <button className="btn-red sales-history-select-btn" onClick={() => void deleteSaleFromHistory(sale.id)}>EXCLUIR</button>
+                      </div>
                     </div>
                   ))}
                 </div>
