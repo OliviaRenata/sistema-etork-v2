@@ -66,6 +66,7 @@ type SavedAppointment = {
   vehicleDetails: string;
   items: ServiceItem[];
   discount: number;
+  timeDays: number;
   note: string;
 };
 
@@ -1784,7 +1785,7 @@ function App() {
           .limit(150),
         sb
           .from('clients_v2')
-          .select('id, name, phone, plate')
+          .select('id, name, phone, plate, price_table')
           .order('id', { ascending: false }),
         sb
           .from('financial_entries_v2')
@@ -1833,19 +1834,19 @@ function App() {
       }
 
       if (!clientsResult.error && clientsResult.data && clientsResult.data.length > 0) {
-        const mappedClients = clientsResult.data.map((item) => ({
+        const mappedClients: ClientRow[] = clientsResult.data.map((item) => ({
           id: Number(item.id),
           name: item.name || '',
           phone: item.phone || '',
           plate: item.plate || '',
-          priceTable: Number(item.price_table) === 2 ? 2 : 1,
+          priceTable: Number((item as { price_table?: number | null }).price_table) === 2 ? 2 : 1,
         }));
         setClients(mappedClients);
         setNextClientId(Math.max(...mappedClients.map((client) => client.id)) + 1);
       }
 
       if (!financialResult.error && financialResult.data && financialResult.data.length > 0) {
-        const mappedEntries = financialResult.data.map((item) => {
+        const mappedEntries: FinancialEntry[] = financialResult.data.map((item) => {
           const amount = Number(item.amount) || 0;
           const description = item.description || '';
           return {
@@ -2894,7 +2895,7 @@ function App() {
     setCalendarAppointments((prev) =>
       prev.map((appointment) =>
         selected.sourceDocumentId && appointment.id === selected.sourceDocumentId
-          ? { ...appointment, status: mapDashboardStatusToDocumentStatus(selected.status) }
+          ? { ...appointment, status: selected.status === 'AVISAR CLIENTE' ? 'CANCELADO' : 'CONFIRMADO' }
           : appointment
       )
     );
@@ -3102,7 +3103,11 @@ function App() {
     await sb.from('clients_v2').delete().eq('id', id);
   }
 
-  async function updateProduct(id: number | null, index: number, patch: Partial<{ description: string; price: number; quantity: number }>) {
+  async function updateProduct(
+    id: number | null,
+    index: number,
+    patch: Partial<{ description: string; itemType: CatalogItemType; priceTable1: number; priceTable2: number; quantity: number }>
+  ) {
     setServiceCatalogData((prev) => prev.map((item, idx) => (idx === index ? { ...item, ...patch } : item)));
 
     if (!isSupabaseConfigured || !supabase || id === null) return;
@@ -3502,6 +3507,7 @@ function App() {
       vehicleDetails: appointmentData.vehicleDetails,
       items: cloneItems(appointmentData.items),
       discount: appointmentData.discount,
+      timeDays: 1,
       note: appointmentData.note,
     };
 
