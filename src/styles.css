@@ -40,6 +40,24 @@ button {
   border-radius: 999px;
 }
 
+button,
+.sale-btn-ghost,
+.sale-btn-primary,
+.sale-btn-green,
+.sale-item-del,
+.sale-add-btn,
+.mini-actions button,
+.btn-cancel,
+.btn-save,
+.item-edit,
+.item-delete,
+.sales-history-select-btn,
+.et-logout,
+.auth-primary,
+.auth-links button {
+  border-radius: 999px !important;
+}
+
 .intro-screen {
   min-height: 100vh;
   display: grid;
