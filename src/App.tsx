@@ -954,12 +954,22 @@ function ServiceStatusModal({
   onClose,
   onServiceChange,
   onSave,
+  onPrint,
+  onWhatsapp,
+  onCancelAppointment,
+  onDeleteAppointment,
+  hasLinkedAppointment,
 }: {
   isOpen: boolean;
   service: DashboardService | null;
   onClose: () => void;
   onServiceChange: (patch: Partial<DashboardService>) => void;
   onSave: () => void;
+  onPrint: () => void;
+  onWhatsapp: () => void;
+  onCancelAppointment: () => void;
+  onDeleteAppointment: () => void;
+  hasLinkedAppointment: boolean;
 }) {
   if (!isOpen || !service) return null;
 
@@ -1005,6 +1015,10 @@ function ServiceStatusModal({
         </div>
 
         <div className="modal-footer">
+          <button className="btn-yellow" disabled={!hasLinkedAppointment} onClick={onPrint}>IMPRIMIR VIA</button>
+          <button className="btn-cyan" disabled={!hasLinkedAppointment} onClick={onWhatsapp}>ENVIAR WHATSAPP</button>
+          <button className="btn-red" disabled={!hasLinkedAppointment} onClick={onCancelAppointment}>CANCELAR AGEND.</button>
+          <button className="btn-dark" disabled={!hasLinkedAppointment} onClick={onDeleteAppointment}>EXCLUIR</button>
           <button className="btn-cancel" onClick={onClose}>CANCELAR</button>
           <button className="btn-save" onClick={onSave}>SALVAR STATUS</button>
         </div>
@@ -2883,6 +2897,11 @@ function App() {
     setSelectedDashboardService({ ...service });
   }
 
+  function findSelectedDashboardAppointment() {
+    if (!selectedDashboardService?.sourceDocumentId) return null;
+    return calendarAppointments.find((item) => item.id === selectedDashboardService.sourceDocumentId) || null;
+  }
+
   async function saveDashboardServiceStatus() {
     if (!selectedDashboardService) return;
     const selected = selectedDashboardService;
@@ -2994,10 +3013,58 @@ function App() {
     setCalendarEditData(null);
   }
 
-  function printCalendarAppointmentServiceSlip() {
-    if (!calendarEditData) return;
+  async function cancelSelectedDashboardServiceAppointment() {
+    const appointment = findSelectedDashboardAppointment();
+    if (!appointment) {
+      window.alert('Servico sem agendamento vinculado.');
+      return;
+    }
 
-    const appointment = calendarEditData;
+    const updated = { ...appointment, status: 'CANCELADO' as AppointmentStatus };
+    setCalendarAppointments((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+    setDashboardServices((prev) =>
+      prev.map((service) =>
+        service.id === selectedDashboardService?.id
+          ? { ...service, status: 'AVISAR CLIENTE', tone: 'info' }
+          : service
+      )
+    );
+
+    if (isSupabaseConfigured && supabase && !updated.id.startsWith('local-')) {
+      const sb = supabase;
+      await sb
+        .from('documents_v2')
+        .update({ status: mapAppointmentStatusToDocumentStatus('CANCELADO') })
+        .eq('id', updated.id)
+        .eq('doc_type', 'agendamento');
+    }
+
+    setSelectedDashboardService((prev) => (prev ? { ...prev, status: 'AVISAR CLIENTE', tone: 'info' } : prev));
+  }
+
+  async function deleteSelectedDashboardServiceAppointment() {
+    const appointment = findSelectedDashboardAppointment();
+    if (!appointment) {
+      window.alert('Servico sem agendamento vinculado.');
+      return;
+    }
+
+    setCalendarAppointments((prev) => prev.filter((item) => item.id !== appointment.id));
+    setDashboardServices((prev) => prev.filter((service) => service.id !== selectedDashboardService?.id));
+
+    if (isSupabaseConfigured && supabase && !appointment.id.startsWith('local-')) {
+      const sb = supabase;
+      await sb
+        .from('documents_v2')
+        .delete()
+        .eq('id', appointment.id)
+        .eq('doc_type', 'agendamento');
+    }
+
+    setSelectedDashboardService(null);
+  }
+
+  function printServiceSlip(appointment: CalendarAppointment) {
     const popup = window.open('', '_blank', 'width=900,height=700');
     if (!popup) {
       window.alert('Nao foi possivel abrir a tela de impressao.');
@@ -3035,6 +3102,29 @@ function App() {
     popup.document.close();
     popup.focus();
     popup.print();
+  }
+
+  function printCalendarAppointmentServiceSlip() {
+    if (!calendarEditData) return;
+    printServiceSlip(calendarEditData);
+  }
+
+  function printSelectedDashboardServiceSlip() {
+    const appointment = findSelectedDashboardAppointment();
+    if (!appointment) {
+      window.alert('Servico sem agendamento vinculado.');
+      return;
+    }
+    printServiceSlip(appointment);
+  }
+
+  function openSelectedDashboardServiceWhatsapp() {
+    const appointment = findSelectedDashboardAppointment();
+    if (!appointment) {
+      window.alert('Servico sem agendamento vinculado.');
+      return;
+    }
+    openWhatsappAppointment(appointment);
   }
 
   async function updateClient(id: number, patch: Partial<ClientRow>) {
@@ -5413,6 +5503,11 @@ function App() {
         onClose={() => setSelectedDashboardService(null)}
         onServiceChange={(patch) => setSelectedDashboardService((prev) => (prev ? { ...prev, ...patch } : prev))}
         onSave={saveDashboardServiceStatus}
+        onPrint={printSelectedDashboardServiceSlip}
+        onWhatsapp={openSelectedDashboardServiceWhatsapp}
+        onCancelAppointment={() => void cancelSelectedDashboardServiceAppointment()}
+        onDeleteAppointment={() => void deleteSelectedDashboardServiceAppointment()}
+        hasLinkedAppointment={Boolean(selectedDashboardService?.sourceDocumentId)}
       />
 
       <datalist id="client-suggestions">
