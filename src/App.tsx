@@ -79,6 +79,7 @@ type CalendarAppointment = {
   vehicleDetails: string;
   note: string;
   total: number;
+  status?: string;
 };
 
 type ReceiptRow = {
@@ -137,6 +138,7 @@ type DashboardService = {
   plate: string;
   status: DashboardServiceStatus;
   tone: DashboardServiceTone;
+  sourceDocumentId?: string | null;
 };
 
 const DASHBOARD_STATUS_OPTIONS: DashboardServiceStatus[] = [
@@ -153,6 +155,23 @@ function dashboardToneByStatus(status: DashboardServiceStatus): DashboardService
   if (status === 'EM ANDAMENTO') return 'warning';
   if (status === 'AVISAR CLIENTE') return 'info';
   return 'neutral';
+}
+
+function normalizeDashboardStatus(value: string | null | undefined): DashboardServiceStatus {
+  const normalized = (value || '').trim().toLowerCase();
+  if (normalized === 'concluido' || normalized === 'finalizado') return 'CONCLUIDO';
+  if (normalized === 'atrasado') return 'ATRASADO';
+  if (normalized === 'em andamento' || normalized === 'em_andamento' || normalized === 'andamento') return 'EM ANDAMENTO';
+  if (normalized === 'avisar cliente' || normalized === 'avisar_cliente') return 'AVISAR CLIENTE';
+  return 'EM ABERTO';
+}
+
+function mapDashboardStatusToDocumentStatus(status: DashboardServiceStatus): string {
+  if (status === 'CONCLUIDO') return 'concluido';
+  if (status === 'ATRASADO') return 'atrasado';
+  if (status === 'EM ANDAMENTO') return 'em_andamento';
+  if (status === 'AVISAR CLIENTE') return 'avisar_cliente';
+  return 'aberto';
 }
 
 const FINANCIAL_PAGE_SIZE = 25;
@@ -1711,7 +1730,7 @@ function App() {
           .order('id', { ascending: false }),
         sb
           .from('documents_v2')
-          .select('id, customer_name_snapshot, phone_snapshot, plate_snapshot, vehicle_snapshot, notes, discount_amount, scheduled_for, total_amount, created_at')
+          .select('id, customer_name_snapshot, phone_snapshot, plate_snapshot, vehicle_snapshot, notes, discount_amount, scheduled_for, total_amount, created_at, status')
           .eq('doc_type', 'agendamento')
           .order('scheduled_for', { ascending: true, nullsFirst: false })
           .order('created_at', { ascending: false }),
@@ -1817,9 +1836,25 @@ function App() {
             vehicleDetails: item.vehicle_snapshot || '',
             note: item.notes || '',
             total: Number(item.total_amount) || 0,
+            status: item.status || 'aberto',
           };
         });
         setCalendarAppointments(mappedAppointments);
+
+        const mappedDashboardServices: DashboardService[] = mappedAppointments.slice(0, 8).map((appointment) => {
+          const dashboardStatus = normalizeDashboardStatus(appointment.status);
+          return {
+            id: `appt-${appointment.id}`,
+            title: appointment.vehicleDetails.split('\n')[0] || appointment.customer || 'SERVICO',
+            plate: appointment.plate || 'SEM PLACA',
+            status: dashboardStatus,
+            tone: dashboardToneByStatus(dashboardStatus),
+            sourceDocumentId: appointment.id,
+          };
+        });
+        if (mappedDashboardServices.length > 0) {
+          setDashboardServices(mappedDashboardServices);
+        }
       } else if (savedAppointment) {
         setCalendarAppointments([
           {
@@ -1832,6 +1867,17 @@ function App() {
             vehicleDetails: savedAppointment.vehicleDetails,
             note: savedAppointment.note,
             total: savedAppointment.items.reduce((acc, item) => acc + item.price * item.quantity, 0) - savedAppointment.discount,
+            status: 'aberto',
+          },
+        ]);
+        setDashboardServices([
+          {
+            id: 'appt-local-saved-appointment',
+            title: savedAppointment.vehicleDetails.split('\n')[0] || savedAppointment.customer || 'SERVICO',
+            plate: savedAppointment.plate || 'SEM PLACA',
+            status: 'EM ABERTO',
+            tone: dashboardToneByStatus('EM ABERTO'),
+            sourceDocumentId: null,
           },
         ]);
       }
@@ -2720,13 +2766,32 @@ function App() {
     setSelectedDashboardService({ ...service });
   }
 
-  function saveDashboardServiceStatus() {
+  async function saveDashboardServiceStatus() {
     if (!selectedDashboardService) return;
+    const selected = selectedDashboardService;
+
     setDashboardServices((prev) =>
       prev.map((service) =>
-        service.id === selectedDashboardService.id ? selectedDashboardService : service
+        service.id === selected.id ? selected : service
       )
     );
+    setCalendarAppointments((prev) =>
+      prev.map((appointment) =>
+        selected.sourceDocumentId && appointment.id === selected.sourceDocumentId
+          ? { ...appointment, status: mapDashboardStatusToDocumentStatus(selected.status) }
+          : appointment
+      )
+    );
+
+    if (selected.sourceDocumentId && isSupabaseConfigured && supabase) {
+      const sb = supabase;
+      await sb
+        .from('documents_v2')
+        .update({ status: mapDashboardStatusToDocumentStatus(selected.status) })
+        .eq('id', selected.sourceDocumentId)
+        .eq('doc_type', 'agendamento');
+    }
+
     setSelectedDashboardService(null);
   }
 
