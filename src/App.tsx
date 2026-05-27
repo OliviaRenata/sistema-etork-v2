@@ -50,6 +50,9 @@ type ImportDocumentRow = {
   customer: string;
   phone: string;
   plate: string;
+  vehicle: string;
+  note: string;
+  createdAtIso: string;
   createdAt: string;
   total: number;
 };
@@ -435,6 +438,36 @@ function parseMoneyInput(raw: string) {
   const normalized = raw.trim().replace(/\s+/g, '').replace(/\./g, '').replace(',', '.');
   const value = Number(normalized);
   return Number.isFinite(value) ? value : null;
+}
+
+function normalizeSearchText(value: string) {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function getMoneySearchValues(value: number) {
+  const absolute = Math.abs(Number(value) || 0);
+  const signal = value < 0 ? '-' : '';
+  const br = `${signal}${absolute.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const us = `${signal}${absolute.toFixed(2)}`;
+  const integer = `${signal}${Math.trunc(absolute)}`;
+
+  return [br, us, integer, `R$ ${br}`, `R$${br}`];
+}
+
+function matchesSearchTokens(values: string[], query: string) {
+  const tokens = normalizeSearchText(query)
+    .split(' ')
+    .filter(Boolean);
+
+  if (tokens.length === 0) return true;
+
+  const normalizedValues = values.map((value) => normalizeSearchText(value));
+  return tokens.every((token) => normalizedValues.some((value) => value.includes(token)));
 }
 
 function toInputDateValue(date: Date) {
@@ -870,14 +903,14 @@ function SaleScreen({
                 className="sale-import-input"
                 value={saleQuoteSearch}
                 onChange={(e) => setSaleQuoteSearch(e.target.value)}
-                placeholder="Buscar orcamento por cliente, tel ou placa"
+                placeholder="Buscar orcamento por nome, data, valor, tel, placa, veiculo ou observacao"
               />
               <button className="sale-import-btn blue" onClick={runSaleQuoteSearch}>BUSCAR ORC.</button>
               <select className="sale-import-select" value={saleSelectedQuoteId} onChange={(e) => setSaleSelectedQuoteId(e.target.value)}>
                 <option value="">Selecione um orcamento</option>
                 {saleQuoteResults.map((row) => (
                   <option key={row.id} value={row.id}>
-                    {`${row.customer} | ${row.plate} | ${row.createdAt} | ${formatMoney(row.total)}`}
+                    {`${row.customer} | ${row.phone} | ${row.plate} | ${row.createdAt} | ${formatMoney(row.total)}`}
                   </option>
                 ))}
               </select>
@@ -890,7 +923,7 @@ function SaleScreen({
                 className="sale-import-input"
                 value={saleAppointmentSearch}
                 onChange={(e) => setSaleAppointmentSearch(e.target.value)}
-                placeholder="Buscar agendamento por cliente, tel ou placa"
+                placeholder="Buscar agendamento por nome, data, valor, tel, placa, veiculo ou observacao"
               />
               <button className="sale-import-btn amber" onClick={runSaleAppointmentSearch}>BUSCAR AGEND.</button>
               <select
@@ -901,7 +934,7 @@ function SaleScreen({
                 <option value="">Selecione um agendamento</option>
                 {saleAppointmentResults.map((row) => (
                   <option key={row.id} value={row.id}>
-                    {`${row.customer} | ${row.plate} | ${row.createdAt} | ${formatMoney(row.total)}`}
+                    {`${row.customer} | ${row.phone} | ${row.plate} | ${row.createdAt} | ${formatMoney(row.total)}`}
                   </option>
                 ))}
               </select>
@@ -2003,6 +2036,16 @@ function App() {
     );
   }, [clients, searchQuery]);
 
+  const clientsTable1 = useMemo(
+    () => filteredClients.filter((client) => client.priceTable === 1),
+    [filteredClients]
+  );
+
+  const clientsTable2 = useMemo(
+    () => filteredClients.filter((client) => client.priceTable === 2),
+    [filteredClients]
+  );
+
   const filteredProducts = useMemo(() => {
     const query = productSearchQuery.trim().toLowerCase();
     if (!query) return serviceCatalogData;
@@ -2047,12 +2090,18 @@ function App() {
     const income = filteredFinancialEntries.reduce((acc, entry) => acc + (entry.amount >= 0 ? entry.amount : 0), 0);
     const expense = filteredFinancialEntries.reduce((acc, entry) => acc + (entry.amount < 0 ? Math.abs(entry.amount) : 0), 0);
     const balance = income - expense;
+    const incomeCount = filteredFinancialEntries.filter((entry) => entry.amount >= 0).length;
+    const expenseCount = filteredFinancialEntries.filter((entry) => entry.amount < 0).length;
+    const averageTicket = incomeCount > 0 ? income / incomeCount : 0;
 
     return {
       totalEntries: filteredFinancialEntries.length,
       income,
       expense,
       balance,
+      incomeCount,
+      expenseCount,
+      averageTicket,
     };
   }, [filteredFinancialEntries]);
 
@@ -2065,6 +2114,33 @@ function App() {
     const startIndex = (financialPage - 1) * FINANCIAL_PAGE_SIZE;
     return filteredFinancialEntries.slice(startIndex, startIndex + FINANCIAL_PAGE_SIZE);
   }, [filteredFinancialEntries, financialPage]);
+
+  const financialRunningBalanceById = useMemo(() => {
+    const byDateAsc = [...filteredFinancialEntries].sort((a, b) => {
+      const dateDiff = new Date(`${a.date}T12:00:00`).getTime() - new Date(`${b.date}T12:00:00`).getTime();
+      if (dateDiff !== 0) return dateDiff;
+      return a.id - b.id;
+    });
+
+    let running = 0;
+    const map = new Map<number, number>();
+    byDateAsc.forEach((entry) => {
+      running += entry.amount;
+      map.set(entry.id, running);
+    });
+
+    return map;
+  }, [filteredFinancialEntries]);
+
+  const pagedFinancialRows = useMemo(
+    () =>
+      pagedFinancialEntries.map((entry) => ({
+        ...entry,
+        kindLabel: entry.amount < 0 ? 'DESPESA' : 'RECEITA',
+        runningBalance: financialRunningBalanceById.get(entry.id) ?? entry.amount,
+      })),
+    [financialRunningBalanceById, pagedFinancialEntries]
+  );
 
   const financialPageRangeLabel = useMemo(() => {
     if (filteredFinancialEntries.length === 0) return '0-0';
@@ -2168,6 +2244,15 @@ function App() {
     }));
   }
 
+  function resolveCustomerType(customerName: string, fallback: string) {
+    const value = customerName.trim().toLowerCase();
+    if (!value) return fallback;
+
+    const matched = clients.find((client) => client.name.trim().toLowerCase() === value);
+    if (!matched) return fallback;
+    return getCustomerTypeLabel(matched.priceTable);
+  }
+
   async function searchDocumentsForImport(docType: 'orcamento' | 'agendamento', query: string) {
     if (!isSupabaseConfigured || !supabase) {
       return [] as ImportDocumentRow[];
@@ -2175,28 +2260,51 @@ function App() {
 
     const sb = supabase;
     const normalized = query.trim();
-    let builder = sb
+    const maxRows = normalized ? 150 : 30;
+
+    const { data, error } = await sb
       .from('documents_v2')
-      .select('id, customer_name_snapshot, phone_snapshot, plate_snapshot, created_at, total_amount')
+      .select('id, customer_name_snapshot, phone_snapshot, plate_snapshot, vehicle_snapshot, notes, created_at, total_amount')
       .eq('doc_type', docType)
       .order('created_at', { ascending: false })
-      .limit(20);
+      .limit(maxRows);
 
-    if (normalized) {
-      builder = builder.or(`customer_name_snapshot.ilike.%${normalized}%,phone_snapshot.ilike.%${normalized}%,plate_snapshot.ilike.%${normalized}%`);
-    }
-
-    const { data, error } = await builder;
     if (error || !data) return [];
 
-    return data.map((row) => ({
-      id: String(row.id),
-      customer: row.customer_name_snapshot || 'SEM CLIENTE',
-      phone: row.phone_snapshot || 'SEM TEL',
-      plate: row.plate_snapshot || 'SEM PLACA',
-      createdAt: toBrDate(row.created_at || ''),
-      total: Number(row.total_amount) || 0,
-    }));
+    const mapped = data.map((row) => {
+      const total = Number(row.total_amount) || 0;
+
+      return {
+        id: String(row.id),
+        customer: row.customer_name_snapshot || 'SEM CLIENTE',
+        phone: row.phone_snapshot || 'SEM TEL',
+        plate: row.plate_snapshot || 'SEM PLACA',
+        vehicle: row.vehicle_snapshot || 'SEM VEICULO',
+        note: row.notes || '',
+        createdAtIso: row.created_at || '',
+        createdAt: toBrDate(row.created_at || ''),
+        total,
+      };
+    });
+
+    if (!normalized) return mapped;
+
+    return mapped.filter((row) =>
+      matchesSearchTokens(
+        [
+          row.id,
+          row.customer,
+          row.phone,
+          row.plate,
+          row.vehicle,
+          row.note,
+          row.createdAt,
+          row.createdAtIso,
+          ...getMoneySearchValues(row.total),
+        ],
+        normalized
+      )
+    );
   }
 
   async function fetchDocumentWithItemsById(docType: 'orcamento' | 'agendamento', id: string) {
@@ -2946,7 +3054,7 @@ function App() {
     setSaleData((prev) => ({
       ...prev,
       customer: source.customer,
-      customerType: source.customerType,
+      customerType: resolveCustomerType(source.customer, source.customerType),
       phone: source.phone,
       plate: source.plate,
       items: cloneItems(source.items),
@@ -2972,7 +3080,7 @@ function App() {
     setSaleData((prev) => ({
       ...prev,
       customer: selected.customer,
-      customerType: quoteData.customerType,
+      customerType: resolveCustomerType(selected.customer, prev.customerType),
       phone: selected.phone,
       plate: selected.plate,
       vehicleDetails: selected.vehicleSnapshot,
@@ -2998,13 +3106,14 @@ function App() {
     setSaleData((prev) => ({
       ...prev,
       customer: selected.customer,
-      customerType: appointmentData.customerType,
+      customerType: resolveCustomerType(selected.customer, prev.customerType),
       phone: selected.phone,
       plate: selected.plate,
       vehicleDetails: selected.vehicleSnapshot,
       items: cloneItems(selected.items),
       discount: selected.discount,
       surcharge: 0,
+      timeDays: selected.timeDays,
       note: selected.note,
     }));
     window.alert('Agendamento importado para a venda.');
@@ -3023,6 +3132,7 @@ function App() {
           vehicleDetails: dbAppointment.vehicleSnapshot,
           items: dbAppointment.items,
           discount: dbAppointment.discount,
+          timeDays: dbAppointment.timeDays,
           note: dbAppointment.note,
         }
       : savedAppointment || {
@@ -3034,19 +3144,21 @@ function App() {
       vehicleDetails: appointmentData.vehicleDetails,
       items: appointmentData.items,
       discount: appointmentData.discount,
+      timeDays: saleData.timeDays,
       note: appointmentData.note,
     };
 
     setSaleData((prev) => ({
       ...prev,
       customer: source.customer,
-      customerType: source.customerType,
+      customerType: resolveCustomerType(source.customer, source.customerType),
       phone: source.phone,
       plate: source.plate,
       vehicleDetails: source.vehicleDetails,
       items: cloneItems(source.items),
       discount: source.discount,
       surcharge: 0,
+      timeDays: source.timeDays,
       note: source.note,
     }));
     window.alert(dbAppointment ? 'Agendamento importado do banco.' : 'Agendamento importado para a venda.');
@@ -3666,21 +3778,57 @@ function App() {
           <h2 className="panel-title">CLIENTES</h2>
           <section className="form-grid menu-single">
             <div className="form-main">
-              <div className="mini-actions receipt-actions">
+              <div className="clients-toolbar">
                 <button className="btn-cyan lg" onClick={addClient}>NOVO CLIENTE</button>
+                <input
+                  className="input-look"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Buscar por nome, telefone ou placa"
+                />
               </div>
-              {clients.map((client, index) => (
-                <div className="menu-row editable" key={`${client.id}-${index}`}>
-                  <input className="input-look" value={client.name} onChange={(event) => updateClient(client.id, { name: event.target.value })} />
-                  <input className="input-look" value={client.phone} onChange={(event) => updateClient(client.id, { phone: event.target.value })} />
-                  <input className="input-look plate" value={client.plate} onChange={(event) => updateClient(client.id, { plate: event.target.value.toUpperCase() })} />
-                  <select className="input-look" value={client.priceTable} onChange={(event) => updateClient(client.id, { priceTable: Number(event.target.value) as PriceTable })}>
-                    <option value={1}>TABELA 1 - CLIENTE FINAL</option>
-                    <option value={2}>TABELA 2 - FRANQUEADO</option>
-                  </select>
-                  <button className="item-delete" onClick={() => removeClient(client.id)}>X</button>
-                </div>
-              ))}
+
+              <div className="clients-columns">
+                <section className="clients-table-card">
+                  <header>
+                    <strong>TABELA 1 - CLIENTE FINAL</strong>
+                    <span>{clientsTable1.length} cliente(s)</span>
+                  </header>
+                  {clientsTable1.map((client, index) => (
+                    <div className="menu-row editable client-row" key={`${client.id}-table1-${index}`}>
+                      <input className="input-look" value={client.name} onChange={(event) => updateClient(client.id, { name: event.target.value })} />
+                      <input className="input-look" value={client.phone} onChange={(event) => updateClient(client.id, { phone: event.target.value })} />
+                      <input className="input-look plate" value={client.plate} onChange={(event) => updateClient(client.id, { plate: event.target.value.toUpperCase() })} />
+                      <select className="input-look" value={client.priceTable} onChange={(event) => updateClient(client.id, { priceTable: Number(event.target.value) as PriceTable })}>
+                        <option value={1}>TABELA 1 - CLIENTE FINAL</option>
+                        <option value={2}>TABELA 2 - FRANQUEADO</option>
+                      </select>
+                      <button className="item-delete" onClick={() => removeClient(client.id)}>X</button>
+                    </div>
+                  ))}
+                  {clientsTable1.length === 0 && <div className="receipt-empty">Nenhum cliente na Tabela 1 para este filtro.</div>}
+                </section>
+
+                <section className="clients-table-card">
+                  <header>
+                    <strong>TABELA 2 - FRANQUEADO</strong>
+                    <span>{clientsTable2.length} cliente(s)</span>
+                  </header>
+                  {clientsTable2.map((client, index) => (
+                    <div className="menu-row editable client-row" key={`${client.id}-table2-${index}`}>
+                      <input className="input-look" value={client.name} onChange={(event) => updateClient(client.id, { name: event.target.value })} />
+                      <input className="input-look" value={client.phone} onChange={(event) => updateClient(client.id, { phone: event.target.value })} />
+                      <input className="input-look plate" value={client.plate} onChange={(event) => updateClient(client.id, { plate: event.target.value.toUpperCase() })} />
+                      <select className="input-look" value={client.priceTable} onChange={(event) => updateClient(client.id, { priceTable: Number(event.target.value) as PriceTable })}>
+                        <option value={1}>TABELA 1 - CLIENTE FINAL</option>
+                        <option value={2}>TABELA 2 - FRANQUEADO</option>
+                      </select>
+                      <button className="item-delete" onClick={() => removeClient(client.id)}>X</button>
+                    </div>
+                  ))}
+                  {clientsTable2.length === 0 && <div className="receipt-empty">Nenhum cliente na Tabela 2 para este filtro.</div>}
+                </section>
+              </div>
             </div>
           </section>
           <footer className="panel-footer">
@@ -3766,6 +3914,18 @@ function App() {
                   <strong>SALDO</strong>
                   <span>{formatMoney(financialSummary.balance)}</span>
                 </article>
+                <article className="financial-card">
+                  <strong>QTD RECEITAS</strong>
+                  <span>{financialSummary.incomeCount}</span>
+                </article>
+                <article className="financial-card">
+                  <strong>QTD DESPESAS</strong>
+                  <span>{financialSummary.expenseCount}</span>
+                </article>
+                <article className="financial-card">
+                  <strong>TICKET MEDIO</strong>
+                  <span>{formatMoney(financialSummary.averageTicket)}</span>
+                </article>
               </div>
 
               <div className="financial-filters">
@@ -3805,7 +3965,7 @@ function App() {
                 <button className="btn-cyan lg" onClick={addFinancialEntry}>NOVO LANCAMENTO</button>
                 <button className="btn-yellow lg" onClick={exportFinancialCSV}>EXPORTAR CSV FILTRADO</button>
               </div>
-              {pagedFinancialEntries.map((entry) => (
+              {pagedFinancialRows.map((entry) => (
                 <div className="menu-row editable financial-row" key={entry.id}>
                   <input
                     className="input-look"
@@ -3828,6 +3988,8 @@ function App() {
                     onChange={(event) => updateFinancialEntry(entry.id, { amount: Number(event.target.value) || 0 })}
                     onBlur={() => void persistFinancialEntry(entry.id)}
                   />
+                  <span className={`financial-kind ${entry.amount < 0 ? 'expense' : 'income'}`}>{entry.kindLabel}</span>
+                  <span className="financial-balance-cell">{formatMoney(entry.runningBalance)}</span>
                   <button className="item-delete" onClick={() => void removeFinancialEntry(entry.id)}>X</button>
                 </div>
               ))}
@@ -4150,7 +4312,7 @@ function App() {
         <main className="panel panel-form">
           <h2 className="panel-title">NOVO AGENDAMENTO</h2>
           <section className="sale-tools sale-tools-search">
-            <input className="input-look" value={appointmentQuoteSearch} onChange={(event) => setAppointmentQuoteSearch(event.target.value)} placeholder="Pesquisar orcamento por cliente, telefone ou placa" />
+            <input className="input-look" value={appointmentQuoteSearch} onChange={(event) => setAppointmentQuoteSearch(event.target.value)} placeholder="Pesquisar orcamento por nome, data, valor, telefone, placa, veiculo ou observacao" />
             <button className="tool-blue" onClick={() => void runAppointmentQuoteSearch()}>PESQUISAR ORCAMENTO</button>
             <select className="input-look" value={appointmentSelectedQuoteId} onChange={(event) => setAppointmentSelectedQuoteId(event.target.value)}>
               <option value="">Selecione um orcamento</option>

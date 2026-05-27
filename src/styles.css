@@ -1493,6 +1493,49 @@ button {
   grid-template-columns: 1fr;
 }
 
+.clients-toolbar {
+  display: grid;
+  grid-template-columns: auto minmax(320px, 1fr);
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.clients-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.clients-table-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.clients-table-card > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.clients-table-card > header strong {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.clients-table-card > header span {
+  font-size: 11px;
+  color: var(--gray-1);
+}
+
+.client-row {
+  grid-template-columns: minmax(220px, 1.3fr) minmax(170px, 0.9fr) 140px minmax(220px, 1fr) 44px !important;
+}
+
 .menu-block {
   margin-top: 14px;
   border-top: 1px solid rgba(255, 255, 255, 0.18);
@@ -1501,7 +1544,7 @@ button {
 
 .financial-summary-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 10px;
   margin-bottom: 12px;
 }
@@ -1542,7 +1585,41 @@ button {
 }
 
 .financial-row {
-  grid-template-columns: 150px 1fr 170px 48px !important;
+  grid-template-columns: 150px 1fr 140px 110px 160px 48px !important;
+}
+
+.financial-kind {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  border-radius: 8px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+
+.financial-kind.income {
+  background: rgba(35, 171, 112, 0.2);
+  color: #7df3bf;
+  border: 1px solid rgba(35, 171, 112, 0.45);
+}
+
+.financial-kind.expense {
+  background: rgba(193, 72, 72, 0.2);
+  color: #ffb3b3;
+  border: 1px solid rgba(193, 72, 72, 0.45);
+}
+
+.financial-balance-cell {
+  background: rgba(232, 232, 232, 0.12);
+  border-radius: 8px;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 10px;
+  font-size: 13px;
 }
 
 .financial-pagination {
@@ -2164,6 +2241,11 @@ button {
 
   .financial-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .clients-toolbar,
+  .clients-columns {
+    grid-template-columns: 1fr;
   }
 
   .financial-filters {
