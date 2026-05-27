@@ -746,10 +746,12 @@ function ProductModal({
 
 function CatalogPickerModal({
   isOpen,
+  rows,
   selectedIndex,
   quantity,
   priceTable,
   onSelectedIndex,
+  onQuantity,
   onClose,
   onConfirm,
   formatMoney,
