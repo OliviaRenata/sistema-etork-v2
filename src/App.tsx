@@ -3087,11 +3087,15 @@ function App() {
     if (!calendarEditData) return;
     const editedDate = parseBrDateTime(calendarEditData.date);
     const normalizedDate = editedDate ? formatBrDateTime(editedDate) : calendarEditData.date;
+    const resolvedStatus: AppointmentStatus =
+      nextStatus === 'CANCELADO' || nextStatus === 'CONFIRMADO'
+        ? nextStatus
+        : calendarEditData.status || 'CONFIRMADO';
     const updated = {
       ...calendarEditData,
       date: normalizedDate,
       dayKey: toCalendarDateKey(normalizedDate),
-      status: nextStatus || calendarEditData.status || 'CONFIRMADO',
+      status: resolvedStatus,
     };
 
     setCalendarAppointments((prev) =>
@@ -3111,7 +3115,7 @@ function App() {
 
     if (isSupabaseConfigured && supabase && !updated.id.startsWith('local-')) {
       const sb = supabase;
-      await sb
+      const { error } = await sb
         .from('documents_v2')
         .update({
           customer_name_snapshot: updated.customer,
@@ -3125,6 +3129,11 @@ function App() {
         })
         .eq('id', updated.id)
         .eq('doc_type', 'agendamento');
+
+      if (error) {
+        console.error('Falha ao salvar alteracoes do agendamento', error);
+        window.alert(`Nao foi possivel salvar no Supabase: ${error.message}`);
+      }
     }
 
     setCalendarEditData(null);
@@ -6163,7 +6172,7 @@ function App() {
       <AppointmentEditModal
         isOpen={calendarEditData !== null}
         data={calendarEditData}
-        onSave={saveCalendarEdit}
+        onSave={() => void saveCalendarEdit()}
         onCancel={() => void cancelCalendarAppointment()}
         onDelete={() => void deleteCalendarAppointment()}
         onPrint={printCalendarAppointmentServiceSlip}
