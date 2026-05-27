@@ -13,6 +13,7 @@
   --gray-3: #5a5a5a;
   --gray-4: #2f2f2f;
   --focus-ring: rgba(0, 191, 255, 0.55);
+  --floating-footer-clearance: 92px;
 }
 
 *,
@@ -94,6 +95,7 @@ button,
   place-items: center;
   background: #02060a;
   animation: fadeIn 0.4s ease;
+  padding: 16px 16px var(--floating-footer-clearance);
 }
 
 .intro-brand .intro-logo-lg {
@@ -183,7 +185,7 @@ button,
     radial-gradient(circle at 15% 20%, rgba(170, 170, 170, 0.22) 0%, transparent 45%),
     radial-gradient(circle at 85% 10%, rgba(100, 100, 100, 0.16) 0%, transparent 40%),
     linear-gradient(150deg, #0a0a0a 0%, #161616 45%, #080808 100%);
-  padding: 20px;
+  padding: 20px 20px var(--floating-footer-clearance);
 }
 .auth-card {
   width: min(100%, 520px);
@@ -272,7 +274,7 @@ button,
 
 .panel {
   min-height: calc(100vh - 92px);
-  padding: 16px 16px 20px;
+  padding: 16px 16px calc(20px + var(--floating-footer-clearance));
   width: 100%;
   overflow-x: hidden;
 }
@@ -1032,7 +1034,7 @@ select option {
 
 .skip-intro {
   position: fixed;
-  bottom: 14px;
+  bottom: 16px;
   right: 14px;
   border: 1px solid #5c5c5c;
   border-radius: 10px;
@@ -1040,15 +1042,17 @@ select option {
   color: #ddd;
   font-size: 14px;
   padding: 8px 10px;
+  z-index: 20;
 }
 
 .brand-watermark {
   position: fixed;
   left: 12px;
-  bottom: 12px;
+  bottom: 16px;
   width: 96px;
   opacity: 0.12;
   pointer-events: none;
+  z-index: 10;
 }
 
 .item-delete {
@@ -1092,7 +1096,7 @@ select option {
   height: calc(100vh - 92px);
   background: radial-gradient(circle at 15% 0%, rgba(59, 130, 246, 0.12), transparent 40%), #0b0f17;
   color: #f3f4f6;
-  padding: 10px 10px 64px;
+  padding: 10px 10px calc(64px + var(--floating-footer-clearance));
   font-family: 'Inter', 'Rajdhani', sans-serif;
   overflow-y: auto;
   overflow-x: hidden;
