@@ -2,10 +2,12 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Swal from 'sweetalert2';
 import {
+  ArrowLeft,
   CalendarClock,
   CarFront,
   CircleDollarSign,
   Gauge,
+  Pencil,
   Plus,
   Search,
   Send,
@@ -646,7 +648,9 @@ function ServiceRows({
               })
             }
           />
-          <button className="item-delete" onClick={() => onRemoveItem(index)}>X</button>
+          <button className="item-delete" onClick={() => onRemoveItem(index)} aria-label="Excluir item">
+            <Trash2 size={14} />
+          </button>
         </div>
       ))}
     </div>
@@ -711,7 +715,7 @@ function ProductModal({
           </div>
 
           <div className="form-field">
-            <label>PREÃ‡O TABELA 1</label>
+            <label>PRECO TABELA 1</label>
             <input
               type="number"
               className="modal-input"
@@ -723,7 +727,7 @@ function ProductModal({
           </div>
 
           <div className="form-field">
-            <label>PREÃ‡O TABELA 2</label>
+            <label>PRECO TABELA 2</label>
             <input
               type="number"
               className="modal-input"
@@ -896,13 +900,13 @@ function AppointmentEditModal({
           </div>
 
           <div className="form-field">
-            <label>VEÃCULO / SERVIÃ‡O</label>
+            <label>VEICULO / SERVICO</label>
             <textarea
               className="modal-input modal-textarea"
               value={data.vehicleDetails}
               onChange={(e) => onDataChange({ vehicleDetails: e.target.value })}
               rows={3}
-              placeholder="Detalhes do veÃ­culo e serviÃ§o"
+              placeholder="Detalhes do veiculo e servico"
             />
           </div>
 
@@ -931,13 +935,13 @@ function AppointmentEditModal({
           </div>
 
           <div className="form-field">
-            <label>OBSERVAÃ‡Ã•ES</label>
+            <label>OBSERVACOES</label>
             <input
               type="text"
               className="modal-input"
               value={data.note}
               onChange={(e) => onDataChange({ note: e.target.value })}
-              placeholder="ObservaÃ§Ãµes adicionais"
+              placeholder="Observacoes adicionais"
             />
           </div>
         </div>
@@ -1576,7 +1580,9 @@ function QuoteScreen({
                   onChange={(e) => updateItems('quote', index, { price: Math.max(0, Number(e.target.value) || 0) })}
                 />
                 <span className="sale-item-total">{formatMoney(item.price * item.quantity)}</span>
-                <button className="sale-item-del" onClick={() => removeItem('quote', index)}>X</button>
+                <button className="sale-item-del" onClick={() => removeItem('quote', index)} aria-label="Excluir item">
+                  <Trash2 size={13} />
+                </button>
               </div>
             ))}
 
@@ -4343,7 +4349,7 @@ function App() {
       return;
     }
 
-    const message = `OlÃ¡ ${target.customer || 'cliente'}, seu agendamento estÃ¡ ${target.status.toLowerCase()} para ${target.date}.`;
+    const message = `Ola ${target.customer || 'cliente'}, seu agendamento esta ${target.status.toLowerCase()} para ${target.date}.`;
     window.open(`https://wa.me/55${digits}?text=${encodeURIComponent(message)}`, '_blank');
   }
 
@@ -4580,18 +4586,20 @@ function App() {
           </section>
           <footer className="panel-footer">
             <div className="footer-right">
-              <button className="btn-back" onClick={() => setScreen('dashboard')}>â†</button>
+              <button className="btn-back" onClick={() => setScreen('dashboard')} aria-label="Voltar">
+                <ArrowLeft size={18} />
+              </button>
             </div>
           </footer>
         </main>
       )}
 
       {screen === 'menu-clients' && (
-        <main className="panel panel-form">
+        <main className="panel panel-form client-panel">
           <h2 className="panel-title">CLIENTES</h2>
           <section className="form-grid menu-single">
-            <div className="form-main">
-              <div className="clients-toolbar">
+            <div className="form-main client-main">
+              <div className="clients-toolbar client-toolbar-modern">
                 <button className="btn-cyan lg" onClick={addClient}>NOVO CLIENTE</button>
                 <input
                   className="input-look"
@@ -4601,14 +4609,14 @@ function App() {
                 />
               </div>
 
-              <div className="clients-columns">
-                <section className="clients-table-card">
+              <div className="clients-columns client-columns-modern">
+                <section className="clients-table-card client-card">
                   <header>
                     <strong>TABELA 1 - CLIENTE FINAL</strong>
                     <span>{clientsTable1.length} cliente(s)</span>
                   </header>
                   {clientsTable1.map((client, index) => (
-                    <div className="menu-row editable client-row" key={`${client.id}-table1-${index}`}>
+                    <div className="menu-row editable client-row client-row-modern" key={`${client.id}-table1-${index}`}>
                       <input className="input-look" value={client.name} onChange={(event) => updateClient(client.id, { name: event.target.value })} />
                       <input className="input-look" value={client.phone} onChange={(event) => updateClient(client.id, { phone: event.target.value })} />
                       <input className="input-look plate" value={client.plate} onChange={(event) => updateClient(client.id, { plate: event.target.value.toUpperCase() })} />
@@ -4616,19 +4624,21 @@ function App() {
                         <option value={1}>TABELA 1 - CLIENTE FINAL</option>
                         <option value={2}>TABELA 2 - FRANQUEADO</option>
                       </select>
-                      <button className="item-delete" onClick={() => removeClient(client.id)}>X</button>
+                      <button className="item-delete" onClick={() => removeClient(client.id)} aria-label="Excluir cliente">
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   ))}
                   {clientsTable1.length === 0 && <div className="receipt-empty">Nenhum cliente na Tabela 1 para este filtro.</div>}
                 </section>
 
-                <section className="clients-table-card">
+                <section className="clients-table-card client-card">
                   <header>
                     <strong>TABELA 2 - FRANQUEADO</strong>
                     <span>{clientsTable2.length} cliente(s)</span>
                   </header>
                   {clientsTable2.map((client, index) => (
-                    <div className="menu-row editable client-row" key={`${client.id}-table2-${index}`}>
+                    <div className="menu-row editable client-row client-row-modern" key={`${client.id}-table2-${index}`}>
                       <input className="input-look" value={client.name} onChange={(event) => updateClient(client.id, { name: event.target.value })} />
                       <input className="input-look" value={client.phone} onChange={(event) => updateClient(client.id, { phone: event.target.value })} />
                       <input className="input-look plate" value={client.plate} onChange={(event) => updateClient(client.id, { plate: event.target.value.toUpperCase() })} />
@@ -4636,7 +4646,9 @@ function App() {
                         <option value={1}>TABELA 1 - CLIENTE FINAL</option>
                         <option value={2}>TABELA 2 - FRANQUEADO</option>
                       </select>
-                      <button className="item-delete" onClick={() => removeClient(client.id)}>X</button>
+                      <button className="item-delete" onClick={() => removeClient(client.id)} aria-label="Excluir cliente">
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   ))}
                   {clientsTable2.length === 0 && <div className="receipt-empty">Nenhum cliente na Tabela 2 para este filtro.</div>}
@@ -4646,7 +4658,9 @@ function App() {
           </section>
           <footer className="panel-footer">
             <div className="footer-right">
-              <button className="btn-back" onClick={() => setScreen('dashboard')}>â†</button>
+              <button className="btn-back" onClick={() => setScreen('dashboard')} aria-label="Voltar">
+                <ArrowLeft size={18} />
+              </button>
             </div>
           </footer>
         </main>
@@ -4689,8 +4703,12 @@ function App() {
                       <span className="product-price">T1 {formatMoney(item.priceTable1)}</span>
                       <span className="product-price">T2 {formatMoney(item.priceTable2)}</span>
                       <div className="item-actions">
-                        <button className="item-edit" onClick={() => openEditProductModal(actualIndex)}>âœŽ</button>
-                        <button className="item-delete" onClick={() => void removeProduct(item.id, actualIndex)}>âœ•</button>
+                        <button className="item-edit" onClick={() => openEditProductModal(actualIndex)} aria-label="Editar item">
+                          <Pencil size={14} />
+                        </button>
+                        <button className="item-delete" onClick={() => void removeProduct(item.id, actualIndex)} aria-label="Excluir item">
+                          <Trash2 size={14} />
+                        </button>
                       </div>
                     </div>
                   );
@@ -4701,7 +4719,9 @@ function App() {
           </section>
           <footer className="panel-footer">
             <div className="footer-right">
-              <button className="btn-back" onClick={() => setScreen('dashboard')}>â†</button>
+              <button className="btn-back" onClick={() => setScreen('dashboard')} aria-label="Voltar">
+                <ArrowLeft size={18} />
+              </button>
             </div>
           </footer>
         </main>
@@ -4879,7 +4899,9 @@ function App() {
           </section>
           <footer className="panel-footer">
             <div className="footer-right">
-              <button className="btn-back" onClick={() => setScreen('dashboard')}>â†</button>
+              <button className="btn-back" onClick={() => setScreen('dashboard')} aria-label="Voltar">
+                <ArrowLeft size={18} />
+              </button>
             </div>
           </footer>
         </main>
@@ -4937,7 +4959,9 @@ function App() {
           </section>
           <footer className="panel-footer">
             <div className="footer-right">
-              <button className="btn-back" onClick={() => setScreen('dashboard')}>â†</button>
+              <button className="btn-back" onClick={() => setScreen('dashboard')} aria-label="Voltar">
+                <ArrowLeft size={18} />
+              </button>
             </div>
           </footer>
         </main>
@@ -5022,7 +5046,9 @@ function App() {
 
           <footer className="panel-footer">
             <div className="footer-right">
-              <button className="btn-back" onClick={() => setScreen('dashboard')}>â†</button>
+              <button className="btn-back" onClick={() => setScreen('dashboard')} aria-label="Voltar">
+                <ArrowLeft size={18} />
+              </button>
             </div>
           </footer>
         </main>
@@ -5240,7 +5266,9 @@ function App() {
 
           <footer className="panel-footer">
             <div className="footer-right">
-              <button className="btn-back" onClick={() => setScreen('dashboard')}>â†</button>
+              <button className="btn-back" onClick={() => setScreen('dashboard')} aria-label="Voltar">
+                <ArrowLeft size={18} />
+              </button>
             </div>
           </footer>
         </main>
@@ -5306,7 +5334,9 @@ function App() {
               <div className="total">TOTAL: <span>{formatMoney(appointmentTotal)}</span></div>
             </div>
             <div className="footer-right">
-              <button className="btn-back" onClick={() => setScreen('dashboard')}>â†</button>
+              <button className="btn-back" onClick={() => setScreen('dashboard')} aria-label="Voltar">
+                <ArrowLeft size={18} />
+              </button>
               <button className="btn-finish" onClick={() => void finalizeAppointment()}>{isSaving ? 'SALVANDO...' : 'FINALIZAR AGENDAMENTO'}</button>
             </div>
           </footer>
@@ -5576,7 +5606,9 @@ function App() {
                 <input className="input-look" value={row.car} onChange={(event) => updateReceipt(row.id, { car: event.target.value })} />
                 <input className="input-look plate" value={row.plate} onChange={(event) => updateReceipt(row.id, { plate: event.target.value.toUpperCase() })} />
                 <input className="input-look" type="number" min={0} step="0.01" value={row.total} onChange={(event) => updateReceipt(row.id, { total: Math.max(0, Number(event.target.value) || 0) })} />
-                <button className="item-delete" onClick={() => removeReceipt(row.id)}>X</button>
+                <button className="item-delete" onClick={() => removeReceipt(row.id)} aria-label="Excluir recibo">
+                  <Trash2 size={14} />
+                </button>
               </div>
             ))}
             {filteredReceipts.length === 0 && <div className="receipt-empty">Nenhum recibo encontrado para os filtros selecionados.</div>}
@@ -5590,7 +5622,9 @@ function App() {
               </div>
             </div>
             <div className="footer-right">
-              <button className="btn-back" onClick={() => setScreen('dashboard')}>â†</button>
+              <button className="btn-back" onClick={() => setScreen('dashboard')} aria-label="Voltar">
+                <ArrowLeft size={18} />
+              </button>
               <button className="btn-finish" onClick={() => setScreen('dashboard')}>FECHAR</button>
             </div>
           </footer>

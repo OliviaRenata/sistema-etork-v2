@@ -708,6 +708,9 @@ button,
   width: 44px;
   height: 44px;
   border: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 50%;
   background: #9a9a9a;
   color: #000;
@@ -2073,6 +2076,9 @@ select option {
 .sale-item-del {
   width: 24px;
   height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: transparent;
   border: 1px solid #1e1e2e;
   color: #554444;
@@ -2365,6 +2371,48 @@ select option {
   gap: 10px;
   align-items: center;
   margin-bottom: 10px;
+}
+
+.client-panel {
+  background:
+    radial-gradient(circle at 92% 0%, rgba(0, 191, 255, 0.1), transparent 34%),
+    linear-gradient(165deg, rgba(12, 16, 24, 0.98), rgba(8, 10, 14, 0.98));
+}
+
+.client-main {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: rgba(11, 16, 24, 0.78);
+  padding: 14px;
+}
+
+.client-toolbar-modern {
+  border: 1px solid rgba(0, 191, 255, 0.2);
+  border-radius: 10px;
+  background: linear-gradient(145deg, rgba(16, 24, 36, 0.9), rgba(12, 17, 25, 0.9));
+  padding: 10px;
+}
+
+.client-columns-modern {
+  gap: 14px;
+}
+
+.client-card {
+  border-radius: 12px;
+  background: linear-gradient(150deg, rgba(19, 25, 37, 0.78), rgba(12, 17, 25, 0.78));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.client-row-modern {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(13, 19, 28, 0.7);
+  padding: 8px;
+  margin-bottom: 8px;
+}
+
+.client-row-modern:hover {
+  border-color: rgba(0, 191, 255, 0.28);
 }
 
 .clients-columns {
@@ -3504,6 +3552,19 @@ select option {
     justify-content: center;
     text-align: center;
     white-space: nowrap;
+  }
+
+  .client-main {
+    padding: 10px;
+  }
+
+  .client-toolbar-modern {
+    padding: 8px;
+  }
+
+  .client-row-modern {
+    grid-template-columns: 1fr !important;
+    gap: 7px;
   }
 
   .cadastro-main {
