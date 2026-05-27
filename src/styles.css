@@ -3161,10 +3161,13 @@ select option {
 }
 
 .calendar-day {
+  width: 100%;
   aspect-ratio: 1 / 1;
   min-height: 0;
   padding: 8px;
-  border-radius: 0;
+  border-radius: 0 !important;
+  -webkit-appearance: none;
+  appearance: none;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.04);
   color: var(--white);
@@ -3173,6 +3176,15 @@ select option {
   align-items: flex-start;
   justify-content: space-between;
   transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.calendar-grid > .calendar-day,
+.calendar-grid > .calendar-day:hover,
+.calendar-grid > .calendar-day:focus,
+.calendar-grid > .calendar-day:active,
+.calendar-grid > .calendar-day.today,
+.calendar-grid > .calendar-day.selected {
+  border-radius: 0 !important;
 }
 
 .calendar-day:hover {
@@ -3465,10 +3477,11 @@ select option {
   }
 
   .calendar-day {
+    width: 100%;
     aspect-ratio: 1 / 1;
     min-height: 0;
     padding: 6px;
-    border-radius: 0;
+    border-radius: 0 !important;
   }
 
   .dashboard-layout {

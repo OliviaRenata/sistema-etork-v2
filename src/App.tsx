@@ -4274,6 +4274,182 @@ function App() {
     URL.revokeObjectURL(url);
   }
 
+  function exportClientsCSV() {
+    const escapeCsv = (value: string | number | boolean) => `"${String(value ?? '').replaceAll('"', '""')}"`;
+    const header = ['ID', 'Nome', 'Telefone', 'Placa', 'TabelaPreco'].join(',');
+    const body = filteredClients
+      .map((client) =>
+        [
+          client.id,
+          escapeCsv(client.name),
+          escapeCsv(client.phone),
+          escapeCsv(client.plate),
+          escapeCsv(client.priceTable === 2 ? 'TABELA 2 - FRANQUEADO' : 'TABELA 1 - CLIENTE FINAL'),
+        ].join(',')
+      )
+      .join('\n');
+
+    const blob = new Blob([`${header}\n${body}`], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `clientes-filtrados-${Date.now()}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function printFilteredClients() {
+    const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=1000,height=700');
+    if (!printWindow) {
+      window.alert('Nao foi possivel abrir a janela de impressao. Verifique se o bloqueador de pop-up esta ativo.');
+      return;
+    }
+
+    const rows = filteredClients
+      .map(
+        (client) => `
+          <tr>
+            <td>${client.id}</td>
+            <td>${client.name || '-'}</td>
+            <td>${client.phone || '-'}</td>
+            <td>${client.plate || '-'}</td>
+            <td>${client.priceTable === 2 ? 'TABELA 2 - FRANQUEADO' : 'TABELA 1 - CLIENTE FINAL'}</td>
+          </tr>
+        `
+      )
+      .join('');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head>
+        <meta charset="UTF-8" />
+        <title>CLIENTES FILTRADOS</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; color: #111; }
+          h1 { margin: 0 0 10px; font-size: 18px; }
+          .meta { margin-bottom: 12px; font-size: 12px; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { border: 1px solid #bbb; padding: 6px; font-size: 12px; text-align: left; }
+          th { background: #f2f2f2; }
+        </style>
+      </head>
+      <body>
+        <h1>CLIENTES FILTRADOS (${filteredClients.length})</h1>
+        <div class="meta">Busca: ${searchQuery || 'SEM FILTRO'} | Gerado em ${new Date().toLocaleString('pt-BR')}</div>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>NOME</th>
+              <th>TELEFONE</th>
+              <th>PLACA</th>
+              <th>TABELA</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows || '<tr><td colspan="5">Nenhum cliente encontrado.</td></tr>'}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  }
+
+  function exportProductsCSV() {
+    const escapeCsv = (value: string | number | boolean) => `"${String(value ?? '').replaceAll('"', '""')}"`;
+    const header = ['ID', 'Tipo', 'Descricao', 'Quantidade', 'PrecoTabela1', 'PrecoTabela2', 'SemEstoque'].join(',');
+    const body = filteredProducts
+      .map((item) =>
+        [
+          item.id ?? '',
+          escapeCsv(item.itemType),
+          escapeCsv(item.description),
+          item.quantity,
+          item.priceTable1.toFixed(2),
+          item.priceTable2.toFixed(2),
+          escapeCsv(item.quantity <= 0 ? 'SIM' : 'NAO'),
+        ].join(',')
+      )
+      .join('\n');
+
+    const blob = new Blob([`${header}\n${body}`], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `cadastro-filtrado-${Date.now()}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function printFilteredProducts() {
+    const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=1100,height=700');
+    if (!printWindow) {
+      window.alert('Nao foi possivel abrir a janela de impressao. Verifique se o bloqueador de pop-up esta ativo.');
+      return;
+    }
+
+    const rows = filteredProducts
+      .map(
+        (item) => `
+          <tr>
+            <td>${item.itemType}</td>
+            <td>${item.description || '-'}</td>
+            <td>${formatNumberValue(item.quantity)}</td>
+            <td>${formatMoney(item.priceTable1)}</td>
+            <td>${formatMoney(item.priceTable2)}</td>
+            <td>${item.quantity <= 0 ? 'SIM' : 'NAO'}</td>
+          </tr>
+        `
+      )
+      .join('');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head>
+        <meta charset="UTF-8" />
+        <title>CADASTRO FILTRADO</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; color: #111; }
+          h1 { margin: 0 0 10px; font-size: 18px; }
+          .meta { margin-bottom: 12px; font-size: 12px; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { border: 1px solid #bbb; padding: 6px; font-size: 12px; text-align: left; }
+          th { background: #f2f2f2; }
+        </style>
+      </head>
+      <body>
+        <h1>CADASTRO FILTRADO (${filteredProducts.length})</h1>
+        <div class="meta">Busca: ${productSearchQuery || 'SEM FILTRO'} | Gerado em ${new Date().toLocaleString('pt-BR')}</div>
+        <table>
+          <thead>
+            <tr>
+              <th>TIPO</th>
+              <th>DESCRICAO</th>
+              <th>QUANTIDADE</th>
+              <th>TABELA 1</th>
+              <th>TABELA 2</th>
+              <th>SEM ESTOQUE</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows || '<tr><td colspan="6">Nenhum item encontrado.</td></tr>'}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  }
+
   function exportFinancialCSV() {
     const header = 'ID,Data,Descricao,Tipo,Valor\n';
     const body = filteredFinancialEntries
@@ -4290,6 +4466,69 @@ function App() {
     anchor.download = `financeiro-filtrado-${Date.now()}.csv`;
     anchor.click();
     URL.revokeObjectURL(url);
+  }
+
+  function printFilteredFinancial() {
+    const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=1200,height=800');
+    if (!printWindow) {
+      window.alert('Nao foi possivel abrir a janela de impressao. Verifique se o bloqueador de pop-up esta ativo.');
+      return;
+    }
+
+    const rows = filteredFinancialEntries
+      .map((row) => {
+        const kind = resolveFinancialKind(row) === 'despesa' ? 'DESPESA' : 'RECEITA';
+        return `
+          <tr>
+            <td>${row.id}</td>
+            <td>${row.date || '-'}</td>
+            <td>${row.description || '-'}</td>
+            <td>${kind}</td>
+            <td>${formatMoney(row.amount)}</td>
+          </tr>
+        `;
+      })
+      .join('');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head>
+        <meta charset="UTF-8" />
+        <title>FINANCEIRO FILTRADO</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; color: #111; }
+          h1 { margin: 0 0 10px; font-size: 18px; }
+          .meta { margin-bottom: 12px; font-size: 12px; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { border: 1px solid #bbb; padding: 6px; font-size: 12px; text-align: left; }
+          th { background: #f2f2f2; }
+        </style>
+      </head>
+      <body>
+        <h1>FINANCEIRO FILTRADO (${filteredFinancialEntries.length})</h1>
+        <div class="meta">Periodo: ${financialFilters.startDate || 'INICIO'} ate ${financialFilters.endDate || 'HOJE'} | Gerado em ${new Date().toLocaleString('pt-BR')}</div>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>DATA</th>
+              <th>DESCRICAO</th>
+              <th>TIPO</th>
+              <th>VALOR</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows || '<tr><td colspan="5">Nenhum lancamento encontrado.</td></tr>'}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
   }
 
   function exportReportsCSV() {
@@ -4342,6 +4581,229 @@ function App() {
     anchor.download = `relatorio-resumo-diario-${Date.now()}.csv`;
     anchor.click();
     URL.revokeObjectURL(url);
+  }
+
+  function exportSalesHistoryCSV() {
+    const escapeCsv = (value: string | number | boolean) => `"${String(value ?? '').replaceAll('"', '""')}"`;
+    const header = [
+      'ID',
+      'Data',
+      'Cliente',
+      'Telefone',
+      'Placa',
+      'Veiculo',
+      'Subtotal',
+      'Desconto',
+      'Acrescimo',
+      'Total',
+      'PrazoDias',
+      'MaoDeObra',
+      'Observacao',
+    ].join(',');
+
+    const body = filteredSalesHistory
+      .map((row) =>
+        [
+          escapeCsv(row.id),
+          escapeCsv(row.createdAt),
+          escapeCsv(row.customer),
+          escapeCsv(row.phone),
+          escapeCsv(row.plate),
+          escapeCsv(row.vehicle),
+          row.subtotal.toFixed(2),
+          row.discount.toFixed(2),
+          row.surcharge.toFixed(2),
+          row.total.toFixed(2),
+          row.timeDays,
+          escapeCsv(row.laborRequired ? 'SIM' : 'NAO'),
+          escapeCsv(row.note),
+        ].join(',')
+      )
+      .join('\n');
+
+    const csvContent = `${header}\n${body}`;
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `vendas-filtradas-${Date.now()}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function printFilteredSalesHistory() {
+    const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=1200,height=800');
+    if (!printWindow) {
+      window.alert('Nao foi possivel abrir a janela de impressao. Verifique se o bloqueador de pop-up esta ativo.');
+      return;
+    }
+
+    const rows = filteredSalesHistory
+      .map(
+        (row) => `
+          <tr>
+            <td>${row.createdAt}</td>
+            <td>${row.id}</td>
+            <td>${row.customer || 'SEM CLIENTE'}</td>
+            <td>${row.phone || 'SEM TELEFONE'}</td>
+            <td>${row.plate || 'SEM PLACA'}</td>
+            <td>${row.vehicle || 'SEM VEICULO'}</td>
+            <td>${formatMoney(row.subtotal)}</td>
+            <td>${formatMoney(row.discount)}</td>
+            <td>${formatMoney(row.surcharge)}</td>
+            <td>${formatMoney(row.total)}</td>
+            <td>${row.timeDays}</td>
+            <td>${row.laborRequired ? 'SIM' : 'NAO'}</td>
+            <td>${row.note || '-'}</td>
+          </tr>
+        `
+      )
+      .join('');
+
+    const title = `LISTA DE VENDAS FILTRADAS (${filteredSalesHistory.length})`;
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head>
+        <meta charset="UTF-8" />
+        <title>${title}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; color: #111; }
+          h1 { margin: 0 0 10px; font-size: 18px; }
+          .meta { margin-bottom: 12px; font-size: 12px; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { border: 1px solid #bbb; padding: 6px; font-size: 11px; vertical-align: top; }
+          th { background: #f2f2f2; text-align: left; }
+        </style>
+      </head>
+      <body>
+        <h1>${title}</h1>
+        <div class="meta">Periodo: ${salesHistoryFilters.startDate || 'INICIO'} ate ${salesHistoryFilters.endDate || 'HOJE'} | Gerado em ${new Date().toLocaleString('pt-BR')}</div>
+        <table>
+          <thead>
+            <tr>
+              <th>DATA</th>
+              <th>ID</th>
+              <th>CLIENTE</th>
+              <th>TELEFONE</th>
+              <th>PLACA</th>
+              <th>VEICULO</th>
+              <th>SUBTOTAL</th>
+              <th>DESCONTO</th>
+              <th>ACRESCIMO</th>
+              <th>TOTAL</th>
+              <th>PRAZO (DIAS)</th>
+              <th>MAO DE OBRA</th>
+              <th>OBSERVACAO</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows || '<tr><td colspan="13">Nenhuma venda encontrada com os filtros atuais.</td></tr>'}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  }
+
+  function exportCalendarAppointmentsCSV() {
+    const escapeCsv = (value: string | number | boolean) => `"${String(value ?? '').replaceAll('"', '""')}"`;
+    const header = ['Data', 'Cliente', 'Telefone', 'Placa', 'Veiculo', 'Status', 'Total', 'Observacao'].join(',');
+    const body = calendarSelectedAppointments
+      .map((row) =>
+        [
+          escapeCsv(row.date),
+          escapeCsv(row.customer),
+          escapeCsv(row.phone),
+          escapeCsv(row.plate),
+          escapeCsv(row.vehicleDetails),
+          escapeCsv(row.status),
+          row.total.toFixed(2),
+          escapeCsv(row.note),
+        ].join(',')
+      )
+      .join('\n');
+
+    const blob = new Blob([`${header}\n${body}`], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `agenda-${calendarSelectedDate}-${Date.now()}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function printCalendarAppointments() {
+    const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=1200,height=800');
+    if (!printWindow) {
+      window.alert('Nao foi possivel abrir a janela de impressao. Verifique se o bloqueador de pop-up esta ativo.');
+      return;
+    }
+
+    const rows = calendarSelectedAppointments
+      .map(
+        (row) => `
+          <tr>
+            <td>${row.date}</td>
+            <td>${row.customer || '-'}</td>
+            <td>${row.phone || '-'}</td>
+            <td>${row.plate || '-'}</td>
+            <td>${(row.vehicleDetails || '-').split('\n')[0]}</td>
+            <td>${row.status}</td>
+            <td>${formatMoney(row.total)}</td>
+            <td>${row.note || '-'}</td>
+          </tr>
+        `
+      )
+      .join('');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head>
+        <meta charset="UTF-8" />
+        <title>AGENDA FILTRADA</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; color: #111; }
+          h1 { margin: 0 0 10px; font-size: 18px; }
+          .meta { margin-bottom: 12px; font-size: 12px; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { border: 1px solid #bbb; padding: 6px; font-size: 12px; text-align: left; }
+          th { background: #f2f2f2; }
+        </style>
+      </head>
+      <body>
+        <h1>AGENDA DO DIA (${calendarSelectedAppointments.length})</h1>
+        <div class="meta">Data selecionada: ${new Date(`${calendarSelectedDate}T12:00:00`).toLocaleDateString('pt-BR')} | Gerado em ${new Date().toLocaleString('pt-BR')}</div>
+        <table>
+          <thead>
+            <tr>
+              <th>DATA / HORA</th>
+              <th>CLIENTE</th>
+              <th>TELEFONE</th>
+              <th>PLACA</th>
+              <th>VEICULO</th>
+              <th>STATUS</th>
+              <th>TOTAL</th>
+              <th>OBSERVACAO</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows || '<tr><td colspan="8">Nenhum agendamento no dia selecionado.</td></tr>'}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
   }
 
   function openWhatsappAppointment(target: Pick<CalendarAppointment, 'customer' | 'phone' | 'date' | 'status'>) {
@@ -4610,6 +5072,10 @@ function App() {
                   placeholder="Buscar por nome, telefone ou placa"
                 />
               </div>
+              <div className="mini-actions receipt-actions" style={{ marginBottom: 10 }}>
+                <button className="btn-cyan lg" onClick={exportClientsCSV}>EXPORTAR FILTRADO</button>
+                <button className="btn-yellow lg" onClick={printFilteredClients}>IMPRIMIR FILTRADO</button>
+              </div>
 
               <div className="clients-columns client-columns-modern">
                 <section className="clients-table-card client-card">
@@ -4684,6 +5150,8 @@ function App() {
               </div>
               <div className="mini-actions receipt-actions cadastro-actions">
                 <button className="btn-cyan lg" onClick={addProduct}>NOVO CADASTRO</button>
+                <button className="btn-cyan lg" onClick={exportProductsCSV}>EXPORTAR FILTRADO</button>
+                <button className="btn-yellow lg" onClick={printFilteredProducts}>IMPRIMIR FILTRADO</button>
               </div>
               <div className="cadastro-list">
               {filteredProducts.length === 0 ? (
@@ -4802,6 +5270,7 @@ function App() {
                  <button className="btn-cyan lg" onClick={() => void addFinancialEntry('receita')}>ADICIONAR RECEITA</button>
                  <button className="btn-red lg" onClick={() => void addFinancialEntry('despesa')}>ADICIONAR DESPESA</button>
                  <button className="btn-yellow lg" onClick={exportFinancialCSV}>EXPORTAR CSV FILTRADO</button>
+                  <button className="btn-yellow lg" onClick={printFilteredFinancial}>IMPRIMIR FILTRADO</button>
               </div>
               {pagedFinancialRows.map((entry) => (
                 <div className={`menu-row editable financial-row ${entry.isSaleLinked ? 'locked' : ''}`} key={entry.id}>
@@ -5017,6 +5486,10 @@ function App() {
               <div className="calendar-side-header">
                 <strong>{new Date(`${calendarSelectedDate}T12:00:00`).toLocaleDateString('pt-BR')}</strong>
                 <span>{formatNumberValue(calendarSelectedAppointments.length)} agendamento(s)</span>
+                <div className="mini-actions receipt-actions">
+                  <button className="btn-cyan lg" onClick={exportCalendarAppointmentsCSV}>EXPORTAR FILTRADO</button>
+                  <button className="btn-yellow lg" onClick={printCalendarAppointments}>IMPRIMIR FILTRADO</button>
+                </div>
               </div>
 
               <div className="calendar-side-list">
@@ -5179,6 +5652,10 @@ function App() {
                   value={salesHistoryFilters.endDate}
                   onChange={(event) => setSalesHistoryFilters((prev) => ({ ...prev, endDate: event.target.value }))}
                 />
+                </div>
+                <div className="mini-actions receipt-actions" style={{ marginTop: 10 }}>
+                  <button className="btn-cyan lg" onClick={exportSalesHistoryCSV}>EXPORTAR FILTRADO</button>
+                  <button className="btn-yellow lg" onClick={printFilteredSalesHistory}>IMPRIMIR FILTRADO</button>
                 </div>
               </div>
 
