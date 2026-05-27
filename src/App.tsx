@@ -1169,7 +1169,7 @@ function SaleScreen({
         </div>
 
         <div className="sales-premium-header-actions">
-          <button className="sales-premium-btn ghost" onClick={() => setScreen('dashboard')}>
+          <button className="sales-premium-btn ghost sales-premium-btn-back" onClick={() => setScreen('dashboard')}>
             <CalendarClock size={16} /> Voltar
           </button>
           <button className="sales-premium-btn primary" onClick={() => void handleSendService()}>

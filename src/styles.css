@@ -1092,7 +1092,7 @@ select option {
   height: calc(100vh - 92px);
   background: radial-gradient(circle at 15% 0%, rgba(59, 130, 246, 0.12), transparent 40%), #0b0f17;
   color: #f3f4f6;
-  padding: 10px;
+  padding: 10px 10px 64px;
   font-family: 'Inter', 'Rajdhani', sans-serif;
   overflow-y: auto;
   overflow-x: hidden;
@@ -1210,6 +1210,10 @@ select option {
   flex-wrap: wrap;
 }
 
+.sales-premium-btn-back {
+  margin-right: 10px;
+}
+
 .sales-premium-btn {
   border: 1px solid #1f2937;
   border-radius: 999px;
@@ -1256,6 +1260,7 @@ select option {
   flex: 1;
   min-height: 0;
   overflow: visible;
+  padding-bottom: 10px;
 }
 
 .sales-premium-content-grid .row {
@@ -1584,7 +1589,7 @@ select option {
 
 @media (max-width: 1366px) and (min-width: 981px) {
   .sales-premium {
-    padding: 7px;
+    padding: 7px 7px 54px;
   }
 
   .sales-premium-main-body .card-body,
@@ -1612,7 +1617,7 @@ select option {
 
 @media (max-height: 860px) and (min-width: 981px) {
   .sales-premium {
-    padding: 8px;
+    padding: 8px 8px 52px;
   }
 
   .sales-premium-title {
@@ -1690,6 +1695,11 @@ select option {
     height: auto;
     min-height: calc(100vh - 92px);
     overflow: auto;
+    padding-bottom: 24px;
+  }
+
+  .sales-premium-btn-back {
+    margin-right: 0;
   }
 
   .sales-premium-main-body,
