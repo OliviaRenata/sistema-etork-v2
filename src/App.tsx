@@ -106,6 +106,7 @@ type FinancialEntry = {
   sourceType?: string | null;
   sourceId?: string | null;
   isNew?: boolean;
+  entryKind?: 'receita' | 'despesa';
 };
 
 type FinancialSaleRow = {
@@ -338,6 +339,15 @@ function getCustomerPriceTable(customerType: string): PriceTable {
 
 function getCustomerTypeLabel(priceTable: PriceTable) {
   return priceTable === 2 ? 'TABELA 2 - FRANQUEADO' : 'TABELA 1 - CLIENTE FINAL';
+}
+
+function resolveFinancialKind(entry: Pick<FinancialEntry, 'amount' | 'description' | 'sourceType' | 'entryKind'>): 'receita' | 'despesa' {
+  if (entry.sourceType === 'venda') return 'receita';
+  if (entry.entryKind) return entry.entryKind;
+  if ((Number(entry.amount) || 0) < 0) return 'despesa';
+  const normalizedDescription = (entry.description || '').trim().toUpperCase();
+  if (normalizedDescription.startsWith('DESPESA')) return 'despesa';
+  return 'receita';
 }
 
 function getCatalogPrice(item: CatalogRow, priceTable: PriceTable) {
@@ -1660,14 +1670,26 @@ function App() {
       }
 
       if (!financialResult.error && financialResult.data && financialResult.data.length > 0) {
-        const mappedEntries = financialResult.data.map((item) => ({
+        const mappedEntries = financialResult.data.map((item) => {
+          const amount = Number(item.amount) || 0;
+          const description = item.description || '';
+          return {
           id: Number(item.id),
           date: item.entry_date || new Date().toISOString().slice(0, 10),
-          description: item.description || '',
-          amount: Number(item.amount) || 0,
+          description,
+          amount,
           sourceType: item.source_type || null,
           sourceId: item.source_id ? String(item.source_id) : null,
-        }));
+          entryKind:
+            item.source_type === 'venda'
+              ? 'receita'
+              : amount < 0
+                ? 'despesa'
+                : description.trim().toUpperCase().startsWith('DESPESA')
+                  ? 'despesa'
+                  : 'receita',
+          };
+        });
         setFinancialEntries(mappedEntries);
         setNextFinancialId(Math.max(...mappedEntries.map((entry) => entry.id)) + 1);
       }
@@ -2104,12 +2126,12 @@ function App() {
           entry.date.toLowerCase().includes(query) ||
           String(entry.id).includes(query);
 
-        const amount = Number(entry.amount) || 0;
+        const entryKind = resolveFinancialKind(entry);
         const matchesKind =
           entry.isNew ||
           financialFilters.kind === 'all' ||
-          (financialFilters.kind === 'receita' && amount >= 0) ||
-          (financialFilters.kind === 'despesa' && amount < 0);
+          (financialFilters.kind === 'receita' && entryKind === 'receita') ||
+          (financialFilters.kind === 'despesa' && entryKind === 'despesa');
 
         const entryDate = new Date(`${entry.date}T12:00:00`);
         if (Number.isNaN(entryDate.getTime())) return false;
@@ -2127,11 +2149,15 @@ function App() {
   }, [financialEntries, financialFilters]);
 
   const financialSummary = useMemo(() => {
-    const income = filteredFinancialEntries.reduce((acc, entry) => acc + (entry.amount >= 0 ? entry.amount : 0), 0);
-    const expense = filteredFinancialEntries.reduce((acc, entry) => acc + (entry.amount < 0 ? Math.abs(entry.amount) : 0), 0);
+    const income = filteredFinancialEntries.reduce((acc, entry) => (
+      resolveFinancialKind(entry) === 'receita' ? acc + Math.abs(entry.amount) : acc
+    ), 0);
+    const expense = filteredFinancialEntries.reduce((acc, entry) => (
+      resolveFinancialKind(entry) === 'despesa' ? acc + Math.abs(entry.amount) : acc
+    ), 0);
     const balance = income - expense;
-    const incomeCount = filteredFinancialEntries.filter((entry) => entry.amount >= 0).length;
-    const expenseCount = filteredFinancialEntries.filter((entry) => entry.amount < 0).length;
+    const incomeCount = filteredFinancialEntries.filter((entry) => resolveFinancialKind(entry) === 'receita').length;
+    const expenseCount = filteredFinancialEntries.filter((entry) => resolveFinancialKind(entry) === 'despesa').length;
     const averageTicket = incomeCount > 0 ? income / incomeCount : 0;
 
     return {
@@ -2176,7 +2202,7 @@ function App() {
     () =>
       pagedFinancialEntries.map((entry) => ({
         ...entry,
-        kindLabel: entry.amount < 0 ? 'DESPESA' : 'RECEITA',
+        kindLabel: resolveFinancialKind(entry) === 'despesa' ? 'DESPESA' : 'RECEITA',
         runningBalance: financialRunningBalanceById.get(entry.id) ?? entry.amount,
         isSaleLinked: entry.sourceType === 'venda' && Boolean(entry.sourceId),
       })),
@@ -2887,6 +2913,7 @@ function App() {
           sourceType: null,
           sourceId: null,
           isNew: true,
+          entryKind: kind,
         };
         setFinancialEntries((prev) => [dbEntry, ...prev]);
         setNextFinancialId((prev) => Math.max(prev, dbEntry.id + 1));
@@ -2902,6 +2929,7 @@ function App() {
       sourceType: null,
       sourceId: null,
       isNew: true,
+      entryKind: kind,
     };
     setFinancialEntries((prev) => [newEntry, ...prev]);
     setNextFinancialId((prev) => prev + 1);
@@ -4112,10 +4140,17 @@ function App() {
                     placeholder="0.00"
                     value={entry.amount === 0 && entry.isNew ? '' : entry.amount}
                     disabled={entry.isSaleLinked}
-                    onChange={(event) => updateFinancialEntry(entry.id, { amount: parseFloat(event.target.value) || 0 })}
+                    onChange={(event) => {
+                      const rawValue = parseFloat(event.target.value);
+                      const parsed = Number.isFinite(rawValue) ? rawValue : 0;
+                      const normalizedAmount = resolveFinancialKind(entry) === 'despesa'
+                        ? -Math.abs(parsed)
+                        : Math.abs(parsed);
+                      updateFinancialEntry(entry.id, { amount: normalizedAmount });
+                    }}
                     onBlur={() => void persistFinancialEntry(entry.id)}
                   />
-                  <span className={`financial-kind ${entry.amount < 0 ? 'expense' : 'income'}`}>
+                  <span className={`financial-kind ${entry.kindLabel === 'DESPESA' ? 'expense' : 'income'}`}>
                     {entry.isSaleLinked ? 'RECEITA VENDA' : entry.kindLabel}
                   </span>
                   <span className="financial-balance-cell">{formatMoney(entry.runningBalance)}</span>
