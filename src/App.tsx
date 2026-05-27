@@ -191,7 +191,8 @@ function normalizeDashboardStatus(value: string | null | undefined): DashboardSe
   if (normalized === 'atrasado') return 'ATRASADO';
   if (normalized === 'em andamento' || normalized === 'em_andamento' || normalized === 'andamento') return 'EM ANDAMENTO';
   if (normalized === 'avisar cliente' || normalized === 'avisar_cliente') return 'AVISAR CLIENTE';
-  if (normalized === 'confirmado' || normalized === 'agendado') return 'EM ANDAMENTO';
+  // Legacy values from previous schema versions should behave like open items.
+  if (normalized === 'confirmado' || normalized === 'agendado') return 'EM ABERTO';
   if (normalized === 'aberto' || normalized === 'em aberto' || normalized === 'em_aberto') return 'EM ABERTO';
   return 'EM ABERTO';
 }
