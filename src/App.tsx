@@ -5,6 +5,8 @@ import {
   ArrowLeft,
   CalendarClock,
   CarFront,
+  ChevronLeft,
+  ChevronRight,
   CircleDollarSign,
   Gauge,
   Pencil,
@@ -4973,9 +4975,13 @@ function App() {
           <section className="calendar-layout">
             <div className="calendar-main">
               <div className="calendar-toolbar">
-                <button className="calendar-nav" onClick={() => moveCalendarMonth(-1)}>â€¹</button>
+                <button className="calendar-nav" onClick={() => moveCalendarMonth(-1)} aria-label="Mes anterior">
+                  <ChevronLeft size={20} />
+                </button>
                 <div className="calendar-month-label">{calendarMonthLabel}</div>
-                <button className="calendar-nav" onClick={() => moveCalendarMonth(1)}>â€º</button>
+                <button className="calendar-nav" onClick={() => moveCalendarMonth(1)} aria-label="Proximo mes">
+                  <ChevronRight size={20} />
+                </button>
               </div>
 
               <div className="calendar-weekdays">

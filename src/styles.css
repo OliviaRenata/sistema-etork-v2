@@ -3089,7 +3089,8 @@ select option {
 }
 
 .panel-calendar {
-  width: min(98vw, 1600px);
+  width: min(98vw, 1500px);
+  margin: 0 auto;
 }
 
 .calendar-layout {
@@ -3129,11 +3130,14 @@ select option {
 .calendar-nav {
   width: 44px;
   height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.07);
   color: var(--white);
-  font-size: 24px;
+  font-size: 20px;
   line-height: 1;
 }
 
@@ -3157,8 +3161,9 @@ select option {
 }
 
 .calendar-day {
-  min-height: 96px;
-  padding: 10px;
+  aspect-ratio: 1 / 1;
+  min-height: 0;
+  padding: 8px;
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.04);
@@ -3186,7 +3191,7 @@ select option {
 }
 
 .calendar-day-number {
-  font-size: 18px;
+  font-size: clamp(14px, 1.4vw, 18px);
 }
 
 .calendar-day-badge {
@@ -3460,8 +3465,9 @@ select option {
   }
 
   .calendar-day {
-    min-height: 82px;
-    padding: 8px;
+    aspect-ratio: 1 / 1;
+    min-height: 0;
+    padding: 6px;
   }
 
   .dashboard-layout {
