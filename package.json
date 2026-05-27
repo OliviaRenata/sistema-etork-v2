@@ -9,8 +9,11 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.8",
+    "bootstrap": "^5.3.8",
+    "lucide-react": "^1.16.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "sweetalert2": "^11.26.25"
   },
   "devDependencies": {
     "@types/react": "^18.3.1",

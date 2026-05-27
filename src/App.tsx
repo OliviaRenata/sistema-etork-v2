@@ -1,4 +1,21 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import Swal from 'sweetalert2';
+import {
+  CalendarClock,
+  CarFront,
+  CircleDollarSign,
+  Clock3,
+  Gauge,
+  History,
+  Plus,
+  Search,
+  Send,
+  ShieldCheck,
+  Trash2,
+  UserRound,
+  Wrench,
+} from 'lucide-react';
 import logoEtork from './assets/logoetork.png';
 import logoEtorkBrasil from './assets/logoetorkbrasil.png';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
@@ -696,7 +713,7 @@ function ProductModal({
           </div>
 
           <div className="form-field">
-            <label>PREÇO TABELA 1</label>
+            <label>PREÃ‡O TABELA 1</label>
             <input
               type="number"
               className="modal-input"
@@ -708,7 +725,7 @@ function ProductModal({
           </div>
 
           <div className="form-field">
-            <label>PREÇO TABELA 2</label>
+            <label>PREÃ‡O TABELA 2</label>
             <input
               type="number"
               className="modal-input"
@@ -881,13 +898,13 @@ function AppointmentEditModal({
           </div>
 
           <div className="form-field">
-            <label>VEÍCULO / SERVIÇO</label>
+            <label>VEÃCULO / SERVIÃ‡O</label>
             <textarea
               className="modal-input modal-textarea"
               value={data.vehicleDetails}
               onChange={(e) => onDataChange({ vehicleDetails: e.target.value })}
               rows={3}
-              placeholder="Detalhes do veículo e serviço"
+              placeholder="Detalhes do veÃ­culo e serviÃ§o"
             />
           </div>
 
@@ -916,13 +933,13 @@ function AppointmentEditModal({
           </div>
 
           <div className="form-field">
-            <label>OBSERVAÇÕES</label>
+            <label>OBSERVAÃ‡Ã•ES</label>
             <input
               type="text"
               className="modal-input"
               value={data.note}
               onChange={(e) => onDataChange({ note: e.target.value })}
-              placeholder="Observações adicionais"
+              placeholder="ObservaÃ§Ãµes adicionais"
             />
           </div>
         </div>
@@ -1049,6 +1066,7 @@ function SaleScreen({
   receipts,
   setScreen,
   applyMatchedClient,
+  now,
 }: {
   saleData: SaleData;
   setSaleData: (updater: (prev: SaleData) => SaleData) => void;
@@ -1079,264 +1097,377 @@ function SaleScreen({
   receipts: ReceiptRow[];
   setScreen: (next: Screen) => void;
   applyMatchedClient: (target: 'quote' | 'appointment' | 'sale', customerValue: string) => void;
+  now: Date;
 }) {
+  const [globalSearch, setGlobalSearch] = useState('');
+
   function patchSale(patch: Partial<SaleData>) {
     setSaleData((prev) => ({ ...prev, ...patch }));
   }
 
+  const clockLabel = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  const dateLabel = now.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+
+  const vehicleLines = saleData.vehicleDetails
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const vehicleModel = vehicleLines[0] || 'VEICULO PERFORMANCE';
+  const vehicleGear = vehicleLines[1] || 'AUTOMATICO';
+  const vehicleYear = vehicleLines[2] || '2024/2024';
+  const vehicleFuel = vehicleLines[3] || 'DIESEL';
+
+  const paymentStatusLabel = saleTotal > 0 ? 'PENDENTE' : 'SEM VALOR';
+
+  async function handleSendService() {
+    await Swal.fire({
+      title: 'Servico enviado',
+      text: 'A OS foi enviada para a fila interna de producao.',
+      icon: 'success',
+      confirmButtonColor: '#3b82f6',
+      background: '#111827',
+      color: '#f3f4f6',
+    });
+  }
+
+  async function handleRemoveSaleItem(index: number) {
+    const result = await Swal.fire({
+      title: 'Remover servico?',
+      text: 'Essa acao remove o item da OS atual.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Remover',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#334155',
+      background: '#111827',
+      color: '#f3f4f6',
+    });
+
+    if (result.isConfirmed) {
+      removeItem('sale', index);
+    }
+  }
+
   return (
-    <main className="sale-panel">
-      <div className="sale-topbar">
-        <span className="sale-topbar-title">BALCAO DE VENDAS</span>
-        <div className="sale-topbar-actions">
-          <button className="sale-btn-ghost" onClick={() => setScreen('dashboard')}>VOLTAR</button>
-          <button className="sale-btn-primary" onClick={() => window.alert('Servico enviado para a fila interna.')}>ENVIAR SERVICO</button>
-          <button className="sale-btn-green" onClick={finalizeSale} disabled={isSaving}>{isSaving ? 'SALVANDO...' : 'FINALIZAR VENDA'}</button>
-        </div>
-      </div>
-
-      <div className="sale-body">
-        <div className="sale-center">
-            <div className="sale-import-row">
-              <input
-                className="sale-import-input"
-                value={saleQuoteSearch}
-                onChange={(e) => setSaleQuoteSearch(e.target.value)}
-                placeholder="Buscar orcamento por nome, data, valor, tel, placa, veiculo ou observacao"
-              />
-              <button className="sale-import-btn blue" onClick={runSaleQuoteSearch}>BUSCAR ORC.</button>
-              <select className="sale-import-select" value={saleSelectedQuoteId} onChange={(e) => setSaleSelectedQuoteId(e.target.value)}>
-                <option value="">Selecione um orcamento</option>
-                {saleQuoteResults.map((row) => (
-                  <option key={row.id} value={row.id}>
-                    {`${row.customer} | ${row.phone} | ${row.plate} | ${row.createdAt} | ${formatMoney(row.total)}`}
-                  </option>
-                ))}
-              </select>
-              <button className="sale-import-btn green" onClick={importQuoteToSaleBySearch}>IMPORTAR</button>
-              <button className="sale-import-btn green" onClick={importQuoteToSale}>ULTIMO</button>
-            </div>
-
-            <div className="sale-import-row">
-              <input
-                className="sale-import-input"
-                value={saleAppointmentSearch}
-                onChange={(e) => setSaleAppointmentSearch(e.target.value)}
-                placeholder="Buscar agendamento por nome, data, valor, tel, placa, veiculo ou observacao"
-              />
-              <button className="sale-import-btn amber" onClick={runSaleAppointmentSearch}>BUSCAR AGEND.</button>
-              <select
-                className="sale-import-select"
-                value={saleSelectedAppointmentId}
-                onChange={(e) => setSaleSelectedAppointmentId(e.target.value)}
-              >
-                <option value="">Selecione um agendamento</option>
-                {saleAppointmentResults.map((row) => (
-                  <option key={row.id} value={row.id}>
-                    {`${row.customer} | ${row.phone} | ${row.plate} | ${row.createdAt} | ${formatMoney(row.total)}`}
-                  </option>
-                ))}
-              </select>
-              <button className="sale-import-btn amber" onClick={importAppointmentToSaleBySearch}>IMPORTAR</button>
-              <button className="sale-import-btn amber" onClick={importAppointmentToSale}>ULTIMO</button>
-            </div>
-
-          <div className="sale-client-section">
-            <div className="sale-field">
-              <span className="sale-field-label">Cliente</span>
-              <input
-                list="client-suggestions"
-                className="sale-field-input"
-                value={saleData.customer}
-                onChange={(e) => patchSale({ customer: e.target.value })}
-                onBlur={(e) => applyMatchedClient('sale', e.target.value)}
-                placeholder="Nome do cliente"
-              />
-            </div>
-            <div className="sale-field">
-              <span className="sale-field-label">Tipo</span>
-              <select
-                className="sale-field-input"
-                value={saleData.customerType}
-                onChange={(e) => patchSale({ customerType: e.target.value })}
-              >
-                <option value={getCustomerTypeLabel(1)}>{getCustomerTypeLabel(1)}</option>
-                <option value={getCustomerTypeLabel(2)}>{getCustomerTypeLabel(2)}</option>
-              </select>
-            </div>
-            <div className="sale-field">
-              <span className="sale-field-label">Telefone</span>
-              <input
-                className="sale-field-input"
-                value={saleData.phone}
-                onChange={(e) => patchSale({ phone: e.target.value })}
-                placeholder="(67) 9 0000-0000"
-              />
-            </div>
-            <div className="sale-field">
-              <span className="sale-field-label">Placa</span>
-              <input
-                className="sale-field-input plate"
-                value={saleData.plate}
-                onChange={(e) => patchSale({ plate: e.target.value.toUpperCase() })}
-                placeholder="AAA-0000"
-              />
-            </div>
+    <main className="sales-premium">
+      <section className="sales-premium-header card border-0">
+        <div className="sales-premium-header-top">
+          <div>
+            <p className="sales-premium-eyebrow mb-1">ETORK BRASIL PERFORMANCE HUB</p>
+            <h2 className="sales-premium-title mb-0">Balcao de Vendas</h2>
           </div>
-
-          <div className="sale-items-area">
-            <div className="sale-items-header">
-              <span>Descricao</span>
-              <span>Qtd</span>
-              <span>Vlr Unit.</span>
-              <span>Subtotal</span>
-              <span></span>
-            </div>
-
-            {saleData.items.map((item, index) => (
-              <div className="sale-item-row" key={`sale-item-${index}`}>
-                <input
-                  className="sale-item-input"
-                  value={item.description}
-                  onChange={(e) => updateItems('sale', index, { description: e.target.value })}
-                />
-                <input
-                  className="sale-item-input right"
-                  type="number"
-                  min={1}
-                  value={item.quantity}
-                  onChange={(e) => updateItems('sale', index, { quantity: Math.max(1, Number(e.target.value) || 1) })}
-                />
-                <input
-                  className="sale-item-input right"
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={item.price}
-                  onChange={(e) => updateItems('sale', index, { price: Math.max(0, Number(e.target.value) || 0) })}
-                />
-                <span className="sale-item-total">{formatMoney(item.price * item.quantity)}</span>
-                <button className="sale-item-del" onClick={() => removeItem('sale', index)}>X</button>
-              </div>
-            ))}
-
-            <div className="sale-add-row">
-              <button className="sale-add-btn" onClick={addItemToSale}>+ ADICIONAR SERVICO / PRODUTO</button>
-            </div>
-          </div>
-
-          <div className="sale-note-area">
-            <textarea
-              className="sale-note-input"
-              rows={2}
-              value={saleData.note}
-              onChange={(e) => patchSale({ note: e.target.value })}
-              placeholder="Observacoes adicionais"
-            />
+          <div className="sales-premium-clock">
+            <Clock3 size={16} />
+            <strong>{clockLabel}</strong>
+            <span>{dateLabel}</span>
           </div>
         </div>
 
-        <div className="sale-sidebar">
-          <div className="sale-vehicle-section">
-            <div className="sale-section-title">Veiculo e Servico</div>
-            <textarea
-              className="sale-vehicle-textarea"
-              rows={4}
-              value={saleData.vehicleDetails}
-              onChange={(e) => patchSale({ vehicleDetails: e.target.value })}
-              placeholder={'MODELO\nCAMBIO\nANO\nCOMBUSTIVEL'}
+        <div className="sales-premium-header-grid">
+          <div className="form-floating sales-premium-search-wrap">
+            <input
+              id="sales-global-search"
+              className="form-control sales-premium-input"
+              value={globalSearch}
+              onChange={(event) => setGlobalSearch(event.target.value)}
+              placeholder="Buscar cliente, placa, servico"
             />
-
-            <div className="sale-check-row">
-              <input
-                id="labor-check"
-                type="checkbox"
-                checked={saleData.laborRequired}
-                onChange={(e) => patchSale({ laborRequired: e.target.checked })}
-              />
-              <label htmlFor="labor-check">MAO DE OBRA INCLUSA</label>
-            </div>
-
-            <div className="sale-time-row">
-              <label>TEMPO (DIAS)</label>
-              <input
-                className="sale-time-input"
-                type="number"
-                min={1}
-                value={saleData.timeDays}
-                onChange={(e) => patchSale({ timeDays: Math.max(1, Number(e.target.value) || 1) })}
-              />
-            </div>
+            <label htmlFor="sales-global-search">Busca global</label>
+            <Search size={16} className="sales-premium-input-icon" />
           </div>
 
-          <div className="sale-totals-section">
-            <div className="sale-section-title">Resumo Financeiro</div>
-
-            <div className="sale-total-row">
-              <span className="sale-total-label">Subtotal</span>
-              <span className="sale-total-value">{formatMoney(saleSubtotal)}</span>
-            </div>
-
-            <div className="sale-total-row discount">
-              <span className="sale-total-label">Desconto (-)</span>
-              <input
-                className="sale-adj-input discount"
-                type="number"
-                min={0}
-                step="0.01"
-                value={saleData.discount}
-                onChange={(e) => patchSale({ discount: Math.max(0, Number(e.target.value) || 0) })}
-              />
-            </div>
-
-            <div className="sale-total-row surcharge">
-              <span className="sale-total-label">Acrescimo (+)</span>
-              <input
-                className="sale-adj-input surcharge"
-                type="number"
-                min={0}
-                step="0.01"
-                value={saleData.surcharge}
-                onChange={(e) => patchSale({ surcharge: Math.max(0, Number(e.target.value) || 0) })}
-              />
-            </div>
-
-            <div className="sale-total-row grand">
-              <span className="sale-total-label">TOTAL</span>
-              <span className="sale-total-value">{formatMoney(saleTotal)}</span>
-            </div>
+          <div className="sales-premium-top-badges">
+            <span><UserRound size={14} /> ADMIN</span>
+            <span><ShieldCheck size={14} /> OS {paymentStatusLabel}</span>
+            <span><Wrench size={14} /> ETORK LIVE</span>
           </div>
+        </div>
 
-          <div className="sale-recent-section">
-            <div className="sale-recent-header">
-              <span className="sale-section-title" style={{ marginBottom: 0 }}>Lancamentos Recentes</span>
-              <span style={{ fontSize: '9px', color: '#44445a', letterSpacing: '0.1em' }}>{formatNumberValue(receipts.length)} registros</span>
-            </div>
+        <div className="sales-premium-header-actions">
+          <button className="sales-premium-btn ghost" onClick={() => setScreen('dashboard')}>
+            <CalendarClock size={16} /> Voltar
+          </button>
+          <button className="sales-premium-btn primary" onClick={() => void handleSendService()}>
+            <Send size={16} /> Enviar Servico
+          </button>
+          <button className="sales-premium-btn success" onClick={finalizeSale} disabled={isSaving}>
+            <CircleDollarSign size={16} /> {isSaving ? 'Salvando...' : 'Finalizar Venda'}
+          </button>
+        </div>
+      </section>
 
-            <div className="sale-recent-list">
-              {receipts.length === 0 ? (
-                <div className="sale-recent-empty">Nenhum lancamento</div>
-              ) : (
-                receipts.map((row) => (
-                  <div className="sale-recent-item" key={row.id} title={`${row.car} - ${formatMoney(row.total)}`}>
-                    <span className="sale-recent-name">{row.customer}</span>
-                    <div className="sale-recent-meta">
-                      <span className="sale-recent-plate">{row.plate}</span>
-                      <span className="sale-recent-date">{row.date}</span>
-                      <span className="sale-recent-total">{formatMoney(row.total)}</span>
+      <section className="container-fluid sales-premium-content px-0">
+        <div className="row g-3">
+          <div className="col-12 col-xxl-8">
+            <div className="card sales-premium-card border-0 h-100">
+              <div className="card-body p-3 p-lg-4">
+                <div className="row g-3 mb-3">
+                  <div className="col-12 col-md-7">
+                    <div className="card sales-premium-inner border-0 h-100">
+                      <div className="card-body p-3">
+                        <h6 className="sales-premium-section-title mb-3"><UserRound size={15} /> Cliente</h6>
+                        <div className="row g-2">
+                          <div className="col-12 col-md-6">
+                            <div className="form-floating">
+                              <input id="sales-customer-name" list="client-suggestions" className="form-control sales-premium-input" value={saleData.customer} onChange={(e) => patchSale({ customer: e.target.value })} onBlur={(e) => applyMatchedClient('sale', e.target.value)} placeholder="Cliente" />
+                              <label htmlFor="sales-customer-name">Cliente</label>
+                            </div>
+                          </div>
+                          <div className="col-12 col-md-6">
+                            <div className="form-floating">
+                              <select id="sales-customer-type" className="form-select sales-premium-input" value={saleData.customerType} onChange={(e) => patchSale({ customerType: e.target.value })}>
+                                <option value={getCustomerTypeLabel(1)}>{getCustomerTypeLabel(1)}</option>
+                                <option value={getCustomerTypeLabel(2)}>{getCustomerTypeLabel(2)}</option>
+                              </select>
+                              <label htmlFor="sales-customer-type">Tipo</label>
+                            </div>
+                          </div>
+                          <div className="col-12 col-md-6">
+                            <div className="form-floating">
+                              <input id="sales-customer-phone" className="form-control sales-premium-input" value={saleData.phone} onChange={(e) => patchSale({ phone: e.target.value })} placeholder="Telefone" />
+                              <label htmlFor="sales-customer-phone">Telefone</label>
+                            </div>
+                          </div>
+                          <div className="col-12 col-md-6">
+                            <div className="form-floating">
+                              <input id="sales-customer-plate" className="form-control sales-premium-input" value={saleData.plate} onChange={(e) => patchSale({ plate: e.target.value.toUpperCase() })} placeholder="Placa" />
+                              <label htmlFor="sales-customer-plate">Placa</label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <span style={{ fontSize: '9px', color: '#2a2a3a', letterSpacing: '0.06em' }}>{row.car}</span>
                   </div>
-                ))
-              )}
+
+                  <div className="col-12 col-md-5">
+                    <div className="card sales-premium-inner border-0 h-100">
+                      <div className="card-body p-3">
+                        <h6 className="sales-premium-section-title mb-3"><CarFront size={15} /> Veiculo</h6>
+                        <div className="sales-premium-vehicle-media mb-2">
+                          <img src="https://images.unsplash.com/photo-1619405399517-d7fce0f13302?auto=format&fit=crop&w=1200&q=60" alt="Veiculo em destaque" />
+                        </div>
+                        <strong className="sales-premium-vehicle-title d-block">{vehicleModel}</strong>
+                        <small className="sales-premium-muted d-block mb-2">{vehicleGear} • {vehicleYear}</small>
+                        <div className="sales-premium-chip-list">
+                          <span className="chip orange">{vehicleFuel}</span>
+                          <span className="chip blue">AUTOMATICO</span>
+                          <span className="chip green">STAGE 2</span>
+                          <span className="chip neutral">PLACA {saleData.plate || 'N/A'}</span>
+                        </div>
+                        <div className="sales-premium-power mt-2"><Gauge size={14} /> 320cv estimados</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="card sales-premium-inner border-0 mb-3">
+                  <div className="card-body p-3">
+                    <h6 className="sales-premium-section-title mb-3"><Search size={15} /> Importar Orcamento e Agendamento</h6>
+                    <div className="row g-2 align-items-center mb-2">
+                      <div className="col-12 col-md-6 col-xl-4">
+                        <div className="form-floating">
+                          <input id="sales-search-quote" className="form-control sales-premium-input" value={saleQuoteSearch} onChange={(e) => setSaleQuoteSearch(e.target.value)} placeholder="Buscar orcamento" />
+                          <label htmlFor="sales-search-quote">Buscar orcamento</label>
+                        </div>
+                      </div>
+                      <div className="col-12 col-md-6 col-xl-4">
+                        <div className="form-floating">
+                          <select id="sales-select-quote" className="form-select sales-premium-input" value={saleSelectedQuoteId} onChange={(e) => setSaleSelectedQuoteId(e.target.value)}>
+                            <option value="">Selecione um orcamento</option>
+                            {saleQuoteResults.map((row) => (
+                              <option key={row.id} value={row.id}>{`${row.customer} | ${row.plate} | ${formatMoney(row.total)}`}</option>
+                            ))}
+                          </select>
+                          <label htmlFor="sales-select-quote">Resultados de orcamento</label>
+                        </div>
+                      </div>
+                      <div className="col-12 col-xl-4 sales-premium-inline-actions">
+                        <button className="sales-premium-btn ghost" onClick={runSaleQuoteSearch}>Buscar</button>
+                        <button className="sales-premium-btn primary" onClick={importQuoteToSaleBySearch}>Importar</button>
+                        <button className="sales-premium-btn success" onClick={importQuoteToSale}>Ultimo</button>
+                      </div>
+                    </div>
+
+                    <div className="row g-2 align-items-center">
+                      <div className="col-12 col-md-6 col-xl-4">
+                        <div className="form-floating">
+                          <input id="sales-search-appointment" className="form-control sales-premium-input" value={saleAppointmentSearch} onChange={(e) => setSaleAppointmentSearch(e.target.value)} placeholder="Buscar agendamento" />
+                          <label htmlFor="sales-search-appointment">Buscar agendamento</label>
+                        </div>
+                      </div>
+                      <div className="col-12 col-md-6 col-xl-4">
+                        <div className="form-floating">
+                          <select id="sales-select-appointment" className="form-select sales-premium-input" value={saleSelectedAppointmentId} onChange={(e) => setSaleSelectedAppointmentId(e.target.value)}>
+                            <option value="">Selecione um agendamento</option>
+                            {saleAppointmentResults.map((row) => (
+                              <option key={row.id} value={row.id}>{`${row.customer} | ${row.plate} | ${formatMoney(row.total)}`}</option>
+                            ))}
+                          </select>
+                          <label htmlFor="sales-select-appointment">Resultados de agendamento</label>
+                        </div>
+                      </div>
+                      <div className="col-12 col-xl-4 sales-premium-inline-actions">
+                        <button className="sales-premium-btn ghost" onClick={runSaleAppointmentSearch}>Buscar</button>
+                        <button className="sales-premium-btn primary" onClick={importAppointmentToSaleBySearch}>Importar</button>
+                        <button className="sales-premium-btn success" onClick={importAppointmentToSale}>Ultimo</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="card sales-premium-inner border-0 mb-3">
+                  <div className="card-body p-3">
+                    <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                      <h6 className="sales-premium-section-title mb-0"><Wrench size={15} /> Servicos</h6>
+                      <button className="sales-premium-btn ghost" onClick={addItemToSale}><Plus size={15} /> Adicionar item</button>
+                    </div>
+
+                    <div className="sales-premium-table-wrap">
+                      <div className="sales-premium-table-head">
+                        <span>Descricao</span>
+                        <span>Qtd</span>
+                        <span>Unitario</span>
+                        <span>Subtotal</span>
+                        <span></span>
+                      </div>
+
+                      {saleData.items.map((item, index) => (
+                        <div className="sales-premium-table-row" key={`sale-item-${index}`}>
+                          <div className="form-floating">
+                            <input id={`sale-item-desc-${index}`} className="form-control sales-premium-input" value={item.description} onChange={(e) => updateItems('sale', index, { description: e.target.value })} placeholder="Descricao" />
+                            <label htmlFor={`sale-item-desc-${index}`}>Descricao</label>
+                          </div>
+
+                          <div className="sales-premium-stepper">
+                            <button type="button" onClick={() => updateItems('sale', index, { quantity: Math.max(1, item.quantity - 1) })}>-</button>
+                            <div className="form-floating flex-grow-1">
+                              <input id={`sale-item-qty-${index}`} className="form-control sales-premium-input text-center" type="number" min={1} value={item.quantity} onChange={(e) => updateItems('sale', index, { quantity: Math.max(1, Number(e.target.value) || 1) })} placeholder="Qtd" />
+                              <label htmlFor={`sale-item-qty-${index}`}>Qtd</label>
+                            </div>
+                            <button type="button" onClick={() => updateItems('sale', index, { quantity: item.quantity + 1 })}>+</button>
+                          </div>
+
+                          <div className="form-floating">
+                            <input id={`sale-item-price-${index}`} className="form-control sales-premium-input text-end" type="number" min={0} step="0.01" value={item.price} onChange={(e) => updateItems('sale', index, { price: Math.max(0, Number(e.target.value) || 0) })} placeholder="Unitario" />
+                            <label htmlFor={`sale-item-price-${index}`}>Unitario</label>
+                          </div>
+
+                          <div className="sales-premium-subtotal">{formatMoney(item.price * item.quantity)}</div>
+
+                          <button className="sales-premium-icon-btn" onClick={() => void handleRemoveSaleItem(index)} aria-label="Excluir item">
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="card sales-premium-inner border-0">
+                  <div className="card-body p-3">
+                    <h6 className="sales-premium-section-title mb-3">Observacoes</h6>
+                    <div className="form-floating">
+                      <textarea id="sales-note" className="form-control sales-premium-input sales-premium-note" value={saleData.note} onChange={(e) => patchSale({ note: e.target.value })} placeholder="Observacoes" />
+                      <label htmlFor="sales-note">Observacoes da OS</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="col-12 col-xxl-4">
+            <div className="card sales-premium-card border-0 mb-3">
+              <div className="card-body p-3 p-lg-4">
+                <h6 className="sales-premium-section-title mb-3"><CircleDollarSign size={15} /> Financeiro</h6>
+                <div className="sales-premium-total-box">
+                  <small>Total da OS</small>
+                  <strong>{formatMoney(saleTotal)}</strong>
+                </div>
+
+                <div className="sales-premium-metrics mt-3">
+                  <div>
+                    <span>Subtotal</span>
+                    <strong>{formatMoney(saleSubtotal)}</strong>
+                  </div>
+                  <div>
+                    <span>Desconto</span>
+                    <div className="form-floating">
+                      <input id="sales-discount" className="form-control sales-premium-input text-end" type="number" min={0} step="0.01" value={saleData.discount} onChange={(e) => patchSale({ discount: Math.max(0, Number(e.target.value) || 0) })} placeholder="Desconto" />
+                      <label htmlFor="sales-discount">Desconto</label>
+                    </div>
+                  </div>
+                  <div>
+                    <span>Acrescimo</span>
+                    <div className="form-floating">
+                      <input id="sales-surcharge" className="form-control sales-premium-input text-end" type="number" min={0} step="0.01" value={saleData.surcharge} onChange={(e) => patchSale({ surcharge: Math.max(0, Number(e.target.value) || 0) })} placeholder="Acrescimo" />
+                      <label htmlFor="sales-surcharge">Acrescimo</label>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="sales-premium-status-grid mt-3">
+                  <span className="chip green">EM ANDAMENTO</span>
+                  <span className="chip orange">{paymentStatusLabel}</span>
+                  <span className="chip blue">PAGAMENTO PIX</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="card sales-premium-card border-0 mb-3">
+              <div className="card-body p-3 p-lg-4">
+                <h6 className="sales-premium-section-title mb-3"><CarFront size={15} /> Dados do Veiculo</h6>
+                <div className="form-floating mb-2">
+                  <textarea id="sales-vehicle-details" className="form-control sales-premium-input sales-premium-note" value={saleData.vehicleDetails} onChange={(e) => patchSale({ vehicleDetails: e.target.value })} placeholder="Veiculo" />
+                  <label htmlFor="sales-vehicle-details">Modelo / Cambio / Ano / Combustivel</label>
+                </div>
+
+                <div className="form-check form-switch sales-premium-switch mb-2">
+                  <input className="form-check-input" type="checkbox" id="sales-labor" checked={saleData.laborRequired} onChange={(e) => patchSale({ laborRequired: e.target.checked })} />
+                  <label className="form-check-label" htmlFor="sales-labor">Mao de obra inclusa</label>
+                </div>
+
+                <div className="form-floating">
+                  <input id="sales-time-days" className="form-control sales-premium-input" type="number" min={1} value={saleData.timeDays} onChange={(e) => patchSale({ timeDays: Math.max(1, Number(e.target.value) || 1) })} placeholder="Tempo" />
+                  <label htmlFor="sales-time-days">Tempo estimado (dias)</label>
+                </div>
+              </div>
+            </div>
+
+            <div className="card sales-premium-card border-0">
+              <div className="card-body p-3 p-lg-4">
+                <h6 className="sales-premium-section-title mb-3"><History size={15} /> Lancamentos recentes</h6>
+                <div className="sales-premium-timeline">
+                  {receipts.length === 0 ? (
+                    <div className="sales-premium-muted">Nenhum lancamento recente.</div>
+                  ) : (
+                    receipts.slice(0, 8).map((row) => (
+                      <article className="sales-premium-timeline-item" key={row.id}>
+                        <div className="sales-premium-dot" />
+                        <div>
+                          <div className="sales-premium-timeline-top">
+                            <strong>{row.customer}</strong>
+                            <span className="chip neutral">{row.plate}</span>
+                          </div>
+                          <p className="mb-1 sales-premium-muted">{row.car}</p>
+                          <div className="sales-premium-timeline-bottom">
+                            <span>{row.date}</span>
+                            <span className="chip green">{formatMoney(row.total)}</span>
+                          </div>
+                        </div>
+                      </article>
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </section>
     </main>
   );
 }
-
 function QuoteScreen({
   quoteData,
   setQuoteData,
@@ -4212,7 +4343,7 @@ function App() {
       return;
     }
 
-    const message = `Olá ${target.customer || 'cliente'}, seu agendamento está ${target.status.toLowerCase()} para ${target.date}.`;
+    const message = `OlÃ¡ ${target.customer || 'cliente'}, seu agendamento estÃ¡ ${target.status.toLowerCase()} para ${target.date}.`;
     window.open(`https://wa.me/55${digits}?text=${encodeURIComponent(message)}`, '_blank');
   }
 
@@ -4449,7 +4580,7 @@ function App() {
           </section>
           <footer className="panel-footer">
             <div className="footer-right">
-              <button className="btn-back" onClick={() => setScreen('dashboard')}>←</button>
+              <button className="btn-back" onClick={() => setScreen('dashboard')}>â†</button>
             </div>
           </footer>
         </main>
@@ -4515,7 +4646,7 @@ function App() {
           </section>
           <footer className="panel-footer">
             <div className="footer-right">
-              <button className="btn-back" onClick={() => setScreen('dashboard')}>←</button>
+              <button className="btn-back" onClick={() => setScreen('dashboard')}>â†</button>
             </div>
           </footer>
         </main>
@@ -4557,8 +4688,8 @@ function App() {
                       <span className="product-price">T1 {formatMoney(item.priceTable1)}</span>
                       <span className="product-price">T2 {formatMoney(item.priceTable2)}</span>
                       <div className="item-actions">
-                        <button className="item-edit" onClick={() => openEditProductModal(actualIndex)}>✎</button>
-                        <button className="item-delete" onClick={() => void removeProduct(item.id, actualIndex)}>✕</button>
+                        <button className="item-edit" onClick={() => openEditProductModal(actualIndex)}>âœŽ</button>
+                        <button className="item-delete" onClick={() => void removeProduct(item.id, actualIndex)}>âœ•</button>
                       </div>
                     </div>
                   );
@@ -4568,7 +4699,7 @@ function App() {
           </section>
           <footer className="panel-footer">
             <div className="footer-right">
-              <button className="btn-back" onClick={() => setScreen('dashboard')}>←</button>
+              <button className="btn-back" onClick={() => setScreen('dashboard')}>â†</button>
             </div>
           </footer>
         </main>
@@ -4746,7 +4877,7 @@ function App() {
           </section>
           <footer className="panel-footer">
             <div className="footer-right">
-              <button className="btn-back" onClick={() => setScreen('dashboard')}>←</button>
+              <button className="btn-back" onClick={() => setScreen('dashboard')}>â†</button>
             </div>
           </footer>
         </main>
@@ -4804,7 +4935,7 @@ function App() {
           </section>
           <footer className="panel-footer">
             <div className="footer-right">
-              <button className="btn-back" onClick={() => setScreen('dashboard')}>←</button>
+              <button className="btn-back" onClick={() => setScreen('dashboard')}>â†</button>
             </div>
           </footer>
         </main>
@@ -4816,9 +4947,9 @@ function App() {
           <section className="calendar-layout">
             <div className="calendar-main">
               <div className="calendar-toolbar">
-                <button className="calendar-nav" onClick={() => moveCalendarMonth(-1)}>‹</button>
+                <button className="calendar-nav" onClick={() => moveCalendarMonth(-1)}>â€¹</button>
                 <div className="calendar-month-label">{calendarMonthLabel}</div>
-                <button className="calendar-nav" onClick={() => moveCalendarMonth(1)}>›</button>
+                <button className="calendar-nav" onClick={() => moveCalendarMonth(1)}>â€º</button>
               </div>
 
               <div className="calendar-weekdays">
@@ -4889,7 +5020,7 @@ function App() {
 
           <footer className="panel-footer">
             <div className="footer-right">
-              <button className="btn-back" onClick={() => setScreen('dashboard')}>←</button>
+              <button className="btn-back" onClick={() => setScreen('dashboard')}>â†</button>
             </div>
           </footer>
         </main>
@@ -5107,7 +5238,7 @@ function App() {
 
           <footer className="panel-footer">
             <div className="footer-right">
-              <button className="btn-back" onClick={() => setScreen('dashboard')}>←</button>
+              <button className="btn-back" onClick={() => setScreen('dashboard')}>â†</button>
             </div>
           </footer>
         </main>
@@ -5173,7 +5304,7 @@ function App() {
               <div className="total">TOTAL: <span>{formatMoney(appointmentTotal)}</span></div>
             </div>
             <div className="footer-right">
-              <button className="btn-back" onClick={() => setScreen('dashboard')}>←</button>
+              <button className="btn-back" onClick={() => setScreen('dashboard')}>â†</button>
               <button className="btn-finish" onClick={() => void finalizeAppointment()}>{isSaving ? 'SALVANDO...' : 'FINALIZAR AGENDAMENTO'}</button>
             </div>
           </footer>
@@ -5211,6 +5342,7 @@ function App() {
           receipts={receipts}
           setScreen={setScreen}
           applyMatchedClient={applyMatchedClient}
+          now={now}
         />
       )}
 
@@ -5457,7 +5589,7 @@ function App() {
               </div>
             </div>
             <div className="footer-right">
-              <button className="btn-back" onClick={() => setScreen('dashboard')}>←</button>
+              <button className="btn-back" onClick={() => setScreen('dashboard')}>â†</button>
               <button className="btn-finish" onClick={() => setScreen('dashboard')}>FECHAR</button>
             </div>
           </footer>
