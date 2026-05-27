@@ -128,6 +128,33 @@ type FinancialFilters = {
   kind: 'all' | 'receita' | 'despesa';
 };
 
+type DashboardServiceTone = 'warning' | 'danger' | 'success' | 'neutral' | 'info';
+type DashboardServiceStatus = 'EM ABERTO' | 'EM ANDAMENTO' | 'ATRASADO' | 'AVISAR CLIENTE' | 'CONCLUIDO';
+
+type DashboardService = {
+  id: string;
+  title: string;
+  plate: string;
+  status: DashboardServiceStatus;
+  tone: DashboardServiceTone;
+};
+
+const DASHBOARD_STATUS_OPTIONS: DashboardServiceStatus[] = [
+  'EM ABERTO',
+  'EM ANDAMENTO',
+  'ATRASADO',
+  'AVISAR CLIENTE',
+  'CONCLUIDO',
+];
+
+function dashboardToneByStatus(status: DashboardServiceStatus): DashboardServiceTone {
+  if (status === 'CONCLUIDO') return 'success';
+  if (status === 'ATRASADO') return 'danger';
+  if (status === 'EM ANDAMENTO') return 'warning';
+  if (status === 'AVISAR CLIENTE') return 'info';
+  return 'neutral';
+}
+
 const FINANCIAL_PAGE_SIZE = 25;
 const SALES_HISTORY_PAGE_SIZE = 20;
 
@@ -259,12 +286,12 @@ function sanitizePrintSettings(input: unknown): PrintSettings {
   };
 }
 
-const dashboardServices = [
-  { title: 'AMAROK V6', plate: 'NSA-6J85', status: 'EM ANDAMENTO', tone: 'warning' },
-  { title: 'HILUX SRX', plate: 'SDR-F435', status: 'ATRASADO', tone: 'danger' },
-  { title: 'S10 LTZ', plate: 'KJD-3D45', status: 'FINALIZADO', tone: 'success' },
-  { title: 'UP TSI', plate: 'MNS-5D43', status: 'EM ABERTO', tone: 'neutral' },
-  { title: 'GOLF GTI', plate: 'SXC-9G56', status: 'AVISAR CLIENTE', tone: 'info' },
+const dashboardServicesDefault: DashboardService[] = [
+  { id: 'svc-1', title: 'AMAROK V6', plate: 'NSA-6J85', status: 'EM ANDAMENTO', tone: 'warning' },
+  { id: 'svc-2', title: 'HILUX SRX', plate: 'SDR-F435', status: 'ATRASADO', tone: 'danger' },
+  { id: 'svc-3', title: 'S10 LTZ', plate: 'KJD-3D45', status: 'CONCLUIDO', tone: 'success' },
+  { id: 'svc-4', title: 'UP TSI', plate: 'MNS-5D43', status: 'EM ABERTO', tone: 'neutral' },
+  { id: 'svc-5', title: 'GOLF GTI', plate: 'SXC-9G56', status: 'AVISAR CLIENTE', tone: 'info' },
 ];
 
 const quoteItems: ServiceItem[] = [
@@ -839,6 +866,71 @@ function AppointmentEditModal({
         <div className="modal-footer">
           <button className="btn-cancel" onClick={onClose}>CANCELAR</button>
           <button className="btn-save" onClick={onSave}>SALVAR</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ServiceStatusModal({
+  isOpen,
+  service,
+  onClose,
+  onServiceChange,
+  onSave,
+}: {
+  isOpen: boolean;
+  service: DashboardService | null;
+  onClose: () => void;
+  onServiceChange: (patch: Partial<DashboardService>) => void;
+  onSave: () => void;
+}) {
+  if (!isOpen || !service) return null;
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <h3 className="modal-title">DETALHES DO SERVICO</h3>
+
+        <div className="modal-body">
+          <div className="form-field">
+            <label>VEICULO / SERVICO</label>
+            <input type="text" className="modal-input" value={service.title} readOnly />
+          </div>
+
+          <div className="form-field">
+            <label>PLACA</label>
+            <input type="text" className="modal-input" value={service.plate} readOnly />
+          </div>
+
+          <div className="form-field">
+            <label>STATUS</label>
+            <select
+              className="modal-input"
+              value={service.status}
+              onChange={(event) => {
+                const nextStatus = event.target.value as DashboardServiceStatus;
+                onServiceChange({
+                  status: nextStatus,
+                  tone: dashboardToneByStatus(nextStatus),
+                });
+              }}
+            >
+              {DASHBOARD_STATUS_OPTIONS.map((statusOption) => (
+                <option key={statusOption} value={statusOption}>
+                  {statusOption}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className={`status-preview tone-${service.tone}`}>{service.status}</div>
+          <p className="service-modal-help">Selecione o status para atualizar o andamento do servico. Exemplo: CONCLUIDO fica em verde.</p>
+        </div>
+
+        <div className="modal-footer">
+          <button className="btn-cancel" onClick={onClose}>CANCELAR</button>
+          <button className="btn-save" onClick={onSave}>SALVAR STATUS</button>
         </div>
       </div>
     </div>
@@ -1484,6 +1576,8 @@ function App() {
     endDate: '',
   });
   const [salesHistoryPage, setSalesHistoryPage] = useState(1);
+  const [dashboardServices, setDashboardServices] = useState<DashboardService[]>(dashboardServicesDefault);
+  const [selectedDashboardService, setSelectedDashboardService] = useState<DashboardService | null>(null);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000);
@@ -2620,6 +2714,20 @@ function App() {
       setCalendarSelectedDate(toInputDateValue(new Date()));
       setScreen('appointment-calendar');
     }
+  }
+
+  function openDashboardServiceModal(service: DashboardService) {
+    setSelectedDashboardService({ ...service });
+  }
+
+  function saveDashboardServiceStatus() {
+    if (!selectedDashboardService) return;
+    setDashboardServices((prev) =>
+      prev.map((service) =>
+        service.id === selectedDashboardService.id ? selectedDashboardService : service
+      )
+    );
+    setSelectedDashboardService(null);
   }
 
   function moveCalendarMonth(offset: number) {
@@ -4333,7 +4441,19 @@ function App() {
             <section className="dashboard-center">
               <div className="service-chips">
                 {dashboardServices.map((service) => (
-                  <article key={service.title + service.plate} className="service-chip">
+                  <article
+                    key={service.id}
+                    className="service-chip service-chip-clickable"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => openDashboardServiceModal(service)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        openDashboardServiceModal(service);
+                      }
+                    }}
+                  >
                     <strong>{service.title}</strong>
                     <span>{service.plate}</span>
                     <small className={`tone-${service.tone}`}>{service.status}</small>
@@ -4869,6 +4989,14 @@ function App() {
         onSave={saveCalendarEdit}
         onClose={() => setCalendarEditData(null)}
         onDataChange={(patch) => setCalendarEditData((prev) => prev ? { ...prev, ...patch } : prev)}
+      />
+
+      <ServiceStatusModal
+        isOpen={selectedDashboardService !== null}
+        service={selectedDashboardService}
+        onClose={() => setSelectedDashboardService(null)}
+        onServiceChange={(patch) => setSelectedDashboardService((prev) => (prev ? { ...prev, ...patch } : prev))}
+        onSave={saveDashboardServiceStatus}
       />
 
       <datalist id="client-suggestions">

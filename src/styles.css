@@ -276,6 +276,18 @@ button {
   background: #bdbdbd;
   color: #131313;
   padding: 10px 12px;
+  border-radius: 8px;
+}
+
+.service-chip-clickable {
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.service-chip-clickable:hover,
+.service-chip-clickable:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
 }
 
 .service-chip strong {
@@ -300,11 +312,11 @@ button {
   letter-spacing: 0.8px;
 }
 
-.tone-warning { background: #8f8f8f; }
-.tone-danger { background: #6f6f6f; }
-.tone-success { background: #b5b5b5; }
-.tone-neutral { background: #d7d7d7; }
-.tone-info { background: #9f9f9f; }
+.tone-warning { background: #f59e0b; color: #1f1400; }
+.tone-danger { background: #dc2626; color: #fff; }
+.tone-success { background: #16a34a; color: #fff; }
+.tone-neutral { background: #d7d7d7; color: #1b1b1b; }
+.tone-info { background: #0284c7; color: #fff; }
 
 .next-title {
   margin-top: 24px;
@@ -1972,6 +1984,23 @@ select option {
 
 .btn-save:hover {
   background: #00d9ff;
+}
+
+.status-preview {
+  margin-top: 4px;
+  border-radius: 8px;
+  padding: 8px 10px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+}
+
+.service-modal-help {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #d0d0d0;
 }
 
 /* Product row with edit button */
