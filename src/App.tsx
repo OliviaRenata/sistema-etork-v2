@@ -1418,7 +1418,7 @@ function SaleScreen({
               <div className="card-body p-3">
                 <h6 className="sales-premium-section-title mb-3"><CarFront size={15} /> Dados do Veiculo</h6>
                 <div className="form-floating mb-2">
-                  <textarea id="sales-vehicle-details" className="form-control sales-premium-input sales-premium-note" value={saleData.vehicleDetails} onChange={(e) => patchSale({ vehicleDetails: e.target.value })} placeholder="Veiculo" />
+                  <textarea id="sales-vehicle-details" className="form-control sales-premium-input sales-premium-note sales-premium-vehicle-note" value={saleData.vehicleDetails} onChange={(e) => patchSale({ vehicleDetails: e.target.value })} placeholder="Veiculo" />
                   <label htmlFor="sales-vehicle-details">Modelo / Cambio / Ano / Combustivel</label>
                 </div>
 
@@ -1682,19 +1682,20 @@ function App() {
     discount: 0,
     note: '',
   });
-  const [saleData, setSaleData] = useState<SaleData>({
-    customer: 'JOAO HENRIQUE DE ALMEIDA',
+  const createEmptySaleData = (): SaleData => ({
+    customer: '',
     customerType: getCustomerTypeLabel(1),
-    phone: '67 99871-1313',
-    plate: 'QAN-2H92',
-    vehicleDetails: 'VW AMAROK 3.0 V6\nAUTO\n2020/2021\nDIESEL',
+    phone: '',
+    plate: '',
+    vehicleDetails: '',
     laborRequired: true,
     timeDays: 1,
-    items: cloneItems(saleItems),
+    items: [],
     discount: 0,
     surcharge: 0,
     note: '',
   });
+  const [saleData, setSaleData] = useState<SaleData>(() => createEmptySaleData());
   const [receipts, setReceipts] = useState<ReceiptRow[]>(receiptRows);
   const [savedQuote, setSavedQuote] = useState<SavedQuote | null>(null);
   const [savedAppointment, setSavedAppointment] = useState<SavedAppointment | null>(null);
@@ -2195,6 +2196,11 @@ function App() {
     return () => {
       active = false;
     };
+  }, [screen]);
+
+  useEffect(() => {
+    if (screen !== 'new-sale') return;
+    setSaleData(createEmptySaleData());
   }, [screen]);
 
   useEffect(() => {

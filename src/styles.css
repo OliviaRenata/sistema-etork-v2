@@ -1138,7 +1138,7 @@ select option {
 
 .sales-premium-title {
   font-family: 'Orbitron', 'Rajdhani', sans-serif;
-  font-size: clamp(20px, 2.7vw, 32px);
+  font-size: clamp(16px, 2.1vw, 24px);
   letter-spacing: 0.04em;
 }
 
@@ -1155,13 +1155,13 @@ select option {
 }
 
 .sales-premium-clock strong {
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .sales-premium-clock span {
   grid-column: 1 / -1;
   color: #9ca3af;
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .sales-premium-header-grid {
@@ -1197,7 +1197,7 @@ select option {
   gap: 6px;
   padding: 6px 10px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 10px;
   color: #cbd5e1;
   border: 1px solid #26344a;
   background: #0f172a;
@@ -1213,12 +1213,12 @@ select option {
 .sales-premium-btn {
   border: 1px solid #1f2937;
   border-radius: 999px;
-  min-height: 38px;
-  padding: 7px 14px;
+  min-height: 34px;
+  padding: 6px 12px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
@@ -1295,7 +1295,7 @@ select option {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #cbd5e1;
@@ -1303,16 +1303,16 @@ select option {
 
 .sales-premium .form-floating > label {
   color: #9ca3af;
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .sales-premium-input {
   border-radius: 12px !important;
-  min-height: 38px;
+  min-height: 34px;
   background: #0f172a !important;
   border: 1px solid #243244 !important;
   color: #f3f4f6 !important;
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .sales-premium-input:focus {
@@ -1321,7 +1321,11 @@ select option {
 }
 
 .sales-premium-note {
-  min-height: 58px !important;
+  min-height: 50px !important;
+}
+
+.sales-premium-vehicle-note {
+  min-height: 112px !important;
 }
 
 .sales-premium-muted {
@@ -1344,7 +1348,7 @@ select option {
 
 .sales-premium-vehicle-title {
   font-family: 'Orbitron', 'Rajdhani', sans-serif;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .sales-premium-chip-list,
@@ -1381,7 +1385,7 @@ select option {
 .sales-premium-pdv-lines {
   display: grid;
   gap: 5px;
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .sales-premium-pdv-lines > div {
@@ -1410,8 +1414,8 @@ select option {
 }
 
 .sales-premium-inline-actions .sales-premium-btn {
-  min-height: 32px;
-  padding: 5px 10px;
+  min-height: 30px;
+  padding: 4px 9px;
   font-size: 10px;
 }
 
@@ -1445,7 +1449,7 @@ select option {
 }
 
 .sales-premium-table-head {
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: 0.09em;
   color: #94a3b8;
   text-transform: uppercase;
@@ -1484,7 +1488,7 @@ select option {
   text-align: right;
   color: #93c5fd;
   font-weight: 700;
-  font-size: 11px;
+  font-size: 10px;
   padding-right: 6px;
 }
 
@@ -1513,12 +1517,12 @@ select option {
   color: #bfdbfe;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .sales-premium-total-box strong {
   font-family: 'Orbitron', 'Rajdhani', sans-serif;
-  font-size: clamp(20px, 2.4vw, 28px);
+  font-size: clamp(15px, 1.8vw, 20px);
   color: #f8fafc;
 }
 
@@ -1534,14 +1538,14 @@ select option {
 
 .sales-premium-metrics span {
   color: #9ca3af;
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .sales-premium-metrics strong {
   color: #f3f4f6;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .sales-premium-switch .form-check-input {
@@ -1556,7 +1560,7 @@ select option {
 
 .sales-premium-switch .form-check-label {
   color: #cbd5e1;
-  font-size: 12px;
+  font-size: 10px;
 }
 
 .sales-premium-timeline {
@@ -1594,11 +1598,15 @@ select option {
   }
 
   .sales-premium-input {
-    min-height: 36px;
+    min-height: 32px;
   }
 
   .sales-premium-note {
-    min-height: 52px !important;
+    min-height: 44px !important;
+  }
+
+  .sales-premium-vehicle-note {
+    min-height: 96px !important;
   }
 }
 
@@ -1622,7 +1630,7 @@ select option {
 
   .sales-premium-top-badges span {
     padding: 4px 8px;
-    font-size: 10px;
+    font-size: 9px;
   }
 
   .sales-premium-main-body .card-body,
@@ -1635,7 +1643,11 @@ select option {
   }
 
   .sales-premium-note {
-    min-height: 62px !important;
+    min-height: 46px !important;
+  }
+
+  .sales-premium-vehicle-note {
+    min-height: 84px !important;
   }
 }
 
