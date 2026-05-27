@@ -79,7 +79,7 @@ type CalendarAppointment = {
   vehicleDetails: string;
   note: string;
   total: number;
-  status?: string;
+  status: AppointmentStatus;
 };
 
 type ReceiptRow = {
@@ -129,8 +129,16 @@ type FinancialFilters = {
   kind: 'all' | 'receita' | 'despesa';
 };
 
+type ReportFilters = {
+  query: string;
+  startDate: string;
+  endDate: string;
+  kind: 'all' | 'receita' | 'despesa';
+};
+
 type DashboardServiceTone = 'warning' | 'danger' | 'success' | 'neutral' | 'info';
 type DashboardServiceStatus = 'EM ABERTO' | 'EM ANDAMENTO' | 'ATRASADO' | 'AVISAR CLIENTE' | 'CONCLUIDO';
+type AppointmentStatus = 'CONFIRMADO' | 'CANCELADO';
 
 type DashboardService = {
   id: string;
@@ -172,6 +180,16 @@ function mapDashboardStatusToDocumentStatus(status: DashboardServiceStatus): str
   if (status === 'EM ANDAMENTO') return 'em_andamento';
   if (status === 'AVISAR CLIENTE') return 'avisar_cliente';
   return 'aberto';
+}
+
+function normalizeAppointmentStatus(value: string | null | undefined): AppointmentStatus {
+  const normalized = (value || '').trim().toLowerCase();
+  if (normalized === 'cancelado') return 'CANCELADO';
+  return 'CONFIRMADO';
+}
+
+function mapAppointmentStatusToDocumentStatus(status: AppointmentStatus): string {
+  return status === 'CANCELADO' ? 'cancelado' : 'confirmado';
 }
 
 const FINANCIAL_PAGE_SIZE = 25;
@@ -568,11 +586,13 @@ function AppHeader({ now, onLogout }: { now: Date; onLogout: () => void }) {
         <img className="et-brand-logo" src={logoEtork} alt="Etork" />
         <div className="et-brand-user">usuario: ADMIN</div>
       </div>
-      <div className="et-clock-wrap">
-        <div className="et-clock">{time}</div>
-        <div className="et-day">{day}</div>
+      <div className="et-header-right">
+        <div className="et-clock-wrap">
+          <div className="et-clock">{time}</div>
+          <div className="et-day">{day}</div>
+        </div>
+        <button className="et-logout" onClick={onLogout}>SAIR</button>
       </div>
-      <button className="et-logout" onClick={onLogout}>SAIR</button>
     </header>
   );
 }
@@ -798,12 +818,18 @@ function AppointmentEditModal({
   isOpen,
   data,
   onSave,
+  onCancel,
+  onDelete,
+  onPrint,
   onClose,
   onDataChange,
 }: {
   isOpen: boolean;
   data: CalendarAppointment | null;
   onSave: () => void;
+  onCancel: () => void;
+  onDelete: () => void;
+  onPrint: () => void;
   onClose: () => void;
   onDataChange: (patch: Partial<CalendarAppointment>) => void;
 }) {
@@ -871,6 +897,30 @@ function AppointmentEditModal({
           </div>
 
           <div className="form-field">
+            <label>STATUS</label>
+            <select
+              className="modal-input"
+              value={data.status}
+              onChange={(e) => onDataChange({ status: e.target.value as AppointmentStatus })}
+            >
+              <option value="CONFIRMADO">CONFIRMADO</option>
+              <option value="CANCELADO">CANCELADO</option>
+            </select>
+          </div>
+
+          <div className="form-field">
+            <label>VALOR TOTAL</label>
+            <input
+              type="number"
+              className="modal-input"
+              step="0.01"
+              min={0}
+              value={data.total}
+              onChange={(e) => onDataChange({ total: Math.max(0, Number(e.target.value) || 0) })}
+            />
+          </div>
+
+          <div className="form-field">
             <label>OBSERVAÇÕES</label>
             <input
               type="text"
@@ -883,6 +933,9 @@ function AppointmentEditModal({
         </div>
 
         <div className="modal-footer">
+          <button className="btn-yellow" onClick={onPrint}>IMPRIMIR VIA</button>
+          <button className="btn-red" onClick={onCancel}>CANCELAR AGEND.</button>
+          <button className="btn-dark" onClick={onDelete}>EXCLUIR</button>
           <button className="btn-cancel" onClick={onClose}>CANCELAR</button>
           <button className="btn-save" onClick={onSave}>SALVAR</button>
         </div>
@@ -1555,6 +1608,12 @@ function App() {
     endDate: '',
     kind: 'all',
   });
+  const [reportFilters, setReportFilters] = useState<ReportFilters>({
+    query: '',
+    startDate: '',
+    endDate: '',
+    kind: 'all',
+  });
   const [financialPage, setFinancialPage] = useState(1);
   const [calendarAppointments, setCalendarAppointments] = useState<CalendarAppointment[]>([]);
   const [calendarSelectedDate, setCalendarSelectedDate] = useState(() => toInputDateValue(new Date()));
@@ -1836,13 +1895,13 @@ function App() {
             vehicleDetails: item.vehicle_snapshot || '',
             note: item.notes || '',
             total: Number(item.total_amount) || 0,
-            status: item.status || 'aberto',
+            status: normalizeAppointmentStatus(item.status),
           };
         });
         setCalendarAppointments(mappedAppointments);
 
         const mappedDashboardServices: DashboardService[] = mappedAppointments.slice(0, 8).map((appointment) => {
-          const dashboardStatus = normalizeDashboardStatus(appointment.status);
+          const dashboardStatus: DashboardServiceStatus = appointment.status === 'CANCELADO' ? 'AVISAR CLIENTE' : 'CONCLUIDO';
           return {
             id: `appt-${appointment.id}`,
             title: appointment.vehicleDetails.split('\n')[0] || appointment.customer || 'SERVICO',
@@ -1867,7 +1926,7 @@ function App() {
             vehicleDetails: savedAppointment.vehicleDetails,
             note: savedAppointment.note,
             total: savedAppointment.items.reduce((acc, item) => acc + item.price * item.quantity, 0) - savedAppointment.discount,
-            status: 'aberto',
+            status: 'CONFIRMADO',
           },
         ]);
         setDashboardServices([
@@ -2421,6 +2480,35 @@ function App() {
     [financialEntries]
   );
 
+  const filteredReportEntries = useMemo(() => {
+    const query = reportFilters.query.trim();
+    const start = reportFilters.startDate ? new Date(`${reportFilters.startDate}T00:00:00`) : null;
+    const end = reportFilters.endDate ? new Date(`${reportFilters.endDate}T23:59:59.999`) : null;
+
+    return financialEntries.filter((entry) => {
+      const entryKind = resolveFinancialKind(entry);
+      if (reportFilters.kind !== 'all' && entryKind !== reportFilters.kind) return false;
+
+      const entryDate = new Date(`${entry.date}T12:00:00`);
+      if (Number.isNaN(entryDate.getTime())) return false;
+      if (start && entryDate < start) return false;
+      if (end && entryDate > end) return false;
+
+      if (!query) return true;
+
+      return matchesSearchTokens(
+        [
+          String(entry.id),
+          entry.date,
+          entry.description,
+          entryKind,
+          ...getMoneySearchValues(entry.amount),
+        ],
+        query
+      );
+    });
+  }, [financialEntries, reportFilters]);
+
   useEffect(() => {
     setFinancialPage(1);
   }, [financialFilters.query, financialFilters.startDate, financialFilters.endDate, financialFilters.kind]);
@@ -2807,7 +2895,7 @@ function App() {
     setCalendarEditData({ ...appt });
   }
 
-  async function saveCalendarEdit() {
+  async function saveCalendarEdit(nextStatus?: AppointmentStatus) {
     if (!calendarEditData) return;
     const editedDate = parseBrDateTime(calendarEditData.date);
     const normalizedDate = editedDate ? formatBrDateTime(editedDate) : calendarEditData.date;
@@ -2815,10 +2903,22 @@ function App() {
       ...calendarEditData,
       date: normalizedDate,
       dayKey: toCalendarDateKey(normalizedDate),
+      status: nextStatus || calendarEditData.status || 'CONFIRMADO',
     };
 
     setCalendarAppointments((prev) =>
       prev.map((a) => (a.id === updated.id ? updated : a))
+    );
+    setDashboardServices((prev) =>
+      prev.map((service) =>
+        service.sourceDocumentId === updated.id
+          ? {
+              ...service,
+              status: updated.status === 'CANCELADO' ? 'AVISAR CLIENTE' : 'CONCLUIDO',
+              tone: updated.status === 'CANCELADO' ? 'info' : 'success',
+            }
+          : service
+      )
     );
 
     if (isSupabaseConfigured && supabase && !updated.id.startsWith('local-')) {
@@ -2832,12 +2932,80 @@ function App() {
           vehicle_snapshot: updated.vehicleDetails,
           scheduled_for: editedDate ? editedDate.toISOString() : null,
           notes: updated.note,
+          total_amount: updated.total,
+          status: mapAppointmentStatusToDocumentStatus(updated.status),
         })
         .eq('id', updated.id)
         .eq('doc_type', 'agendamento');
     }
 
     setCalendarEditData(null);
+  }
+
+  async function cancelCalendarAppointment() {
+    await saveCalendarEdit('CANCELADO');
+  }
+
+  async function deleteCalendarAppointment() {
+    if (!calendarEditData) return;
+    const target = calendarEditData;
+
+    setCalendarAppointments((prev) => prev.filter((item) => item.id !== target.id));
+    setDashboardServices((prev) => prev.filter((service) => service.sourceDocumentId !== target.id));
+
+    if (isSupabaseConfigured && supabase && !target.id.startsWith('local-')) {
+      const sb = supabase;
+      await sb
+        .from('documents_v2')
+        .delete()
+        .eq('id', target.id)
+        .eq('doc_type', 'agendamento');
+    }
+
+    setCalendarEditData(null);
+  }
+
+  function printCalendarAppointmentServiceSlip() {
+    if (!calendarEditData) return;
+
+    const appointment = calendarEditData;
+    const popup = window.open('', '_blank', 'width=900,height=700');
+    if (!popup) {
+      window.alert('Nao foi possivel abrir a tela de impressao.');
+      return;
+    }
+
+    const printable = `
+      <html>
+        <head>
+          <title>Via de Servico</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 22px; color: #111; }
+            h1 { margin: 0 0 12px; font-size: 24px; }
+            .line { margin: 6px 0; font-size: 14px; }
+            .label { font-weight: 700; }
+            .box { margin-top: 14px; border: 1px solid #ccc; padding: 10px; white-space: pre-wrap; }
+          </style>
+        </head>
+        <body>
+          <h1>VIA DE SERVICO</h1>
+          <div class="line"><span class="label">Cliente:</span> ${appointment.customer || 'SEM CLIENTE'}</div>
+          <div class="line"><span class="label">Telefone:</span> ${appointment.phone || '-'}</div>
+          <div class="line"><span class="label">Placa:</span> ${appointment.plate || '-'}</div>
+          <div class="line"><span class="label">Data:</span> ${appointment.date || '-'}</div>
+          <div class="line"><span class="label">Status:</span> ${appointment.status}</div>
+          <div class="line"><span class="label">Valor:</span> ${formatMoney(appointment.total)}</div>
+          <div class="box"><span class="label">Veiculo/Servico:</span><br/>${appointment.vehicleDetails || '-'}</div>
+          <div class="box"><span class="label">Observacoes:</span><br/>${appointment.note || '-'}</div>
+        </body>
+      </html>
+    `;
+
+    popup.document.open();
+    popup.document.write(printable);
+    popup.document.close();
+    popup.focus();
+    popup.print();
   }
 
   async function updateClient(id: number, patch: Partial<ClientRow>) {
@@ -3322,6 +3490,7 @@ function App() {
         vehicleDetails: payload.vehicleDetails,
         note: payload.note,
         total: appointmentData.items.reduce((acc, item) => acc + item.price * item.quantity, 0) - appointmentData.discount,
+        status: 'CONFIRMADO',
       },
       ...prev,
     ]);
@@ -3862,6 +4031,24 @@ function App() {
     URL.revokeObjectURL(url);
   }
 
+  function exportReportsCSV() {
+    const header = 'ID,Data,Descricao,Tipo,Valor\n';
+    const body = filteredReportEntries
+      .map((entry) => {
+        const type = resolveFinancialKind(entry) === 'despesa' ? 'DESPESA' : 'RECEITA';
+        return `${entry.id},${entry.date},"${entry.description.replaceAll('"', '""')}",${type},${entry.amount.toFixed(2)}`;
+      })
+      .join('\n');
+
+    const blob = new Blob([header + body], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `relatorio-filtrado-${Date.now()}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
   if (screen === 'intro-brand') {
     return (
       <main className="intro-screen intro-brand">
@@ -4398,12 +4585,46 @@ function App() {
           <h2 className="panel-title">RELATORIOS</h2>
           <section className="form-grid menu-single">
             <div className="form-main">
+              <div className="financial-filters">
+                <input
+                  className="input-look"
+                  placeholder="Buscar por descricao, tipo, data, valor ou id"
+                  value={reportFilters.query}
+                  onChange={(event) => setReportFilters((prev) => ({ ...prev, query: event.target.value }))}
+                />
+                <input
+                  className="input-look"
+                  type="date"
+                  value={reportFilters.startDate}
+                  onChange={(event) => setReportFilters((prev) => ({ ...prev, startDate: event.target.value }))}
+                />
+                <input
+                  className="input-look"
+                  type="date"
+                  value={reportFilters.endDate}
+                  onChange={(event) => setReportFilters((prev) => ({ ...prev, endDate: event.target.value }))}
+                />
+                <select
+                  className="input-look"
+                  value={reportFilters.kind}
+                  onChange={(event) =>
+                    setReportFilters((prev) => ({ ...prev, kind: event.target.value as ReportFilters['kind'] }))
+                  }
+                >
+                  <option value="all">TODOS</option>
+                  <option value="receita">SOMENTE RECEITAS</option>
+                  <option value="despesa">SOMENTE DESPESAS</option>
+                </select>
+              </div>
+
               <div className="line"><strong>CLIENTES CADASTRADOS:</strong> <span>{formatNumberValue(clients.length)}</span></div>
               <div className="line"><strong>ITENS CADASTRADOS:</strong> <span>{formatNumberValue(serviceCatalogData.length)}</span></div>
               <div className="line"><strong>RECIBOS GERADOS:</strong> <span>{formatNumberValue(receipts.length)}</span></div>
               <div className="line"><strong>FATURAMENTO:</strong> <span>{formatMoney(financialTotal)}</span></div>
+              <div className="line"><strong>REGISTROS FILTRADOS:</strong> <span>{formatNumberValue(filteredReportEntries.length)}</span></div>
               <div className="mini-actions">
                 <button className="btn-yellow lg" onClick={() => window.print()}>IMPRIMIR RELATORIO</button>
+                <button className="btn-cyan lg" onClick={exportReportsCSV}>EXPORTAR CSV FILTRADO</button>
                 <button className="btn-cyan lg" onClick={() => setScreen('print-receipt')}>VER RECIBOS</button>
               </div>
             </div>
@@ -4469,6 +4690,7 @@ function App() {
                   calendarSelectedAppointments.map((appointment) => (
                     <article className="calendar-card" key={appointment.id} onClick={() => openCalendarEdit(appointment)} style={{ cursor: 'pointer' }}>
                       <div className="calendar-card-title">{appointment.customer || 'SEM CLIENTE'}</div>
+                      <div className={`calendar-status-badge ${appointment.status === 'CANCELADO' ? 'cancelado' : 'confirmado'}`}>{appointment.status}</div>
                       <div className="calendar-card-line">{appointment.plate || 'SEM PLACA'}</div>
                       <div className="calendar-card-line">{appointment.vehicleDetails.split('\n')[0] || 'SEM VEICULO'}</div>
                       <div className="calendar-card-line">{appointment.date}</div>
@@ -4494,7 +4716,6 @@ function App() {
           <h2 className="panel-title">SERVICOS</h2>
           <section className="dashboard-layout">
             <aside className="left-actions">
-              <button onClick={() => handleMenuAction('Pesquisar')}>PESQUISAR</button>
               <button onClick={() => handleMenuAction('Clientes')}>CLIENTES</button>
               <button onClick={() => handleMenuAction('Financeiro')}>FINANCEIRO</button>
               <button onClick={() => handleMenuAction('Cadastro')}>CADASTRO</button>
@@ -5052,6 +5273,9 @@ function App() {
         isOpen={calendarEditData !== null}
         data={calendarEditData}
         onSave={saveCalendarEdit}
+        onCancel={() => void cancelCalendarAppointment()}
+        onDelete={() => void deleteCalendarAppointment()}
+        onPrint={printCalendarAppointmentServiceSlip}
         onClose={() => setCalendarEditData(null)}
         onDataChange={(patch) => setCalendarEditData((prev) => prev ? { ...prev, ...patch } : prev)}
       />

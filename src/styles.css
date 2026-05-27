@@ -73,6 +73,12 @@ button {
   border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 }
 
+.et-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .et-brand-logo {
   width: 150px;
   object-fit: contain;
@@ -110,9 +116,6 @@ button {
   color: var(--gray-1);
 }
 .et-logout {
-  position: absolute;
-  top: 12px;
-  right: 20px;
   min-height: 34px;
   padding: 0 14px;
   border: 1px solid rgba(255, 255, 255, 0.28);
@@ -1943,6 +1946,7 @@ select option {
   display: flex;
   gap: 10px;
   justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
 .modal-content-wide {
@@ -2268,6 +2272,28 @@ select option {
 .calendar-card-title {
   font-size: 15px;
   margin-bottom: 6px;
+}
+
+.calendar-status-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  margin-bottom: 4px;
+}
+
+.calendar-status-badge.confirmado {
+  background: rgba(12, 160, 74, 0.25);
+  color: #8ef0b0;
+  border: 1px solid rgba(12, 160, 74, 0.5);
+}
+
+.calendar-status-badge.cancelado {
+  background: rgba(198, 40, 40, 0.25);
+  color: #ffb3b3;
+  border: 1px solid rgba(198, 40, 40, 0.5);
 }
 
 .calendar-card-line,
