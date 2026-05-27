@@ -1665,6 +1665,7 @@ function App() {
   });
   const [salesHistoryPage, setSalesHistoryPage] = useState(1);
   const [dashboardServices, setDashboardServices] = useState<DashboardService[]>([]);
+  const [dashboardRealDataReady, setDashboardRealDataReady] = useState(false);
   const [selectedDashboardService, setSelectedDashboardService] = useState<DashboardService | null>(null);
 
   useEffect(() => {
@@ -1779,6 +1780,12 @@ function App() {
     let active = true;
 
     async function loadFromDatabase() {
+      setDashboardRealDataReady(false);
+      setDashboardServices([]);
+      setCalendarAppointments([]);
+      setFinancialEntries([]);
+      setServiceCatalogData([]);
+
       const [catalogResult, receiptResult, clientsResult, financialResult, appointmentResult, salesResult] = await Promise.all([
         sb
           .from('service_catalog_v2')
@@ -1910,15 +1917,15 @@ function App() {
         });
         setCalendarAppointments(mappedAppointments);
 
-        const mappedDashboardServices: DashboardService[] = mappedAppointments.slice(0, 8).map((appointment) => {
-          const dashboardStatus: DashboardServiceStatus = appointment.status === 'CANCELADO' ? 'AVISAR CLIENTE' : 'CONCLUIDO';
+        const mappedDashboardServices: DashboardService[] = appointmentResult.data.slice(0, 8).map((item) => {
+          const dashboardStatus = normalizeDashboardStatus(item.status);
           return {
-            id: `appt-${appointment.id}`,
-            title: appointment.vehicleDetails.split('\n')[0] || appointment.customer || 'SERVICO',
-            plate: appointment.plate || 'SEM PLACA',
+            id: `appt-${String(item.id)}`,
+            title: (item.vehicle_snapshot || '').split('\n')[0] || item.customer_name_snapshot || 'SERVICO',
+            plate: item.plate_snapshot || 'SEM PLACA',
             status: dashboardStatus,
             tone: dashboardToneByStatus(dashboardStatus),
-            sourceDocumentId: appointment.id,
+            sourceDocumentId: String(item.id),
           };
         });
         setDashboardServices(mappedDashboardServices);
@@ -1939,14 +1946,24 @@ function App() {
         ]);
         setDashboardServices([]);
       }
+
+      if (active) {
+        setDashboardRealDataReady(true);
+      }
     }
 
-    loadFromDatabase();
+    loadFromDatabase().catch(() => {
+      if (active) {
+        setDashboardRealDataReady(true);
+      }
+    });
 
     return () => {
       active = false;
     };
   }, [isAuthenticated, isLocalMode]);
+
+  const shouldWaitDashboardRealData = isAuthenticated && !isLocalMode && isSupabaseConfigured && !dashboardRealDataReady;
 
   const quoteSubtotal = useMemo(
     () => quoteData.items.reduce((acc, item) => acc + item.price * item.quantity, 0),
@@ -4892,60 +4909,66 @@ function App() {
             </aside>
 
             <section className="dashboard-center">
-              <div className="dashboard-kpi-grid">
-                <article className="dashboard-kpi-card">
-                  <strong>AGENDADOS HOJE</strong>
-                  <span>{dashboardKpis.todayAppointments}</span>
-                </article>
-                <article className="dashboard-kpi-card">
-                  <strong>CONFIRMADOS</strong>
-                  <span>{dashboardKpis.confirmedToday}</span>
-                </article>
-                <article className="dashboard-kpi-card warning">
-                  <strong>CANCELADOS</strong>
-                  <span>{dashboardKpis.canceledToday}</span>
-                </article>
-                <article className="dashboard-kpi-card money">
-                  <strong>RECEITA HOJE</strong>
-                  <span>{formatMoney(dashboardKpis.todayRevenue)}</span>
-                </article>
-              </div>
-
-              {lowStockItems.length > 0 && (
-                <div className="stock-warning-panel">
-                  <strong>ALERTA DE ESTOQUE BAIXO</strong>
-                  <div className="stock-warning-list">
-                    {lowStockItems.map((item) => (
-                      <span key={`${item.id ?? 'local'}-${item.description}`}>{item.description} ({item.quantity})</span>
-                    ))}
+              {shouldWaitDashboardRealData ? (
+                <div className="receipt-empty">Carregando informacoes reais...</div>
+              ) : (
+                <>
+                  <div className="dashboard-kpi-grid">
+                    <article className="dashboard-kpi-card">
+                      <strong>AGENDADOS HOJE</strong>
+                      <span>{dashboardKpis.todayAppointments}</span>
+                    </article>
+                    <article className="dashboard-kpi-card">
+                      <strong>CONFIRMADOS</strong>
+                      <span>{dashboardKpis.confirmedToday}</span>
+                    </article>
+                    <article className="dashboard-kpi-card warning">
+                      <strong>CANCELADOS</strong>
+                      <span>{dashboardKpis.canceledToday}</span>
+                    </article>
+                    <article className="dashboard-kpi-card money">
+                      <strong>RECEITA HOJE</strong>
+                      <span>{formatMoney(dashboardKpis.todayRevenue)}</span>
+                    </article>
                   </div>
-                </div>
-              )}
 
-              <div className="service-chips">
-                {dashboardServices.map((service) => (
-                  <article
-                    key={service.id}
-                    className="service-chip service-chip-clickable"
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => openDashboardServiceModal(service)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        openDashboardServiceModal(service);
-                      }
-                    }}
-                  >
-                    <strong>{service.title}</strong>
-                    <span>{service.plate}</span>
-                    <small className={`tone-${service.tone}`}>{service.status}</small>
-                  </article>
-                ))}
-                {dashboardServices.length === 0 && (
-                  <div className="receipt-empty">Nenhum servico em andamento no momento.</div>
-                )}
-              </div>
+                  {lowStockItems.length > 0 && (
+                    <div className="stock-warning-panel">
+                      <strong>ALERTA DE ESTOQUE BAIXO</strong>
+                      <div className="stock-warning-list">
+                        {lowStockItems.map((item) => (
+                          <span key={`${item.id ?? 'local'}-${item.description}`}>{item.description} ({item.quantity})</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="service-chips">
+                    {dashboardServices.map((service) => (
+                      <article
+                        key={service.id}
+                        className="service-chip service-chip-clickable"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => openDashboardServiceModal(service)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            openDashboardServiceModal(service);
+                          }
+                        }}
+                      >
+                        <strong>{service.title}</strong>
+                        <span>{service.plate}</span>
+                        <small className={`tone-${service.tone}`}>{service.status}</small>
+                      </article>
+                    ))}
+                    {dashboardServices.length === 0 && (
+                      <div className="receipt-empty">Nenhum servico em andamento no momento.</div>
+                    )}
+                  </div>
+                </>
+              )}
 
               <div className="next-title">PROXIMOS AGENDAMENTOS</div>
               <article className="next-card">
