@@ -1443,7 +1443,7 @@ function SaleScreen({
                   {receipts.length === 0 ? (
                     <div className="sales-premium-muted">Nenhum lancamento recente.</div>
                   ) : (
-                    receipts.slice(0, 8).map((row) => (
+                    receipts.slice(0, 6).map((row) => (
                       <article className="sales-premium-timeline-item" key={row.id}>
                         <div className="sales-premium-dot" />
                         <div>

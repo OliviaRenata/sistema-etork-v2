@@ -1094,7 +1094,8 @@ select option {
   color: #f3f4f6;
   padding: 10px;
   font-family: 'Inter', 'Rajdhani', sans-serif;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -1113,6 +1114,10 @@ select option {
   padding: 10px 12px;
   margin-bottom: 8px;
   flex-shrink: 0;
+}
+
+.sales-premium-header-compact .sales-premium-header-top {
+  margin-bottom: 6px;
 }
 
 .sales-premium-header-top {
@@ -1208,12 +1213,12 @@ select option {
 .sales-premium-btn {
   border: 1px solid #1f2937;
   border-radius: 999px;
-  min-height: 42px;
-  padding: 9px 16px;
+  min-height: 38px;
+  padding: 7px 14px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: 11px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
@@ -1250,6 +1255,7 @@ select option {
   margin: 0;
   flex: 1;
   min-height: 0;
+  overflow: visible;
 }
 
 .sales-premium-content-grid .row {
@@ -1269,7 +1275,7 @@ select option {
   min-height: 0;
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
-  gap: 8px;
+  gap: 6px;
 }
 
 .sales-premium-side-stack {
@@ -1277,7 +1283,12 @@ select option {
   min-height: 0;
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
-  gap: 8px;
+  gap: 6px;
+}
+
+.sales-premium-main-body .card-body,
+.sales-premium-side-stack .card-body {
+  padding: 8px !important;
 }
 
 .sales-premium-section-title {
@@ -1292,16 +1303,16 @@ select option {
 
 .sales-premium .form-floating > label {
   color: #9ca3af;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .sales-premium-input {
   border-radius: 12px !important;
-  min-height: 48px;
+  min-height: 38px;
   background: #0f172a !important;
   border: 1px solid #243244 !important;
   color: #f3f4f6 !important;
-  font-size: 13px;
+  font-size: 11px;
 }
 
 .sales-premium-input:focus {
@@ -1310,7 +1321,7 @@ select option {
 }
 
 .sales-premium-note {
-  min-height: 88px !important;
+  min-height: 58px !important;
 }
 
 .sales-premium-muted {
@@ -1326,7 +1337,7 @@ select option {
 
 .sales-premium-vehicle-media img {
   width: 100%;
-  height: 88px;
+  height: 74px;
   object-fit: cover;
   filter: saturate(1.1) contrast(1.05);
 }
@@ -1374,14 +1385,14 @@ select option {
 }
 
 .sales-premium-inline-actions .sales-premium-btn {
-  min-height: 36px;
-  padding: 6px 11px;
-  font-size: 11px;
+  min-height: 32px;
+  padding: 5px 10px;
+  font-size: 10px;
 }
 
 .sales-premium-table-wrap {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .sales-premium-services-card,
@@ -1403,8 +1414,8 @@ select option {
 .sales-premium-table-head,
 .sales-premium-table-row {
   display: grid;
-  grid-template-columns: minmax(180px, 1.35fr) minmax(146px, 0.9fr) minmax(146px, 0.9fr) 120px 42px;
-  gap: 8px;
+  grid-template-columns: minmax(150px, 1.35fr) minmax(126px, 0.8fr) minmax(126px, 0.8fr) 100px 36px;
+  gap: 5px;
   align-items: center;
 }
 
@@ -1420,7 +1431,7 @@ select option {
   background: rgba(15, 23, 42, 0.55);
   border: 1px solid #233146;
   border-radius: 12px;
-  padding: 6px;
+  padding: 4px;
   transition: border-color 0.2s ease, background 0.2s ease;
 }
 
@@ -1436,8 +1447,8 @@ select option {
 }
 
 .sales-premium-stepper button {
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   border-radius: 10px;
   border: 1px solid #2d3f58;
   background: #162236;
@@ -1448,13 +1459,13 @@ select option {
   text-align: right;
   color: #93c5fd;
   font-weight: 700;
-  font-size: 13px;
+  font-size: 11px;
   padding-right: 6px;
 }
 
 .sales-premium-icon-btn {
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   border-radius: 10px;
   border: 1px solid rgba(239, 68, 68, 0.45);
   background: rgba(127, 29, 29, 0.25);
@@ -1469,7 +1480,7 @@ select option {
   border: 1px solid #2b3f5a;
   background: linear-gradient(145deg, rgba(30, 58, 138, 0.35), rgba(15, 23, 42, 0.9));
   border-radius: 14px;
-  padding: 10px;
+  padding: 7px;
 }
 
 .sales-premium-total-box small {
@@ -1488,7 +1499,7 @@ select option {
 
 .sales-premium-metrics {
   display: grid;
-  gap: 10px;
+  gap: 6px;
 }
 
 .sales-premium-metrics > div {
@@ -1539,7 +1550,68 @@ select option {
   border: 1px solid #25344b;
   border-radius: 12px;
   background: rgba(15, 23, 42, 0.6);
-  padding: 8px;
+  padding: 5px;
+}
+
+@media (max-width: 1366px) and (min-width: 981px) {
+  .sales-premium {
+    padding: 7px;
+  }
+
+  .sales-premium-main-body .card-body,
+  .sales-premium-side-stack .card-body {
+    padding: 7px !important;
+  }
+
+  .sales-premium-table-head,
+  .sales-premium-table-row {
+    grid-template-columns: minmax(140px, 1.25fr) minmax(110px, 0.75fr) minmax(110px, 0.75fr) 92px 34px;
+  }
+
+  .sales-premium-input {
+    min-height: 36px;
+  }
+
+  .sales-premium-note {
+    min-height: 52px !important;
+  }
+}
+
+@media (max-height: 860px) and (min-width: 981px) {
+  .sales-premium {
+    padding: 8px;
+  }
+
+  .sales-premium-title {
+    font-size: clamp(17px, 2vw, 24px);
+  }
+
+  .sales-premium-header {
+    padding: 8px 10px;
+    margin-bottom: 6px;
+  }
+
+  .sales-premium-eyebrow {
+    display: none;
+  }
+
+  .sales-premium-top-badges span {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+
+  .sales-premium-main-body .card-body,
+  .sales-premium-side-stack .card-body {
+    padding: 8px !important;
+  }
+
+  .sales-premium-vehicle-media img {
+    height: 62px;
+  }
+
+  .sales-premium-note {
+    min-height: 62px !important;
+  }
 }
 
 .sales-premium-dot {
@@ -1572,7 +1644,7 @@ select option {
 @media (max-width: 1400px) {
   .sales-premium-table-head,
   .sales-premium-table-row {
-    grid-template-columns: minmax(160px, 1fr) minmax(130px, 0.8fr) minmax(130px, 0.8fr) 110px 40px;
+    grid-template-columns: minmax(150px, 1fr) minmax(120px, 0.75fr) minmax(120px, 0.75fr) 100px 36px;
   }
 }
 
