@@ -433,6 +433,7 @@ button,
   text-align: center;
   font-size: 11px;
   letter-spacing: 0.8px;
+  border-radius: 4px;
 }
 
 .tone-warning { background: #f59e0b; color: #1f1400; }
@@ -2147,7 +2148,7 @@ select option {
 
 .status-preview {
   margin-top: 4px;
-  border-radius: 8px;
+  border-radius: 4px;
   padding: 8px 10px;
   text-align: center;
   font-size: 12px;
