@@ -6043,9 +6043,29 @@ function App() {
 
       {screen === 'appointment-calendar' && (
         <main className="panel panel-form panel-calendar">
-          <h2 className="panel-title">CALENDARIO DE AGENDAMENTOS</h2>
+          <section className="panel-hero calendar-hero">
+            <div>
+              <p className="panel-eyebrow">GESTAO DE HORARIOS</p>
+              <h2 className="panel-title">CALENDARIO DE AGENDAMENTOS</h2>
+              <p className="panel-subtitle">Visualize o mes, acompanhe a carga do dia e acesse os agendamentos sem perder contexto.</p>
+            </div>
+            <div className="panel-summary-strip calendar-hero-stats">
+              <div className="summary-chip">
+                <span>DATA SELECIONADA</span>
+                <strong>{new Date(`${calendarSelectedDate}T12:00:00`).toLocaleDateString('pt-BR')}</strong>
+              </div>
+              <div className="summary-chip">
+                <span>AGENDAMENTOS</span>
+                <strong>{formatNumberValue(calendarSelectedAppointments.length)}</strong>
+              </div>
+              <div className="summary-chip highlight">
+                <span>CONFIRMADOS NO DIA</span>
+                <strong>{formatNumberValue(calendarSelectedAppointments.filter((appointment) => appointment.status !== 'CANCELADO').length)}</strong>
+              </div>
+            </div>
+          </section>
           <section className="calendar-layout">
-            <div className="calendar-main">
+            <div className="calendar-main calendar-main-card">
               <div className="calendar-toolbar">
                 <button className="calendar-nav" onClick={() => moveCalendarMonth(-1)} aria-label="Mes anterior">
                   <ChevronLeft size={20} />
@@ -6085,7 +6105,7 @@ function App() {
               </div>
             </div>
 
-            <aside className="calendar-side">
+            <aside className="calendar-side calendar-side-card">
               <div className="calendar-side-header">
                 <strong>{new Date(`${calendarSelectedDate}T12:00:00`).toLocaleDateString('pt-BR')}</strong>
                 <span>{formatNumberValue(calendarSelectedAppointments.length)} agendamento(s)</span>
@@ -6392,9 +6412,29 @@ function App() {
       )}
 
       {screen === 'new-appointment' && (
-        <main className="panel panel-form">
-          <h2 className="panel-title">NOVO AGENDAMENTO</h2>
-          <section className="sale-tools sale-tools-search">
+        <main className="panel panel-form panel-appointment">
+          <section className="panel-hero appointment-hero">
+            <div>
+              <p className="panel-eyebrow">FLUXO RAPIDO</p>
+              <h2 className="panel-title">NOVO AGENDAMENTO</h2>
+              <p className="panel-subtitle">Importe um orçamento, ajuste os dados do cliente e finalize com uma leitura mais limpa do serviço.</p>
+            </div>
+            <div className="panel-summary-strip">
+              <div className="summary-chip">
+                <span>DATA</span>
+                <strong>{toDisplayAppointmentDate(appointmentData.date)}</strong>
+              </div>
+              <div className="summary-chip">
+                <span>ITENS</span>
+                <strong>{formatNumberValue(appointmentData.items.length)}</strong>
+              </div>
+              <div className="summary-chip highlight">
+                <span>TOTAL</span>
+                <strong>{formatMoney(appointmentTotal)}</strong>
+              </div>
+            </div>
+          </section>
+          <section className="sale-tools sale-tools-search appointment-search-bar">
             <input className="input-look" value={appointmentQuoteSearch} onChange={(event) => setAppointmentQuoteSearch(event.target.value)} placeholder="Pesquisar orcamento por nome, data, valor, telefone, placa, veiculo ou observacao" />
             <button className="tool-blue" onClick={() => void runAppointmentQuoteSearch()}>PESQUISAR ORCAMENTO</button>
             <select className="input-look" value={appointmentSelectedQuoteId} onChange={(event) => setAppointmentSelectedQuoteId(event.target.value)}>
@@ -6406,8 +6446,9 @@ function App() {
             <button className="tool-yellow" onClick={() => void importQuoteToAppointmentBySearch()}>IMPORTAR</button>
             <button className="tool-yellow" onClick={clearAppointmentForm}>LIMPAR CAMPOS</button>
           </section>
-          <section className="form-grid">
-            <div className="form-main">
+          <section className="form-grid appointment-grid">
+            <div className="form-main appointment-main-card">
+              <div className="section-label">DADOS DO AGENDAMENTO</div>
               <div className="line"><strong>DATA:</strong> <input type="datetime-local" className="input-look" value={appointmentData.date} onChange={(event) => setAppointmentData((prev) => ({ ...prev, date: event.target.value }))} title={toDisplayAppointmentDate(appointmentData.date)} /></div>
               <div className="line"><strong>CLIENTE:</strong> <input list="client-suggestions" className="input-look" value={appointmentData.customer} onChange={(event) => setAppointmentData((prev) => ({ ...prev, customer: event.target.value }))} onBlur={(event) => applyMatchedClient('appointment', event.target.value)} /> <select className="input-look" value={appointmentData.customerType} onChange={(event) => setAppointmentData((prev) => ({ ...prev, customerType: event.target.value }))}><option value={getCustomerTypeLabel(1)}>{getCustomerTypeLabel(1)}</option><option value={getCustomerTypeLabel(2)}>{getCustomerTypeLabel(2)}</option></select></div>
               <div className="line line-mini"><strong>LISTAR</strong> <button onClick={addItemToAppointment}>+</button></div>
@@ -6419,7 +6460,8 @@ function App() {
               <div className="line"><strong>OBSERVACAO:</strong> <textarea className="vehicle-card note-input" value={appointmentData.note} onChange={(event) => setAppointmentData((prev) => ({ ...prev, note: event.target.value }))} /></div>
             </div>
 
-            <aside className="vehicle-info">
+            <aside className="vehicle-info appointment-side-card">
+              <div className="section-label">VEICULO E CONTATO</div>
               <div className="line side-top"><strong>TEL:</strong> <input className="input-look" value={appointmentData.phone} onChange={(event) => setAppointmentData((prev) => ({ ...prev, phone: event.target.value }))} /></div>
               <div className="line side-top line-check"><strong>MAO DE OBRA</strong> <input type="checkbox" checked={appointmentData.laborRequired} onChange={(event) => setAppointmentData((prev) => ({ ...prev, laborRequired: event.target.checked }))} /></div>
               <div className="line side-top"><strong>PLACA:</strong> <input className="input-look plate" value={appointmentData.plate} onChange={(event) => setAppointmentData((prev) => ({ ...prev, plate: event.target.value.toUpperCase() }))} onBlur={(event) => void handlePlateLookup('appointment', event.target.value)} onKeyDown={(event) => {
@@ -6440,6 +6482,7 @@ function App() {
               <div className="total">TOTAL: <span>{formatMoney(appointmentTotal)}</span></div>
             </div>
             <div className="footer-right">
+              <div className="appointment-footer-note">Dica: use a busca para importar um orçamento e ganhar tempo no preenchimento.</div>
               <button className="btn-back" onClick={() => setScreen('dashboard')} aria-label="Voltar">
                 <ArrowLeft size={18} />
               </button>
