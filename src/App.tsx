@@ -2911,7 +2911,7 @@ function App() {
     const sb = supabase;
     const { data: doc, error: docError } = await sb
       .from('documents_v2')
-      .select('id, customer_name_snapshot, phone_snapshot, plate_snapshot, vehicle_snapshot, notes, discount_amount, service_time_days, scheduled_for')
+      .select('id, customer_name_snapshot, phone_snapshot, plate_snapshot, vehicle_snapshot, notes, discount_amount, service_time_days, scheduled_for, status')
       .eq('doc_type', docType)
       .eq('id', id)
       .maybeSingle();
@@ -2939,6 +2939,7 @@ function App() {
       discount: Number(doc.discount_amount) || 0,
       timeDays: Number(doc.service_time_days) || 1,
       scheduledFor: doc.scheduled_for,
+      status: normalizeDashboardStatus(doc.status),
       items: mappedItems,
     };
   }
@@ -3278,12 +3279,31 @@ function App() {
     setSelectedDashboardService(null);
   }
 
-  function printServiceSlip(appointment: CalendarAppointment) {
+  async function printServiceSlip(appointment: CalendarAppointment, preferredStatus?: DashboardServiceStatus) {
     const popup = openPrintWindow('width=900,height=700');
     if (!popup) {
       window.alert('Nao foi possivel abrir a tela de impressao.');
       return;
     }
+
+    const linkedDashboardStatus =
+      preferredStatus || dashboardServices.find((service) => service.sourceDocumentId === appointment.id)?.status;
+    const docWithItems = await fetchDocumentWithItemsById('agendamento', appointment.id);
+    const resolvedStatus =
+      linkedDashboardStatus ||
+      docWithItems?.status ||
+      (appointment.status === 'CANCELADO' ? 'AVISAR CLIENTE' : 'EM ABERTO');
+
+    const itemRows = (docWithItems?.items || [])
+      .map(
+        (item, index) =>
+          `<li>${escapeHtml(index + 1)}. ${escapeHtml(item.description || 'SERVICO')} - QTD: ${escapeHtml(
+            formatNumberValue(item.quantity)
+          )}</li>`
+      )
+      .join('');
+
+    const itemsMarkup = itemRows || '<li>SEM ITENS/SERVICOS CADASTRADOS</li>';
 
     const printable = `
       <html>
@@ -3295,15 +3315,18 @@ function App() {
             .line { margin: 6px 0; font-size: 14px; }
             .label { font-weight: 700; }
             .box { margin-top: 14px; border: 1px solid #ccc; padding: 10px; white-space: pre-wrap; }
+            .services-list { margin: 8px 0 0 18px; padding: 0; }
+            .services-list li { margin: 4px 0; }
           </style>
         </head>
         <body>
           <h1>VIA DE SERVICO</h1>
-          <div class="line"><span class="label">Placa:</span> ${appointment.plate || '-'}</div>
-          <div class="line"><span class="label">Data:</span> ${appointment.date || '-'}</div>
-          <div class="line"><span class="label">Status:</span> ${appointment.status}</div>
-          <div class="box"><span class="label">Veiculo/Servico:</span><br/>${appointment.vehicleDetails || '-'}</div>
-          <div class="box"><span class="label">Observacoes:</span><br/>${appointment.note || '-'}</div>
+          <div class="line"><span class="label">Placa:</span> ${escapeHtml(appointment.plate || '-')}</div>
+          <div class="line"><span class="label">Data:</span> ${escapeHtml(appointment.date || '-')}</div>
+          <div class="line"><span class="label">Status:</span> ${escapeHtml(resolvedStatus)}</div>
+          <div class="box"><span class="label">ITENS/SERVICOS:</span><ul class="services-list">${itemsMarkup}</ul></div>
+          <div class="box"><span class="label">Veiculo/Servico:</span><br/>${escapeHtml(appointment.vehicleDetails || '-')}</div>
+          <div class="box"><span class="label">Observacoes:</span><br/>${escapeHtml(appointment.note || '-')}</div>
           <div class="line" style="margin-top: 18px;"><span class="label">FINALIZADO EM:</span> __/__/___ &nbsp;&nbsp; <span class="label">AS:</span> _:___h.</div>
           
           <div class="line" style="margin-top: 10px;"><span class="label">RESPONSAVEL:</span> ____________________________</div>
@@ -3320,7 +3343,7 @@ function App() {
 
   function printCalendarAppointmentServiceSlip() {
     if (!calendarEditData) return;
-    printServiceSlip(calendarEditData);
+    void printServiceSlip(calendarEditData);
   }
 
   function printSelectedDashboardServiceSlip() {
@@ -3329,7 +3352,7 @@ function App() {
       window.alert('Servico sem agendamento vinculado.');
       return;
     }
-    printServiceSlip(appointment);
+    void printServiceSlip(appointment, selectedDashboardService?.status);
   }
 
   function openSelectedDashboardServiceWhatsapp() {
