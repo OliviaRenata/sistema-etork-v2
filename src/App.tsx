@@ -1112,8 +1112,6 @@ function SaleScreen({
   setScreen: (next: Screen) => void;
   applyMatchedClient: (target: 'quote' | 'appointment' | 'sale', customerValue: string) => void;
 }) {
-  const [globalSearch, setGlobalSearch] = useState('');
-
   function patchSale(patch: Partial<SaleData>) {
     setSaleData((prev) => ({ ...prev, ...patch }));
   }
@@ -1170,18 +1168,6 @@ function SaleScreen({
         </div>
 
         <div className="sales-premium-header-grid">
-          <div className="form-floating sales-premium-search-wrap">
-            <input
-              id="sales-global-search"
-              className="form-control sales-premium-input"
-              value={globalSearch}
-              onChange={(event) => setGlobalSearch(event.target.value)}
-              placeholder="Buscar cliente, placa, servico"
-            />
-            <label htmlFor="sales-global-search">Busca global</label>
-            <Search size={16} className="sales-premium-input-icon" />
-          </div>
-
           <div className="sales-premium-top-badges">
             <span><UserRound size={14} /> ADMIN</span>
             <span><ShieldCheck size={14} /> OS {paymentStatusLabel}</span>
@@ -1197,7 +1183,6 @@ function SaleScreen({
             className="sales-premium-btn ghost"
             onClick={() => {
               onCancelSale();
-              setGlobalSearch('');
             }}
           >
             Cancelar Venda
@@ -1496,8 +1481,6 @@ function QuoteScreen({
   setScreen: (next: Screen) => void;
   applyMatchedClient: (target: 'quote' | 'appointment' | 'sale', customerValue: string) => void;
 }) {
-  const [globalSearch, setGlobalSearch] = useState('');
-
   function patchQuote(patch: Partial<QuoteData>) {
     setQuoteData((prev) => ({ ...prev, ...patch }));
   }
@@ -1551,18 +1534,6 @@ function QuoteScreen({
         </div>
 
         <div className="sales-premium-header-grid">
-          <div className="form-floating sales-premium-search-wrap">
-            <input
-              id="quote-global-search"
-              className="form-control sales-premium-input"
-              value={globalSearch}
-              onChange={(event) => setGlobalSearch(event.target.value)}
-              placeholder="Buscar cliente, placa, servico"
-            />
-            <label htmlFor="quote-global-search">Busca global</label>
-            <Search size={16} className="sales-premium-input-icon" />
-          </div>
-
           <div className="sales-premium-top-badges">
             <span><UserRound size={14} /> ADMIN</span>
             <span><ShieldCheck size={14} /> ORCAMENTO EM ABERTO</span>
