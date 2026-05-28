@@ -351,11 +351,6 @@ function sanitizePrintSettings(input: unknown): PrintSettings {
   };
 }
 
-const quoteItems: ServiceItem[] = [
-  { description: "REMAP STAGE 1 + LIMITADOR OFF + CODING'S", quantity: 1, price: 1800 },
-  { description: 'DIFUSOR INOX 3" POLEGADAS', quantity: 1, price: 1500 },
-];
-
 const appointmentItems: ServiceItem[] = [
   { description: 'REMAP STAGE 1', quantity: 1, price: 1800 },
   { description: 'DIFUSOR INOX 2,5" POLEGADAS', quantity: 1, price: 1400 },
@@ -1767,16 +1762,19 @@ function App() {
   const [resetPasswordConfirm, setResetPasswordConfirm] = useState('');
   const [serviceCatalogData, setServiceCatalogData] = useState(defaultServiceCatalog);
   const [isSaving, setIsSaving] = useState(false);
-  const [quoteData, setQuoteData] = useState<QuoteData>({
-    customer: 'JOAO HENRIQUE DE ALMEIDA',
+  const createEmptyQuoteData = (): QuoteData => ({
+    customer: '',
     customerType: getCustomerTypeLabel(1),
-    phone: '67 99871-1313',
-    plate: 'QAN-2H92',
-    vehicle: 'RAM 1500 CLASSIC 2023',
-    items: cloneItems(quoteItems),
+    phone: '',
+    plate: '',
+    vehicle: '',
+    items: [],
     discount: 0,
     timeDays: 1,
     note: '',
+  });
+  const [quoteData, setQuoteData] = useState<QuoteData>({
+    ...createEmptyQuoteData(),
   });
   const [appointmentData, setAppointmentData] = useState({
     date: toDateTimeLocalValue(new Date()),
@@ -5993,7 +5991,7 @@ function App() {
             <aside className="right-actions">
               <button className="action-green" onClick={() => setScreen('new-sale')}>NOVA VENDA</button>
               <button className="action-yellow" onClick={() => setScreen('new-appointment')}>NOVO AGENDAMENTO</button>
-              <button className="action-blue" onClick={() => setScreen('new-quote')}>NOVO ORCAMENTO</button>
+              <button className="action-blue" onClick={() => { setQuoteData(createEmptyQuoteData()); setScreen('new-quote'); }}>NOVO ORCAMENTO</button>
               <button className="action-orange" onClick={() => setScreen('print-receipt')}>IMPRIMIR RECIBO</button>
             </aside>
           </section>
