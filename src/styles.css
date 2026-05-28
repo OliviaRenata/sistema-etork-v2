@@ -2508,7 +2508,22 @@ select option {
 }
 
 .client-row {
-  grid-template-columns: minmax(220px, 1.3fr) minmax(170px, 0.9fr) 140px minmax(220px, 1fr) 44px !important;
+  grid-template-columns: minmax(170px, 1.2fr) minmax(125px, 0.85fr) 96px minmax(116px, 0.7fr) 36px !important;
+}
+
+.client-row .input-look {
+  height: 34px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+.client-row .input-look.plate {
+  width: 96px;
+}
+
+.client-row .item-delete {
+  width: 28px;
+  height: 28px;
 }
 
 .menu-row,

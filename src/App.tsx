@@ -5371,8 +5371,8 @@ function App() {
                       <input className="input-look" value={client.phone} onChange={(event) => updateClient(client.id, { phone: event.target.value })} />
                       <input className="input-look plate" value={client.plate} onChange={(event) => updateClient(client.id, { plate: event.target.value.toUpperCase() })} />
                       <select className="input-look" value={client.priceTable} onChange={(event) => updateClient(client.id, { priceTable: Number(event.target.value) as PriceTable })}>
-                        <option value={1}>TABELA 1 - CLIENTE FINAL</option>
-                        <option value={2}>TABELA 2 - FRANQUEADO</option>
+                        <option value={1}>TABELA 1</option>
+                        <option value={2}>TABELA 2</option>
                       </select>
                       <button className="item-delete" onClick={() => removeClient(client.id)} aria-label="Excluir cliente">
                         <Trash2 size={14} />
@@ -5393,8 +5393,8 @@ function App() {
                       <input className="input-look" value={client.phone} onChange={(event) => updateClient(client.id, { phone: event.target.value })} />
                       <input className="input-look plate" value={client.plate} onChange={(event) => updateClient(client.id, { plate: event.target.value.toUpperCase() })} />
                       <select className="input-look" value={client.priceTable} onChange={(event) => updateClient(client.id, { priceTable: Number(event.target.value) as PriceTable })}>
-                        <option value={1}>TABELA 1 - CLIENTE FINAL</option>
-                        <option value={2}>TABELA 2 - FRANQUEADO</option>
+                        <option value={1}>TABELA 1</option>
+                        <option value={2}>TABELA 2</option>
                       </select>
                       <button className="item-delete" onClick={() => removeClient(client.id)} aria-label="Excluir cliente">
                         <Trash2 size={14} />
