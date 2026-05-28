@@ -4909,11 +4909,7 @@ function App() {
             <td>${escapeHtml(row.phone || 'SEM TELEFONE')}</td>
             <td>${escapeHtml(row.plate || 'SEM PLACA')}</td>
             <td>${escapeHtml(row.vehicle || 'SEM VEICULO')}</td>
-            <td>${escapeHtml(formatMoney(row.subtotal))}</td>
-            <td>${escapeHtml(formatMoney(row.discount))}</td>
-            <td>${escapeHtml(formatMoney(row.surcharge))}</td>
             <td>${escapeHtml(formatMoney(row.total))}</td>
-            <td>${escapeHtml(row.timeDays)}</td>
             <td>${row.laborRequired ? 'SIM' : 'NAO'}</td>
             <td>${escapeHtml(row.note || '-')}</td>
           </tr>
@@ -4949,17 +4945,13 @@ function App() {
               <th>TELEFONE</th>
               <th>PLACA</th>
               <th>VEICULO</th>
-              <th>SUBTOTAL</th>
-              <th>DESCONTO</th>
-              <th>ACRESCIMO</th>
               <th>TOTAL</th>
-              <th>PRAZO (DIAS)</th>
               <th>MAO DE OBRA</th>
               <th>OBSERVACAO</th>
             </tr>
           </thead>
           <tbody>
-            ${rows || '<tr><td colspan="12">Nenhuma venda encontrada com os filtros atuais.</td></tr>'}
+            ${rows || '<tr><td colspan="8">Nenhuma venda encontrada com os filtros atuais.</td></tr>'}
           </tbody>
         </table>
       </body>
