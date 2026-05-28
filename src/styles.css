@@ -12,7 +12,7 @@
   --gray-2: #9f9f9f;
   --gray-3: #5a5a5a;
   --gray-4: #2f2f2f;
-  --focus-ring: rgba(0, 191, 255, 0.55);
+  --focus-ring: rgba(148, 163, 184, 0.55);
   --floating-footer-clearance: 84px;
 }
 
@@ -459,7 +459,7 @@ button,
 .tone-danger { background: #dc2626; color: #fff; }
 .tone-success { background: #16a34a; color: #fff; }
 .tone-neutral { background: #d7d7d7; color: #1b1b1b; }
-.tone-info { background: #0284c7; color: #fff; }
+.tone-info { background: #6b7280; color: #fff; }
 
 .next-title {
   margin-top: 24px;
@@ -2435,7 +2435,7 @@ select option {
 
 .client-panel {
   background:
-    radial-gradient(circle at 92% 0%, rgba(0, 191, 255, 0.1), transparent 34%),
+    radial-gradient(circle at 92% 0%, rgba(148, 163, 184, 0.1), transparent 34%),
     linear-gradient(165deg, rgba(12, 16, 24, 0.98), rgba(8, 10, 14, 0.98));
 }
 
@@ -2447,7 +2447,7 @@ select option {
 }
 
 .client-toolbar-modern {
-  border: 1px solid rgba(0, 191, 255, 0.2);
+  border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: 10px;
   background: linear-gradient(145deg, rgba(16, 24, 36, 0.9), rgba(12, 17, 25, 0.9));
   padding: 10px;
@@ -2472,7 +2472,7 @@ select option {
 }
 
 .client-row-modern:hover {
-  border-color: rgba(0, 191, 255, 0.28);
+  border-color: rgba(148, 163, 184, 0.28);
 }
 
 .clients-columns {
@@ -2595,13 +2595,13 @@ select option {
 }
 
 .financial-row.locked {
-  border: 1px solid rgba(0, 191, 255, 0.35);
-  background: rgba(0, 191, 255, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(148, 163, 184, 0.08);
 }
 
 .financial-row.locked .input-look:disabled {
   opacity: 0.92;
-  border: 1px solid rgba(0, 191, 255, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.35);
   color: #e8f7ff;
   cursor: not-allowed;
 }
@@ -2901,7 +2901,7 @@ select option {
 .modal-input:focus {
   outline: none;
   border-color: #00bfff;
-  box-shadow: 0 0 8px rgba(0, 191, 255, 0.3);
+  box-shadow: 0 0 8px rgba(148, 163, 184, 0.3);
 }
 
 .modal-footer {
@@ -3001,7 +3001,7 @@ select option {
 
 .cadastro-panel {
   background:
-    radial-gradient(circle at 8% 0%, rgba(0, 191, 255, 0.12), transparent 35%),
+    radial-gradient(circle at 8% 0%, rgba(148, 163, 184, 0.12), transparent 35%),
     linear-gradient(165deg, rgba(12, 16, 24, 0.98), rgba(8, 10, 14, 0.98));
 }
 
@@ -3013,7 +3013,7 @@ select option {
 }
 
 .cadastro-search-bar {
-  border: 1px solid rgba(0, 191, 255, 0.2);
+  border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: 10px;
   background: linear-gradient(145deg, rgba(16, 24, 36, 0.9), rgba(12, 17, 25, 0.9));
 }
@@ -3057,9 +3057,9 @@ select option {
   font-size: 10px;
   font-weight: 800;
   border-radius: 999px;
-  border: 1px solid rgba(0, 191, 255, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.35);
   color: #bfe7ff;
-  background: rgba(0, 191, 255, 0.12);
+  background: rgba(148, 163, 184, 0.12);
   min-height: 30px;
   padding: 0 10px;
 }
@@ -3078,7 +3078,7 @@ select option {
 }
 
 .cadastro-row:hover {
-  border-color: rgba(0, 191, 255, 0.28);
+  border-color: rgba(148, 163, 184, 0.28);
   box-shadow: 0 8px 20px rgba(2, 10, 22, 0.28);
 }
 
@@ -3122,8 +3122,8 @@ select option {
   width: 32px;
   height: 32px;
   padding: 0;
-  background: rgba(0, 191, 255, 0.2);
-  border: 1px solid rgba(0, 191, 255, 0.4);
+  background: rgba(148, 163, 184, 0.2);
+  border: 1px solid rgba(148, 163, 184, 0.4);
   border-radius: 999px;
   color: #00bfff;
   cursor: pointer;
@@ -3135,7 +3135,7 @@ select option {
 }
 
 .item-edit:hover {
-  background: rgba(0, 191, 255, 0.3);
+  background: rgba(148, 163, 184, 0.3);
   border-color: #00bfff;
 }
 
@@ -3277,13 +3277,13 @@ select option {
 }
 
 .calendar-day.today {
-  border-color: rgba(0, 191, 255, 0.8);
-  box-shadow: inset 0 0 0 1px rgba(0, 191, 255, 0.18);
+  border-color: rgba(148, 163, 184, 0.8);
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.18);
 }
 
 .calendar-day.selected {
-  background: linear-gradient(180deg, rgba(0, 191, 255, 0.2), rgba(0, 191, 255, 0.08));
-  border-color: rgba(0, 191, 255, 0.95);
+  background: linear-gradient(180deg, rgba(148, 163, 184, 0.2), rgba(148, 163, 184, 0.08));
+  border-color: rgba(148, 163, 184, 0.95);
 }
 
 .calendar-day-number {
@@ -3783,3 +3783,4 @@ select option {
     print-color-adjust: exact;
   }
 }
+
