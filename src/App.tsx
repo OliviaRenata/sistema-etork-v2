@@ -3304,8 +3304,9 @@ function App() {
           <div class="line"><span class="label">Status:</span> ${appointment.status}</div>
           <div class="box"><span class="label">Veiculo/Servico:</span><br/>${appointment.vehicleDetails || '-'}</div>
           <div class="box"><span class="label">Observacoes:</span><br/>${appointment.note || '-'}</div>
-          <div class="line" style="margin-top: 18px;"><span class="label">FINALIZADO EM:</span> _/_/___ &nbsp;&nbsp; <span class="label">AS:</span> _:___h.</div>
-          <div class="line" style="margin-top: 10px;"><span class="label">RESPONSAVEL:</span> _____________</div>
+          <div class="line" style="margin-top: 18px;"><span class="label">FINALIZADO EM:</span> __/__/___ &nbsp;&nbsp; <span class="label">AS:</span> _:___h.</div>
+          
+          <div class="line" style="margin-top: 10px;"><span class="label">RESPONSAVEL:</span> ____________________________</div>
         </body>
       </html>
     `;
