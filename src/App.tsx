@@ -4905,7 +4905,6 @@ function App() {
         (row) => `
           <tr>
             <td>${escapeHtml(row.createdAt)}</td>
-            <td>${escapeHtml(row.id)}</td>
             <td>${escapeHtml(row.customer || 'SEM CLIENTE')}</td>
             <td>${escapeHtml(row.phone || 'SEM TELEFONE')}</td>
             <td>${escapeHtml(row.plate || 'SEM PLACA')}</td>
@@ -4946,7 +4945,6 @@ function App() {
           <thead>
             <tr>
               <th>DATA</th>
-              <th>ID</th>
               <th>CLIENTE</th>
               <th>TELEFONE</th>
               <th>PLACA</th>
@@ -4961,7 +4959,7 @@ function App() {
             </tr>
           </thead>
           <tbody>
-            ${rows || '<tr><td colspan="13">Nenhuma venda encontrada com os filtros atuais.</td></tr>'}
+            ${rows || '<tr><td colspan="12">Nenhuma venda encontrada com os filtros atuais.</td></tr>'}
           </tbody>
         </table>
       </body>
