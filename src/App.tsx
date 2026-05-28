@@ -1987,6 +1987,12 @@ function App() {
   }, [screen]);
 
   useEffect(() => {
+    if (screen === 'new-appointment') {
+      clearAppointmentForm();
+    }
+  }, [screen]);
+
+  useEffect(() => {
     if (!isAuthenticated || isLocalMode || !isSupabaseConfigured || !supabase) return;
 
     const sb = supabase;
@@ -6436,7 +6442,7 @@ function App() {
           </section>
           <section className="sale-tools sale-tools-search appointment-search-bar">
             <input className="input-look" value={appointmentQuoteSearch} onChange={(event) => setAppointmentQuoteSearch(event.target.value)} placeholder="Pesquisar orcamento por nome, data, valor, telefone, placa, veiculo ou observacao" />
-            <button className="tool-blue" onClick={() => void runAppointmentQuoteSearch()}>PESQUISAR ORCAMENTO</button>
+            <button type="button" className="tool-blue" onClick={() => void runAppointmentQuoteSearch()}>PESQUISAR ORCAMENTO</button>
             <select className="input-look" value={appointmentSelectedQuoteId} onChange={(event) => setAppointmentSelectedQuoteId(event.target.value)}>
               <option value="">Selecione um orcamento</option>
               {appointmentQuoteResults.map((row) => (
