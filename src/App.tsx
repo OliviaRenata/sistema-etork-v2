@@ -1123,7 +1123,6 @@ function SaleScreen({
   const vehicleModel = vehicleLines[0] || 'VEICULO PERFORMANCE';
   const vehicleGear = vehicleLines[1] || 'AUTOMATICO';
   const vehicleYear = vehicleLines[2] || '2024/2024';
-  const vehicleFuel = vehicleLines[3] || 'DIESEL';
 
   const paymentStatusLabel = saleTotal > 0 ? 'EM ABERTO' : 'SEM VALOR';
 
@@ -1245,73 +1244,7 @@ function SaleScreen({
                         <h6 className="sales-premium-section-title mb-3"><CarFront size={15} /> Veiculo</h6>
                         <strong className="sales-premium-vehicle-title d-block">{vehicleModel}</strong>
                         <small className="sales-premium-muted d-block mb-2">{vehicleGear} • {vehicleYear}</small>
-                        <div className="sales-premium-pdv-lines mb-2">
-                          <div><span>Atendimento:</span><strong>Balcao PDV</strong></div>
-                          <div><span>Operador:</span><strong>ADMIN</strong></div>
-                          <div><span>Placa:</span><strong>{saleData.plate || 'N/A'}</strong></div>
-                        </div>
-                        <div className="sales-premium-chip-list">
-                          <span className="chip orange">{vehicleFuel}</span>
-                          <span className="chip blue">AUTOMATICO</span>
-                          <span className="chip green">STAGE 2</span>
-                          <span className="chip neutral">PLACA {saleData.plate || 'N/A'}</span>
-                        </div>
-                        <div className="sales-premium-power mt-2"><Gauge size={14} /> 320cv estimados</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="card sales-premium-inner sales-premium-import-card border-0">
-                  <div className="card-body p-3">
-                    <h6 className="sales-premium-section-title mb-3"><Search size={15} /> Importar Orcamento e Agendamento</h6>
-                    <div className="row g-2 align-items-center mb-2">
-                      <div className="col-12 col-md-6 col-xl-4">
-                        <div className="form-floating">
-                          <input id="sales-search-quote" className="form-control sales-premium-input" value={saleQuoteSearch} onChange={(e) => setSaleQuoteSearch(e.target.value)} placeholder="Buscar orcamento" />
-                          <label htmlFor="sales-search-quote">Buscar orcamento</label>
-                        </div>
-                      </div>
-                      <div className="col-12 col-md-6 col-xl-4">
-                        <div className="form-floating">
-                          <select id="sales-select-quote" className="form-select sales-premium-input" value={saleSelectedQuoteId} onChange={(e) => setSaleSelectedQuoteId(e.target.value)}>
-                            <option value="">Selecione um orcamento</option>
-                            {saleQuoteResults.map((row) => (
-                              <option key={row.id} value={row.id}>{`${row.customer} | ${row.plate} | ${formatMoney(row.total)}`}</option>
-                            ))}
-                          </select>
-                          <label htmlFor="sales-select-quote">Resultados de orcamento</label>
-                        </div>
-                      </div>
-                      <div className="col-12 col-xl-4 sales-premium-inline-actions">
-                        <button className="sales-premium-btn ghost" onClick={runSaleQuoteSearch}>Buscar</button>
-                        <button className="sales-premium-btn primary" onClick={importQuoteToSaleBySearch}>Importar</button>
-                        <button className="sales-premium-btn success" onClick={importQuoteToSale}>Ultimo</button>
-                      </div>
-                    </div>
-
-                    <div className="row g-2 align-items-center">
-                      <div className="col-12 col-md-6 col-xl-4">
-                        <div className="form-floating">
-                          <input id="sales-search-appointment" className="form-control sales-premium-input" value={saleAppointmentSearch} onChange={(e) => setSaleAppointmentSearch(e.target.value)} placeholder="Buscar agendamento" />
-                          <label htmlFor="sales-search-appointment">Buscar agendamento</label>
-                        </div>
-                      </div>
-                      <div className="col-12 col-md-6 col-xl-4">
-                        <div className="form-floating">
-                          <select id="sales-select-appointment" className="form-select sales-premium-input" value={saleSelectedAppointmentId} onChange={(e) => setSaleSelectedAppointmentId(e.target.value)}>
-                            <option value="">Selecione um agendamento</option>
-                            {saleAppointmentResults.map((row) => (
-                              <option key={row.id} value={row.id}>{`${row.customer} | ${row.plate} | ${formatMoney(row.total)}`}</option>
-                            ))}
-                          </select>
-                          <label htmlFor="sales-select-appointment">Resultados de agendamento</label>
-                        </div>
-                      </div>
-                      <div className="col-12 col-xl-4 sales-premium-inline-actions">
-                        <button className="sales-premium-btn ghost" onClick={runSaleAppointmentSearch}>Buscar</button>
-                        <button className="sales-premium-btn primary" onClick={importAppointmentToSaleBySearch}>Importar</button>
-                        <button className="sales-premium-btn success" onClick={importAppointmentToSale}>Ultimo</button>
+                        <textarea id="sales-vehicle-details" className="form-control sales-premium-input sales-premium-note sales-premium-vehicle-note" value={saleData.vehicleDetails} onChange={(e) => patchSale({ vehicleDetails: e.target.value })} placeholder="Veiculo" />
                       </div>
                     </div>
                   </div>
@@ -1328,36 +1261,29 @@ function SaleScreen({
                       <div className="sales-premium-table-head">
                         <span>Descricao</span>
                         <span>Qtd</span>
-                        <span>Unitario</span>
+                        <span>Unit.</span>
                         <span>Subtotal</span>
                         <span></span>
                       </div>
 
                       {saleData.items.map((item, index) => (
                         <div className="sales-premium-table-row" key={`sale-item-${index}`}>
-                          <div className="form-floating">
+                          <div>
                             <input id={`sale-item-desc-${index}`} className="form-control sales-premium-input" value={item.description} onChange={(e) => updateItems('sale', index, { description: e.target.value })} placeholder="Descricao" />
-                            <label htmlFor={`sale-item-desc-${index}`}>Descricao</label>
                           </div>
 
                           <div className="sales-premium-stepper">
-                            <button type="button" onClick={() => updateItems('sale', index, { quantity: Math.max(1, item.quantity - 1) })}>-</button>
-                            <div className="form-floating flex-grow-1">
-                              <input id={`sale-item-qty-${index}`} className="form-control sales-premium-input text-center" type="number" min={1} value={item.quantity} onChange={(e) => updateItems('sale', index, { quantity: Math.max(1, Number(e.target.value) || 1) })} placeholder="Qtd" />
-                              <label htmlFor={`sale-item-qty-${index}`}>Qtd</label>
-                            </div>
-                            <button type="button" onClick={() => updateItems('sale', index, { quantity: item.quantity + 1 })}>+</button>
+                            <input id={`sale-item-qty-${index}`} className="form-control sales-premium-input text-center" type="number" min={1} value={item.quantity} onChange={(e) => updateItems('sale', index, { quantity: Math.max(1, Number(e.target.value) || 1) })} placeholder="Qtd" />
                           </div>
 
-                          <div className="form-floating">
+                          <div>
                             <input id={`sale-item-price-${index}`} className="form-control sales-premium-input text-end" type="number" min={0} step="0.01" value={item.price} onChange={(e) => updateItems('sale', index, { price: Math.max(0, Number(e.target.value) || 0) })} placeholder="Unitario" />
-                            <label htmlFor={`sale-item-price-${index}`}>Unitario</label>
                           </div>
 
                           <div className="sales-premium-subtotal">{formatMoney(item.price * item.quantity)}</div>
 
                           <button className="sales-premium-icon-btn" onClick={() => void handleRemoveSaleItem(index)} aria-label="Excluir item">
-                            <Trash2 size={16} />
+                            <Trash2 size={12} />
                           </button>
                         </div>
                       ))}
@@ -1418,11 +1344,7 @@ function SaleScreen({
 
             <div className="card sales-premium-card sales-premium-side-card border-0">
               <div className="card-body p-3">
-                <h6 className="sales-premium-section-title mb-3"><CarFront size={15} /> Dados do Veiculo</h6>
-                <div className="form-floating mb-2">
-                  <textarea id="sales-vehicle-details" className="form-control sales-premium-input sales-premium-note sales-premium-vehicle-note" value={saleData.vehicleDetails} onChange={(e) => patchSale({ vehicleDetails: e.target.value })} placeholder="Veiculo" />
-                  <label htmlFor="sales-vehicle-details">Modelo / Cambio / Ano / Combustivel</label>
-                </div>
+                <h6 className="sales-premium-section-title mb-3"><CarFront size={15} /> Dados do Servico</h6>
 
                 <div className="form-check form-switch sales-premium-switch mb-2">
                   <input className="form-check-input" type="checkbox" id="sales-labor" checked={saleData.laborRequired} onChange={(e) => patchSale({ laborRequired: e.target.checked })} />
@@ -1431,7 +1353,7 @@ function SaleScreen({
 
                 <div className="form-floating">
                   <input id="sales-time-days" className="form-control sales-premium-input" type="number" min={1} value={saleData.timeDays} onChange={(e) => patchSale({ timeDays: Math.max(1, Number(e.target.value) || 1) })} placeholder="Tempo" />
-                  <label htmlFor="sales-time-days">Tempo estimado (dias)</label>
+                  <label htmlFor="sales-time-days">Tempo (dias)</label>
                 </div>
               </div>
             </div>
