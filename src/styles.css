@@ -1113,7 +1113,7 @@ select option {
 /* BALCAO DE VENDAS PREMIUM */
 .sales-premium {
   height: calc(100vh - 92px);
-  background: radial-gradient(circle at 15% 0%, rgba(148, 163, 184, 0.12), transparent 40%), #0b0f17;
+  background: radial-gradient(circle at 15% 0%, rgba(140, 140, 140, 0.12), transparent 40%), #0e0e0e;
   color: #f3f4f6;
   padding: 10px 10px calc(64px + var(--floating-footer-clearance));
   font-family: 'Inter', 'Rajdhani', sans-serif;
@@ -1126,10 +1126,10 @@ select option {
 .sales-premium-header,
 .sales-premium-card,
 .sales-premium-inner {
-  background: rgba(17, 24, 39, 0.92);
-  border: 1px solid #1f2937 !important;
+  background: rgba(24, 24, 24, 0.92);
+  border: 1px solid #3a3a3a !important;
   border-radius: 16px;
-  box-shadow: 0 12px 30px rgba(2, 8, 23, 0.45);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(8px);
 }
 
@@ -1172,9 +1172,9 @@ select option {
   gap: 2px 8px;
   padding: 8px 12px;
   border-radius: 12px;
-  border: 1px solid #3a3f48;
-  background: #12161d;
-  color: #e5e7eb;
+  border: 1px solid #444;
+  background: #171717;
+  color: #e6e6e6;
 }
 
 .sales-premium-clock strong {
@@ -1221,9 +1221,9 @@ select option {
   padding: 6px 10px;
   border-radius: 999px;
   font-size: 10px;
-  color: #cbd5e1;
-  border: 1px solid #3a3f48;
-  background: #12161d;
+  color: #d6d6d6;
+  border: 1px solid #444;
+  background: #171717;
 }
 
 .sales-premium-header-actions {
@@ -1238,7 +1238,7 @@ select option {
 }
 
 .sales-premium-btn {
-  border: 1px solid #1f2937;
+  border: 1px solid #3a3a3a;
   border-radius: 999px;
   min-height: 34px;
   padding: 6px 12px;
@@ -1256,17 +1256,17 @@ select option {
 
 .sales-premium-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.35), 0 8px 22px rgba(55, 65, 81, 0.28);
+  box-shadow: 0 0 0 1px rgba(150, 150, 150, 0.35), 0 8px 22px rgba(45, 45, 45, 0.28);
 }
 
 .sales-premium-btn.ghost {
-  background: #111827;
+  background: #1b1b1b;
   color: #e5e7eb;
 }
 
 .sales-premium-btn.primary {
-  background: linear-gradient(120deg, #6b7280, #4b5563);
-  border-color: #6b7280;
+  background: linear-gradient(120deg, #6f6f6f, #4f4f4f);
+  border-color: #6f6f6f;
   color: #f8fafc;
 }
 
@@ -1329,7 +1329,7 @@ select option {
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #cbd5e1;
+  color: #d0d0d0;
 }
 
 .sales-premium .form-floating > label {
@@ -1340,8 +1340,8 @@ select option {
 .sales-premium-input {
   border-radius: 12px !important;
   min-height: 34px;
-  background: #12161d !important;
-  border: 1px solid #243244 !important;
+  background: #171717 !important;
+  border: 1px solid #444 !important;
   color: #f3f4f6 !important;
   font-size: 10px;
 }
@@ -1367,7 +1367,7 @@ select option {
 .sales-premium-vehicle-media {
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid #243244;
+  border: 1px solid #444;
 }
 
 .sales-premium-vehicle-media img {
@@ -1400,16 +1400,16 @@ select option {
   text-transform: uppercase;
 }
 
-.chip.blue { background: rgba(148, 163, 184, 0.2); border-color: rgba(148, 163, 184, 0.35); color: #e2e8f0; }
+.chip.blue { background: rgba(140, 140, 140, 0.2); border-color: rgba(140, 140, 140, 0.35); color: #e3e3e3; }
 .chip.green { background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.42); color: #bbf7d0; }
 .chip.orange { background: rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.42); color: #fde68a; }
-.chip.neutral { background: rgba(148, 163, 184, 0.18); border-color: rgba(148, 163, 184, 0.35); color: #e2e8f0; }
+.chip.neutral { background: rgba(140, 140, 140, 0.18); border-color: rgba(140, 140, 140, 0.35); color: #e3e3e3; }
 
 .sales-premium-power {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #cbd5e1;
+  color: #d0d0d0;
   font-size: 12px;
 }
 
@@ -1425,8 +1425,8 @@ select option {
   gap: 8px;
   padding: 5px 8px;
   border-radius: 8px;
-  background: rgba(23, 28, 36, 0.55);
-  border: 1px solid #3a3f48;
+  background: rgba(28, 28, 28, 0.55);
+  border: 1px solid #444;
 }
 
 .sales-premium-pdv-lines span {
@@ -1434,7 +1434,7 @@ select option {
 }
 
 .sales-premium-pdv-lines strong {
-  color: #e2e8f0;
+  color: #e6e6e6;
   font-weight: 700;
 }
 
@@ -1482,22 +1482,22 @@ select option {
 .sales-premium-table-head {
   font-size: 10px;
   letter-spacing: 0.09em;
-  color: #94a3b8;
+  color: #a6a6a6;
   text-transform: uppercase;
   padding: 0 2px;
 }
 
 .sales-premium-table-row {
-  background: rgba(23, 28, 36, 0.55);
-  border: 1px solid #343b45;
+  background: rgba(28, 28, 28, 0.58);
+  border: 1px solid #3a3a3a;
   border-radius: 12px;
   padding: 4px;
   transition: border-color 0.2s ease, background 0.2s ease;
 }
 
 .sales-premium-table-row:hover {
-  border-color: #495261;
-  background: rgba(23, 28, 36, 0.78);
+  border-color: #4b4b4b;
+  background: rgba(35, 35, 35, 0.78);
 }
 
 .sales-premium-stepper {
@@ -1510,8 +1510,8 @@ select option {
   width: 26px;
   height: 26px;
   border-radius: 10px;
-  border: 1px solid #3c4451;
-  background: #1f252f;
+  border: 1px solid #4a4a4a;
+  background: #242424;
   color: #e5e7eb;
 }
 
@@ -1537,15 +1537,15 @@ select option {
 }
 
 .sales-premium-total-box {
-  border: 1px solid #3b4350;
-  background: linear-gradient(145deg, rgba(75, 85, 99, 0.45), rgba(23, 28, 36, 0.92));
+  border: 1px solid #454545;
+  background: linear-gradient(145deg, rgba(92, 92, 92, 0.45), rgba(30, 30, 30, 0.92));
   border-radius: 14px;
   padding: 7px;
 }
 
 .sales-premium-total-box small {
   display: block;
-  color: #e5e7eb;
+  color: #e2e2e2;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   font-size: 10px;
@@ -1580,8 +1580,8 @@ select option {
 }
 
 .sales-premium-switch .form-check-input {
-  background-color: #1f2937;
-  border-color: #334155;
+  background-color: #2d2d2d;
+  border-color: #4a4a4a;
 }
 
 .sales-premium-switch .form-check-input:checked {
@@ -1590,7 +1590,7 @@ select option {
 }
 
 .sales-premium-switch .form-check-label {
-  color: #cbd5e1;
+  color: #d0d0d0;
   font-size: 10px;
 }
 
@@ -1607,9 +1607,9 @@ select option {
   display: grid;
   grid-template-columns: 10px 1fr;
   gap: 8px;
-  border: 1px solid #3a3f48;
+  border: 1px solid #444;
   border-radius: 12px;
-  background: rgba(23, 28, 36, 0.6);
+  background: rgba(28, 28, 28, 0.6);
   padding: 5px;
 }
 
