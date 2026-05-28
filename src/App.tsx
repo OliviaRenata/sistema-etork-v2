@@ -914,6 +914,12 @@ function AppointmentEditModal({
               value={data.plate}
               onChange={(e) => onDataChange({ plate: e.target.value.toUpperCase() })}
               onBlur={(e) => onPlateLookup(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  onPlateLookup((e.currentTarget as HTMLInputElement).value);
+                }
+              }}
               placeholder="AAA-0000"
             />
           </div>
@@ -1237,7 +1243,12 @@ function SaleScreen({
                           </div>
                           <div className="col-12 col-md-6">
                             <div className="form-floating">
-                              <input id="sales-customer-plate" className="form-control sales-premium-input" value={saleData.plate} onChange={(e) => patchSale({ plate: e.target.value.toUpperCase() })} onBlur={(e) => onPlateLookup('sale', e.target.value)} placeholder="Placa" />
+                              <input id="sales-customer-plate" className="form-control sales-premium-input" value={saleData.plate} onChange={(e) => patchSale({ plate: e.target.value.toUpperCase() })} onBlur={(e) => onPlateLookup('sale', e.target.value)} onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  onPlateLookup('sale', (e.currentTarget as HTMLInputElement).value);
+                                }
+                              }} placeholder="Placa" />
                               <label htmlFor="sales-customer-plate">Placa</label>
                             </div>
                           </div>
@@ -1575,7 +1586,12 @@ function QuoteScreen({
                           </div>
                           <div className="col-12 col-md-6">
                             <div className="form-floating">
-                              <input id="quote-customer-plate" className="form-control sales-premium-input" value={quoteData.plate} onChange={(e) => patchQuote({ plate: e.target.value.toUpperCase() })} onBlur={(e) => onPlateLookup('quote', e.target.value)} placeholder="Placa" />
+                              <input id="quote-customer-plate" className="form-control sales-premium-input" value={quoteData.plate} onChange={(e) => patchQuote({ plate: e.target.value.toUpperCase() })} onBlur={(e) => onPlateLookup('quote', e.target.value)} onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  onPlateLookup('quote', (e.currentTarget as HTMLInputElement).value);
+                                }
+                              }} placeholder="Placa" />
                               <label htmlFor="quote-customer-plate">Placa</label>
                             </div>
                           </div>
@@ -2961,6 +2977,16 @@ function App() {
     const details = await fetchVehicleDetailsByPlate(plateValue);
     if (!details) return;
     setCalendarEditData((prev) => (prev ? { ...prev, vehicleDetails: details } : prev));
+  }
+
+  async function handleReceiptPlateLookup(receiptId: number, plateValue: string) {
+    const details = await fetchVehicleDetailsByPlate(plateValue);
+    if (!details) return;
+
+    const vehicleName = details.split('\n').map((line) => line.trim()).filter(Boolean)[0];
+    if (!vehicleName) return;
+
+    updateReceipt(receiptId, { car: vehicleName });
   }
 
   function resolveCustomerType(customerName: string, fallback: string) {
@@ -6271,7 +6297,12 @@ function App() {
             <aside className="vehicle-info">
               <div className="line side-top"><strong>TEL:</strong> <input className="input-look" value={appointmentData.phone} onChange={(event) => setAppointmentData((prev) => ({ ...prev, phone: event.target.value }))} /></div>
               <div className="line side-top line-check"><strong>MAO DE OBRA</strong> <input type="checkbox" checked={appointmentData.laborRequired} onChange={(event) => setAppointmentData((prev) => ({ ...prev, laborRequired: event.target.checked }))} /></div>
-              <div className="line side-top"><strong>PLACA:</strong> <input className="input-look plate" value={appointmentData.plate} onChange={(event) => setAppointmentData((prev) => ({ ...prev, plate: event.target.value.toUpperCase() }))} onBlur={(event) => void handlePlateLookup('appointment', event.target.value)} /></div>
+              <div className="line side-top"><strong>PLACA:</strong> <input className="input-look plate" value={appointmentData.plate} onChange={(event) => setAppointmentData((prev) => ({ ...prev, plate: event.target.value.toUpperCase() }))} onBlur={(event) => void handlePlateLookup('appointment', event.target.value)} onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  void handlePlateLookup('appointment', (event.currentTarget as HTMLInputElement).value);
+                }
+              }} /></div>
               <textarea className="vehicle-card vehicle-input" value={appointmentData.vehicleDetails} onChange={(event) => setAppointmentData((prev) => ({ ...prev, vehicleDetails: event.target.value }))} />
             </aside>
           </section>
@@ -6555,7 +6586,12 @@ function App() {
                 <input className="input-look" value={row.date} onChange={(event) => updateReceipt(row.id, { date: event.target.value })} />
                 <input className="input-look" value={row.customer} onChange={(event) => updateReceipt(row.id, { customer: event.target.value })} />
                 <input className="input-look" value={row.car} onChange={(event) => updateReceipt(row.id, { car: event.target.value })} />
-                <input className="input-look plate" value={row.plate} onChange={(event) => updateReceipt(row.id, { plate: event.target.value.toUpperCase() })} />
+                <input className="input-look plate" value={row.plate} onChange={(event) => updateReceipt(row.id, { plate: event.target.value.toUpperCase() })} onBlur={(event) => void handleReceiptPlateLookup(row.id, event.target.value)} onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    void handleReceiptPlateLookup(row.id, (event.currentTarget as HTMLInputElement).value);
+                  }
+                }} />
                 <input className="input-look" type="number" min={0} step="0.01" value={row.total} onChange={(event) => updateReceipt(row.id, { total: Math.max(0, Number(event.target.value) || 0) })} />
                 <button className="item-delete" onClick={() => removeReceipt(row.id)} aria-label="Excluir recibo">
                   <Trash2 size={14} />
