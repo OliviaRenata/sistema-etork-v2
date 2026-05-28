@@ -419,6 +419,17 @@ button,
   padding: 10px 12px;
   border-radius: 8px;
   line-height: 1.25;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.35);
+  animation: dashboardFloat 4.8s ease-in-out infinite;
+}
+
+.service-chip:nth-child(2n) {
+  animation-delay: 0.9s;
+}
+
+.service-chip:nth-child(3n) {
+  animation-delay: 1.8s;
 }
 
 .service-chip-clickable {
@@ -470,6 +481,9 @@ button,
   letter-spacing: 1px;
   padding: 3px 10px;
   text-transform: uppercase;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.28);
 }
 
 .next-card {
@@ -479,6 +493,29 @@ button,
   color: #181818;
   padding: 12px;
   border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.35);
+  animation: dashboardFloat 5.2s ease-in-out infinite;
+  animation-delay: 0.6s;
+}
+
+@keyframes dashboardFloat {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .service-chip,
+  .next-card {
+    animation: none;
+  }
 }
 
 .next-card strong,
