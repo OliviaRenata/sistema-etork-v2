@@ -1501,167 +1501,251 @@ function QuoteScreen({
   setScreen: (next: Screen) => void;
   applyMatchedClient: (target: 'quote' | 'appointment' | 'sale', customerValue: string) => void;
 }) {
+  const [globalSearch, setGlobalSearch] = useState('');
+
   function patchQuote(patch: Partial<QuoteData>) {
     setQuoteData((prev) => ({ ...prev, ...patch }));
   }
 
+  const vehicleLines = quoteData.vehicle
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const vehicleModel = vehicleLines[0] || 'VEICULO PERFORMANCE';
+  const vehicleGear = vehicleLines[1] || 'AUTOMATICO';
+  const vehicleYear = vehicleLines[2] || '2024/2024';
+
+  async function handleSendQuote() {
+    await Swal.fire({
+      title: 'Orcamento enviado',
+      text: 'O orcamento foi enviado para aprovacao interna.',
+      icon: 'success',
+      confirmButtonColor: '#3b82f6',
+      background: '#111827',
+      color: '#f3f4f6',
+    });
+  }
+
+  async function handleRemoveQuoteItem(index: number) {
+    const result = await Swal.fire({
+      title: 'Remover servico?',
+      text: 'Essa acao remove o item do orcamento atual.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Remover',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#334155',
+      background: '#111827',
+      color: '#f3f4f6',
+    });
+
+    if (result.isConfirmed) {
+      removeItem('quote', index);
+    }
+  }
+
   return (
-    <main className="sale-panel">
-      <div className="sale-topbar">
-        <span className="sale-topbar-title">BALCAO DE ORCAMENTO</span>
-        <div className="sale-topbar-actions">
-          <button className="sale-btn-ghost" onClick={() => setScreen('dashboard')}>VOLTAR</button>
-          <button className="sale-btn-primary" onClick={() => window.alert('Orcamento enviado para aprovacao interna.')}>ENVIAR ORCAMENTO</button>
-          <button className="sale-btn-green" onClick={finalizeQuote} disabled={isSaving}>{isSaving ? 'SALVANDO...' : 'FINALIZAR ORCAMENTO'}</button>
+    <main className="sales-premium sales-premium-panel">
+      <section className="sales-premium-header sales-premium-header-compact card border-0">
+        <div className="sales-premium-header-top">
+          <div>
+            <p className="sales-premium-eyebrow mb-1">ETORK BRASIL PERFORMANCE HUB</p>
+            <h2 className="sales-premium-title mb-0">Balcao de Orcamento</h2>
+          </div>
         </div>
-      </div>
 
-      <div className="sale-body">
-        <div className="sale-center">
-          <div className="sale-client-section">
-            <div className="sale-field">
-              <span className="sale-field-label">Cliente</span>
-              <input
-                list="client-suggestions"
-                className="sale-field-input"
-                value={quoteData.customer}
-                onChange={(e) => patchQuote({ customer: e.target.value })}
-                onBlur={(e) => applyMatchedClient('quote', e.target.value)}
-                placeholder="Nome do cliente"
-              />
-            </div>
-            <div className="sale-field">
-              <span className="sale-field-label">Tipo</span>
-              <select className="sale-field-input" value={quoteData.customerType} onChange={(e) => patchQuote({ customerType: e.target.value })}>
-                <option value={getCustomerTypeLabel(1)}>{getCustomerTypeLabel(1)}</option>
-                <option value={getCustomerTypeLabel(2)}>{getCustomerTypeLabel(2)}</option>
-              </select>
-            </div>
-            <div className="sale-field">
-              <span className="sale-field-label">Telefone</span>
-              <input
-                className="sale-field-input"
-                value={quoteData.phone}
-                onChange={(e) => patchQuote({ phone: e.target.value })}
-                placeholder="(67) 9 0000-0000"
-              />
-            </div>
-            <div className="sale-field">
-              <span className="sale-field-label">Placa</span>
-              <input
-                className="sale-field-input plate"
-                value={quoteData.plate}
-                onChange={(e) => patchQuote({ plate: e.target.value.toUpperCase() })}
-                placeholder="AAA-0000"
-              />
-            </div>
-            <div className="sale-field">
-              <span className="sale-field-label">Veiculo</span>
-              <input
-                className="sale-field-input"
-                value={quoteData.vehicle}
-                onChange={(e) => patchQuote({ vehicle: e.target.value })}
-                placeholder="Modelo do veiculo"
-              />
-            </div>
-          </div>
-
-          <div className="sale-items-area">
-            <div className="sale-items-header">
-              <span>Descricao</span>
-              <span>Qtd</span>
-              <span>Vlr Unit.</span>
-              <span>Subtotal</span>
-              <span></span>
-            </div>
-
-            {quoteData.items.map((item, index) => (
-              <div className="sale-item-row" key={`quote-item-${index}`}>
-                <input
-                  className="sale-item-input"
-                  value={item.description}
-                  onChange={(e) => updateItems('quote', index, { description: e.target.value })}
-                />
-                <input
-                  className="sale-item-input right"
-                  type="number"
-                  min={1}
-                  value={item.quantity}
-                  onChange={(e) => updateItems('quote', index, { quantity: Math.max(1, Number(e.target.value) || 1) })}
-                />
-                <input
-                  className="sale-item-input right"
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={item.price}
-                  onChange={(e) => updateItems('quote', index, { price: Math.max(0, Number(e.target.value) || 0) })}
-                />
-                <span className="sale-item-total">{formatMoney(item.price * item.quantity)}</span>
-                <button className="sale-item-del" onClick={() => removeItem('quote', index)} aria-label="Excluir item">
-                  <Trash2 size={13} />
-                </button>
-              </div>
-            ))}
-
-            <div className="sale-add-row">
-              <button className="sale-add-btn" onClick={addItemToQuote}>+ ADICIONAR SERVICO / PRODUTO</button>
-            </div>
-          </div>
-
-          <div className="sale-note-area">
-            <textarea
-              className="sale-note-input"
-              rows={2}
-              value={quoteData.note}
-              onChange={(e) => patchQuote({ note: e.target.value })}
-              placeholder="Observacoes adicionais"
+        <div className="sales-premium-header-grid">
+          <div className="form-floating sales-premium-search-wrap">
+            <input
+              id="quote-global-search"
+              className="form-control sales-premium-input"
+              value={globalSearch}
+              onChange={(event) => setGlobalSearch(event.target.value)}
+              placeholder="Buscar cliente, placa, servico"
             />
+            <label htmlFor="quote-global-search">Busca global</label>
+            <Search size={16} className="sales-premium-input-icon" />
+          </div>
+
+          <div className="sales-premium-top-badges">
+            <span><UserRound size={14} /> ADMIN</span>
+            <span><ShieldCheck size={14} /> ORCAMENTO EM ABERTO</span>
+            <span><Wrench size={14} /> ETORK LIVE</span>
           </div>
         </div>
 
-        <div className="sale-sidebar">
-          <div className="sale-vehicle-section">
-            <div className="sale-section-title">Dados do Servico</div>
-            <div className="sale-time-row">
-              <label>TEMPO (DIAS)</label>
-              <input
-                className="sale-time-input"
-                type="number"
-                min={1}
-                value={quoteData.timeDays}
-                onChange={(e) => patchQuote({ timeDays: Math.max(1, Number(e.target.value) || 1) })}
-              />
+        <div className="sales-premium-header-actions">
+          <button className="sales-premium-btn ghost sales-premium-btn-back" onClick={() => setScreen('dashboard')}>
+            <CalendarClock size={16} /> Voltar
+          </button>
+          <button className="sales-premium-btn primary" onClick={() => void handleSendQuote()}>
+            <Send size={16} /> Enviar Orcamento
+          </button>
+          <button className="sales-premium-btn success" onClick={finalizeQuote} disabled={isSaving}>
+            <CircleDollarSign size={16} /> {isSaving ? 'Salvando...' : 'Finalizar Orcamento'}
+          </button>
+        </div>
+      </section>
+
+      <section className="container-fluid sales-premium-content sales-premium-content-grid px-0">
+        <div className="row g-2 h-100">
+          <div className="col-12 col-xl-8 sales-premium-col">
+            <div className="card sales-premium-card sales-premium-main-card border-0 h-100">
+              <div className="card-body p-3 sales-premium-main-body">
+                <div className="row g-2 sales-premium-client-vehicle">
+                  <div className="col-12 col-md-7">
+                    <div className="card sales-premium-inner border-0 h-100">
+                      <div className="card-body p-3">
+                        <h6 className="sales-premium-section-title mb-3"><UserRound size={15} /> Cliente</h6>
+                        <div className="row g-2">
+                          <div className="col-12 col-md-6">
+                            <div className="form-floating">
+                              <input id="quote-customer-name" list="client-suggestions" className="form-control sales-premium-input" value={quoteData.customer} onChange={(e) => patchQuote({ customer: e.target.value })} onBlur={(e) => applyMatchedClient('quote', e.target.value)} placeholder="Cliente" />
+                              <label htmlFor="quote-customer-name">Cliente</label>
+                            </div>
+                          </div>
+                          <div className="col-12 col-md-6">
+                            <div className="form-floating">
+                              <select id="quote-customer-type" className="form-select sales-premium-input" value={quoteData.customerType} onChange={(e) => patchQuote({ customerType: e.target.value })}>
+                                <option value={getCustomerTypeLabel(1)}>{getCustomerTypeLabel(1)}</option>
+                                <option value={getCustomerTypeLabel(2)}>{getCustomerTypeLabel(2)}</option>
+                              </select>
+                              <label htmlFor="quote-customer-type">Tipo</label>
+                            </div>
+                          </div>
+                          <div className="col-12 col-md-6">
+                            <div className="form-floating">
+                              <input id="quote-customer-phone" className="form-control sales-premium-input" value={quoteData.phone} onChange={(e) => patchQuote({ phone: e.target.value })} placeholder="Telefone" />
+                              <label htmlFor="quote-customer-phone">Telefone</label>
+                            </div>
+                          </div>
+                          <div className="col-12 col-md-6">
+                            <div className="form-floating">
+                              <input id="quote-customer-plate" className="form-control sales-premium-input" value={quoteData.plate} onChange={(e) => patchQuote({ plate: e.target.value.toUpperCase() })} placeholder="Placa" />
+                              <label htmlFor="quote-customer-plate">Placa</label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="col-12 col-md-5">
+                    <div className="card sales-premium-inner border-0 h-100">
+                      <div className="card-body p-3">
+                        <h6 className="sales-premium-section-title mb-3"><CarFront size={15} /> Veiculo</h6>
+                        <strong className="sales-premium-vehicle-title d-block">{vehicleModel}</strong>
+                        <small className="sales-premium-muted d-block mb-2">{vehicleGear} • {vehicleYear}</small>
+                        <textarea id="quote-vehicle-details" className="form-control sales-premium-input sales-premium-note sales-premium-vehicle-note" value={quoteData.vehicle} onChange={(e) => patchQuote({ vehicle: e.target.value })} placeholder="Veiculo" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="card sales-premium-inner sales-premium-services-card border-0">
+                  <div className="card-body p-3">
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                      <h6 className="sales-premium-section-title mb-0"><Wrench size={15} /> Servicos</h6>
+                      <button className="sales-premium-btn ghost" onClick={addItemToQuote}><Plus size={15} /> Adicionar item</button>
+                    </div>
+
+                    <div className="sales-premium-table-wrap sales-premium-table-scroller">
+                      <div className="sales-premium-table-head">
+                        <span>Descricao</span>
+                        <span>Qtd</span>
+                        <span>Unit.</span>
+                        <span>Subtotal</span>
+                        <span></span>
+                      </div>
+
+                      {quoteData.items.map((item, index) => (
+                        <div className="sales-premium-table-row" key={`quote-item-${index}`}>
+                          <div>
+                            <input id={`quote-item-desc-${index}`} className="form-control sales-premium-input" value={item.description} onChange={(e) => updateItems('quote', index, { description: e.target.value })} placeholder="Descricao" />
+                          </div>
+
+                          <div className="sales-premium-stepper">
+                            <input id={`quote-item-qty-${index}`} className="form-control sales-premium-input text-center" type="number" min={1} value={item.quantity} onChange={(e) => updateItems('quote', index, { quantity: Math.max(1, Number(e.target.value) || 1) })} placeholder="Qtd" />
+                          </div>
+
+                          <div>
+                            <input id={`quote-item-price-${index}`} className="form-control sales-premium-input text-end" type="number" min={0} step="0.01" value={item.price} onChange={(e) => updateItems('quote', index, { price: Math.max(0, Number(e.target.value) || 0) })} placeholder="Unitario" />
+                          </div>
+
+                          <div className="sales-premium-subtotal">{formatMoney(item.price * item.quantity)}</div>
+
+                          <button className="sales-premium-icon-btn" onClick={() => void handleRemoveQuoteItem(index)} aria-label="Excluir item">
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="card sales-premium-inner sales-premium-note-card border-0">
+                  <div className="card-body p-3">
+                    <h6 className="sales-premium-section-title mb-3">Observacoes</h6>
+                    <textarea id="quote-note" className="form-control sales-premium-input sales-premium-note" value={quoteData.note} onChange={(e) => patchQuote({ note: e.target.value })} placeholder="Observacoes" />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="sale-totals-section">
-            <div className="sale-section-title">Resumo Financeiro</div>
+          <div className="col-12 col-xl-4 sales-premium-col">
+            <div className="sales-premium-side-stack">
+              <div className="card sales-premium-card sales-premium-side-card border-0">
+                <div className="card-body p-3">
+                  <h6 className="sales-premium-section-title mb-3"><CircleDollarSign size={15} /> Financeiro</h6>
+                  <div className="sales-premium-total-box">
+                    <small>Total do Orcamento</small>
+                    <strong>{formatMoney(quoteTotal)}</strong>
+                  </div>
 
-            <div className="sale-total-row">
-              <span className="sale-total-label">Subtotal</span>
-              <span className="sale-total-value">{formatMoney(quoteSubtotal)}</span>
-            </div>
+                  <div className="sales-premium-metrics mt-3">
+                    <div>
+                      <span>Subtotal</span>
+                      <strong>{formatMoney(quoteSubtotal)}</strong>
+                    </div>
+                    <div>
+                      <span>Desconto</span>
+                      <input id="quote-discount" className="form-control sales-premium-input text-end" type="number" min={0} step="0.01" value={quoteData.discount} onChange={(e) => patchQuote({ discount: Math.max(0, Number(e.target.value) || 0) })} placeholder="Desconto" />
+                    </div>
+                  </div>
 
-            <div className="sale-total-row discount">
-              <span className="sale-total-label">Desconto (-)</span>
-              <input
-                className="sale-adj-input discount"
-                type="number"
-                min={0}
-                step="0.01"
-                value={quoteData.discount}
-                onChange={(e) => patchQuote({ discount: Math.max(0, Number(e.target.value) || 0) })}
-              />
-            </div>
+                  <div className="sales-premium-status-grid mt-3">
+                    <span className="chip blue">ORCAMENTO</span>
+                    <span className="chip orange">PENDENTE</span>
+                  </div>
+                </div>
+              </div>
 
-            <div className="sale-total-row grand">
-              <span className="sale-total-label">TOTAL</span>
-              <span className="sale-total-value">{formatMoney(quoteTotal)}</span>
+              <div className="card sales-premium-card sales-premium-side-card border-0">
+                <div className="card-body p-3">
+                  <h6 className="sales-premium-section-title mb-3"><CarFront size={15} /> Dados do Servico</h6>
+                  <div className="form-floating">
+                    <input id="quote-time-days" className="form-control sales-premium-input" type="number" min={1} value={quoteData.timeDays} onChange={(e) => patchQuote({ timeDays: Math.max(1, Number(e.target.value) || 1) })} placeholder="Tempo" />
+                    <label htmlFor="quote-time-days">Tempo (dias)</label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="card sales-premium-card sales-premium-side-card border-0">
+                <div className="card-body p-3">
+                  <h6 className="sales-premium-section-title mb-3"><Wrench size={15} /> Operacao de Balcao</h6>
+                  <div className="sales-premium-pdv-lines">
+                    <div><span>Status:</span><strong>Aguardando aprovacao</strong></div>
+                    <div><span>Fluxo:</span><strong>Cadastro {'>'} Revisao {'>'} Envio</strong></div>
+                    <div><span>Prioridade:</span><strong>Padrao</strong></div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </section>
     </main>
   );
 }
@@ -4647,14 +4731,33 @@ function App() {
           body { font-family: Arial, sans-serif; margin: 20px; color: #111; }
           h1 { margin: 0 0 10px; font-size: 18px; }
           .meta { margin-bottom: 12px; font-size: 12px; }
+          .dashboard-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+          .kpi { border: 1px solid #bbb; border-radius: 6px; padding: 8px; background: #fafafa; }
+          .kpi strong { display: block; font-size: 10px; color: #555; margin-bottom: 4px; text-transform: uppercase; }
+          .kpi span { font-size: 13px; font-weight: 700; color: #111; }
           table { width: 100%; border-collapse: collapse; }
           th, td { border: 1px solid #bbb; padding: 6px; font-size: 12px; text-align: left; }
           th { background: #f2f2f2; }
+          @media print {
+            .dashboard-grid { break-inside: avoid; }
+          }
         </style>
       </head>
       <body>
         <h1>FINANCEIRO FILTRADO (${escapeHtml(filteredFinancialEntries.length)})</h1>
         <div class="meta">Periodo: ${escapeHtml(financialFilters.startDate || 'INICIO')} ate ${escapeHtml(financialFilters.endDate || 'HOJE')} | Gerado em ${escapeHtml(new Date().toLocaleString('pt-BR'))}</div>
+        <section class="dashboard-grid">
+          <div class="kpi"><strong>Lancamentos</strong><span>${escapeHtml(formatNumberValue(financialSummary.totalEntries))}</span></div>
+          <div class="kpi"><strong>Receitas</strong><span>${escapeHtml(formatMoney(financialSummary.income))}</span></div>
+          <div class="kpi"><strong>Despesas</strong><span>${escapeHtml(formatMoney(financialSummary.expense))}</span></div>
+          <div class="kpi"><strong>Saldo</strong><span>${escapeHtml(formatMoney(financialSummary.balance))}</span></div>
+          <div class="kpi"><strong>Qtd Receitas</strong><span>${escapeHtml(formatNumberValue(financialSummary.incomeCount))}</span></div>
+          <div class="kpi"><strong>Qtd Despesas</strong><span>${escapeHtml(formatNumberValue(financialSummary.expenseCount))}</span></div>
+          <div class="kpi"><strong>Ticket Medio</strong><span>${escapeHtml(formatMoney(financialSummary.averageTicket))}</span></div>
+          <div class="kpi"><strong>Total Geral (Base Completa)</strong><span>${escapeHtml(formatMoney(financialTotal))}</span></div>
+          <div class="kpi"><strong>Vendas Filtradas</strong><span>${escapeHtml(formatMoney(financialSalesTotal))}</span></div>
+          <div class="kpi"><strong>Qtd Vendas</strong><span>${escapeHtml(formatNumberValue(filteredFinancialSalesRows.length))}</span></div>
+        </section>
         <table>
           <thead>
             <tr>
