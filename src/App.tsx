@@ -1040,7 +1040,7 @@ function ServiceStatusModal({
           </div>
 
           <div className={`status-preview tone-${service.tone}`}>{service.status}</div>
-          <p className="service-modal-help">Selecione o status para atualizar o andamento do servico. Exemplo: CONCLUIDO fica em verde.</p>
+          <p className="service-modal-help">Selecione o status para atualizar o andamento do servico.</p>
         </div>
 
         <div className="modal-footer service-status-modal-actions">
@@ -2622,7 +2622,7 @@ function App() {
             row.plate,
             row.vehicle,
             row.note,
-            row.timeDays,
+            String(row.timeDays),
             row.laborRequired === null ? '' : row.laborRequired ? 'SIM' : 'NAO',
             ...getMoneySearchValues(row.subtotal),
             ...getMoneySearchValues(row.discount),
@@ -2709,6 +2709,18 @@ function App() {
       );
     });
   }, [financialEntries, reportFilters]);
+
+  const reportIncomeTotal = useMemo(
+    () => filteredReportEntries.reduce((acc, entry) => (resolveFinancialKind(entry) === 'receita' ? acc + Math.abs(Number(entry.amount) || 0) : acc), 0),
+    [filteredReportEntries]
+  );
+
+  const reportExpenseTotal = useMemo(
+    () => filteredReportEntries.reduce((acc, entry) => (resolveFinancialKind(entry) === 'despesa' ? acc + Math.abs(Number(entry.amount) || 0) : acc), 0),
+    [filteredReportEntries]
+  );
+
+  const reportBalance = useMemo(() => reportIncomeTotal - reportExpenseTotal, [reportExpenseTotal, reportIncomeTotal]);
 
   useEffect(() => {
     setFinancialPage(1);
@@ -3237,7 +3249,7 @@ function App() {
   }
 
   function printServiceSlip(appointment: CalendarAppointment) {
-    const popup = window.open('', '_blank', 'width=900,height=700');
+    const popup = openPrintWindow('width=900,height=700');
     if (!popup) {
       window.alert('Nao foi possivel abrir a tela de impressao.');
       return;
@@ -4378,6 +4390,47 @@ function App() {
       .replaceAll("'", '&#39;');
   }
 
+  function openPrintWindow(features: string) {
+    // Prefer a hidden iframe to avoid popup blockers on print actions.
+    const iframe = document.createElement('iframe');
+    iframe.setAttribute('aria-hidden', 'true');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.style.opacity = '0';
+    iframe.style.pointerEvents = 'none';
+    document.body.appendChild(iframe);
+
+    const frameWindow = iframe.contentWindow;
+    if (frameWindow) {
+      const cleanup = () => {
+        window.setTimeout(() => {
+          if (iframe.parentNode) {
+            iframe.parentNode.removeChild(iframe);
+          }
+        }, 400);
+      };
+
+      frameWindow.addEventListener('afterprint', cleanup, { once: true });
+      window.setTimeout(cleanup, 60000);
+      return frameWindow;
+    }
+
+    iframe.remove();
+
+    // Fallback for environments where iframe printing is unavailable.
+    const attempts = [`popup=yes,${features}`, features, ''];
+    for (const attempt of attempts) {
+      const popup = window.open('about:blank', '_blank', attempt);
+      if (popup) return popup;
+    }
+
+    return null;
+  }
+
   function exportReceiptCSV() {
     downloadCsv(
       `recibos-${Date.now()}.csv`,
@@ -4401,7 +4454,7 @@ function App() {
   }
 
   function printFilteredClients() {
-    const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=1000,height=700');
+    const printWindow = openPrintWindow('width=1000,height=700');
     if (!printWindow) {
       window.alert('Nao foi possivel abrir a janela de impressao. Verifique se o bloqueador de pop-up esta ativo.');
       return;
@@ -4479,7 +4532,7 @@ function App() {
   }
 
   function printFilteredProducts() {
-    const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=1100,height=700');
+    const printWindow = openPrintWindow('width=1100,height=700');
     if (!printWindow) {
       window.alert('Nao foi possivel abrir a janela de impressao. Verifique se o bloqueador de pop-up esta ativo.');
       return;
@@ -4563,7 +4616,7 @@ function App() {
   }
 
   function printFilteredFinancial() {
-    const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=1200,height=800');
+    const printWindow = openPrintWindow('width=1200,height=800');
     if (!printWindow) {
       window.alert('Nao foi possivel abrir a janela de impressao. Verifique se o bloqueador de pop-up esta ativo.');
       return;
@@ -4716,7 +4769,7 @@ function App() {
   }
 
   function printDetailedReports() {
-    const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=1600,height=900');
+    const printWindow = openPrintWindow('width=1600,height=900');
     if (!printWindow) {
       window.alert('Nao foi possivel abrir a janela de impressao. Verifique se o bloqueador de pop-up esta ativo.');
       return;
@@ -4853,7 +4906,7 @@ function App() {
   }
 
   function printFilteredSalesHistory() {
-    const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=1200,height=800');
+    const printWindow = openPrintWindow('width=1200,height=800');
     if (!printWindow) {
       window.alert('Nao foi possivel abrir a janela de impressao. Verifique se o bloqueador de pop-up esta ativo.');
       return;
@@ -4952,7 +5005,7 @@ function App() {
   }
 
   function printCalendarAppointments() {
-    const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=1200,height=800');
+    const printWindow = openPrintWindow('width=1200,height=800');
     if (!printWindow) {
       window.alert('Nao foi possivel abrir a janela de impressao. Verifique se o bloqueador de pop-up esta ativo.');
       return;
@@ -5019,15 +5072,31 @@ function App() {
     printWindow.print();
   }
 
-  function openWhatsappAppointment(target: Pick<CalendarAppointment, 'customer' | 'phone' | 'date' | 'status'>) {
+  function buildWhatsappAppointmentMessage(target: Pick<CalendarAppointment, 'customer' | 'date' | 'status'>) {
+    return `Ola ${target.customer || 'cliente'}, seu agendamento esta ${target.status.toLowerCase()} para ${target.date}.`;
+  }
+
+  function openWhatsappAppointment(target: Pick<CalendarAppointment, 'customer' | 'phone' | 'date' | 'status'>, customMessage?: string) {
     const digits = (target.phone || '').replace(/\D/g, '');
     if (!digits) {
       window.alert('Telefone do agendamento nao informado.');
       return;
     }
 
-    const message = `Ola ${target.customer || 'cliente'}, seu agendamento esta ${target.status.toLowerCase()} para ${target.date}.`;
+    const message = (customMessage || buildWhatsappAppointmentMessage(target)).trim();
+    if (!message) {
+      window.alert('Mensagem do WhatsApp nao pode ficar vazia.');
+      return;
+    }
+
     window.open(`https://wa.me/55${digits}?text=${encodeURIComponent(message)}`, '_blank');
+  }
+
+  function openWhatsappAppointmentWithMessageEdit(target: Pick<CalendarAppointment, 'customer' | 'phone' | 'date' | 'status'>) {
+    const defaultMessage = buildWhatsappAppointmentMessage(target);
+    const editedMessage = window.prompt('Edite a mensagem que sera enviada no WhatsApp:', defaultMessage);
+    if (editedMessage === null) return;
+    openWhatsappAppointment(target, editedMessage);
   }
 
   function openCalendarAppointmentWhatsapp() {
@@ -5728,6 +5797,15 @@ function App() {
                           WHATSAPP
                         </button>
                       </div>
+                      <button
+                        className="calendar-message-link"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          openWhatsappAppointmentWithMessageEdit(appointment);
+                        }}
+                      >
+                        ALTERAR MENSAGEM
+                      </button>
                       {appointment.note && <div className="calendar-card-note">OBS: {appointment.note}</div>}
                     </article>
                   ))

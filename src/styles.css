@@ -3377,6 +3377,21 @@ select option {
   color: var(--gray-1);
   margin-top: 4px;
 }
+.calendar-message-link {
+  margin-top: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #8ed3ff;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.calendar-message-link:hover {
+  color: #c4e8ff;
+}
 
 .calendar-card-note {
   color: #cfefff;
