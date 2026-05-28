@@ -4930,7 +4930,7 @@ function App() {
           h1 { margin: 0 0 10px; font-size: 18px; }
           .meta { margin-bottom: 12px; font-size: 12px; }
           table { width: 100%; border-collapse: collapse; }
-          th, td { border: 1px solid #bbb; padding: 6px; font-size: 11px; vertical-align: top; }
+          th, td { border: 1px solid #bbb; padding: 6px; font-size: 10px; vertical-align: top; white-space: nowrap; }
           th { background: #f2f2f2; text-align: left; }
         </style>
       </head>
