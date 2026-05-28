@@ -4683,14 +4683,11 @@ function App() {
     downloadCsv(
       `relatorio-filtrado-${Date.now()}.csv`,
       [
-        'ID Lancamento',
         'Data Lancamento',
         'Tipo',
         'Descricao',
         'Valor Lancamento',
         'Origem',
-        'ID Origem',
-        'ID Venda',
         'Data Venda',
         'Cliente',
         'Telefone',
@@ -4711,14 +4708,11 @@ function App() {
         const linkedSale = sourceType === 'venda' && sourceId ? saleById.get(String(sourceId)) : undefined;
 
         return [
-          entry.id,
           entry.date,
           type,
           entry.description,
           entry.amount.toFixed(2),
           sourceType || '-',
-          sourceId || '-',
-          linkedSale?.id || '-',
           linkedSale?.date || '-',
           linkedSale?.customer || '-',
           linkedSale?.phone || '-',
@@ -4786,14 +4780,11 @@ function App() {
 
         return `
           <tr>
-            <td>${escapeHtml(entry.id)}</td>
             <td>${escapeHtml(entry.date || '-')}</td>
             <td>${type}</td>
             <td>${escapeHtml(entry.description || '-')}</td>
             <td>${escapeHtml(formatMoney(entry.amount))}</td>
             <td>${escapeHtml(sourceType || '-')}</td>
-            <td>${escapeHtml(sourceId || '-')}</td>
-            <td>${escapeHtml(linkedSale?.id || '-')}</td>
             <td>${escapeHtml(linkedSale?.date || '-')}</td>
             <td>${escapeHtml(linkedSale?.customer || '-')}</td>
             <td>${escapeHtml(linkedSale?.phone || '-')}</td>
@@ -4847,14 +4838,11 @@ function App() {
           <table>
             <thead>
               <tr>
-                <th>ID Lancamento</th>
                 <th>Data Lancamento</th>
                 <th>Tipo</th>
                 <th>Descricao</th>
                 <th>Valor Lancamento</th>
                 <th>Origem</th>
-                <th>ID Origem</th>
-                <th>ID Venda</th>
                 <th>Data Venda</th>
                 <th>Cliente</th>
                 <th>Telefone</th>
@@ -4870,7 +4858,7 @@ function App() {
               </tr>
             </thead>
             <tbody>
-              ${rows || '<tr><td colspan="20">Nenhum lancamento encontrado para os filtros aplicados.</td></tr>'}
+              ${rows || '<tr><td colspan="17">Nenhum lancamento encontrado para os filtros aplicados.</td></tr>'}
             </tbody>
           </table>
         </div>
