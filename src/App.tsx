@@ -3323,9 +3323,8 @@ function App() {
           <h1>VIA DE SERVICO</h1>
           <div class="line"><span class="label">Placa:</span> ${escapeHtml(appointment.plate || '-')}</div>
           <div class="line"><span class="label">Data:</span> ${escapeHtml(appointment.date || '-')}</div>
-          <div class="line"><span class="label">Status:</span> ${escapeHtml(resolvedStatus)}</div>
           <div class="box"><span class="label">ITENS/SERVICOS:</span><ul class="services-list">${itemsMarkup}</ul></div>
-          <div class="box"><span class="label">Veiculo/Servico:</span><br/>${escapeHtml(appointment.vehicleDetails || '-')}</div>
+          <div class="box"><span class="label">VEICULO:</span><br/>${escapeHtml(appointment.vehicleDetails || '-')}</div>
           <div class="box"><span class="label">Observacoes:</span><br/>${escapeHtml(appointment.note || '-')}</div>
           <div class="line" style="margin-top: 18px;"><span class="label">FINALIZADO EM:</span> __/__/___ &nbsp;&nbsp; <span class="label">AS:</span> _:___h.</div>
           
