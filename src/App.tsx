@@ -2881,26 +2881,46 @@ function App() {
     }
 
     const row = source as Record<string, unknown>;
-    const model =
-      (row.modelo as string) ||
-      (row.model as string) ||
-      (row.veiculo as string) ||
-      (row.vehicle as string) ||
-      (row.descricao as string) ||
-      (row.modeloCompleto as string) ||
-      (row.marcaModelo as string) ||
-      '';
-    const brand = (row.marca as string) || '';
-    const fuel = (row.combustivel as string) || (row.fuel as string) || '';
-    const year =
-      (row.anoModelo as string) ||
-      (row.ano_modelo as string) ||
-      (row.ano as string) ||
-      (row.year as string) ||
-      '';
+    const extra = (row.extra && typeof row.extra === 'object' ? row.extra : null) as Record<string, unknown> | null;
+    const pickString = (obj: Record<string, unknown> | null, keys: string[]) => {
+      if (!obj) return '';
+      for (const key of keys) {
+        const value = obj[key];
+        if (typeof value === 'string' && value.trim()) return value.trim();
+        if (typeof value === 'number') return String(value);
+      }
+      return '';
+    };
 
-    const firstLine = [brand, model].filter(Boolean).join(' ').trim();
-    const lines = [firstLine, String(year || '').trim(), String(fuel || '').trim()].filter(Boolean);
+    const model =
+      pickString(row, ['modelo', 'MODELO', 'model', 'veiculo', 'VEICULO', 'vehicle', 'descricao', 'DESCRICAO', 'modeloCompleto', 'marcaModelo']) ||
+      pickString(extra, ['modelo', 'MODELO', 'marcaModelo']);
+    const brand = pickString(row, ['marca', 'MARCA']) || pickString(extra, ['marca', 'MARCA']);
+    const fuel = pickString(row, ['combustivel', 'COMBUSTIVEL', 'fuel']) || pickString(extra, ['combustivel', 'COMBUSTIVEL']);
+    const yearModel =
+      pickString(row, ['anoModelo', 'ano_modelo', 'ANO_MODELO', 'ano', 'year']) ||
+      pickString(extra, ['ano_modelo', 'anoModelo']);
+    const yearBuild = pickString(extra, ['ano_fabricacao', 'anoFabricacao']);
+    const color = pickString(row, ['cor', 'COR']) || pickString(extra, ['cor', 'COR']);
+    const city = pickString(row, ['municipio', 'MUNICIPIO']) || pickString(extra, ['municipio', 'MUNICIPIO']);
+    const uf = pickString(row, ['uf', 'UF']) || pickString(extra, ['uf', 'UF', 'uf_placa']);
+    const plate = pickString(row, ['placa', 'PLACA']) || pickString(extra, ['placa', 'PLACA']);
+
+    const firstLine = [brand, model].filter(Boolean).join(' ').trim() || model || brand;
+    const yearLine =
+      yearBuild && yearModel
+        ? `${yearBuild}/${yearModel}`
+        : yearModel || yearBuild;
+
+    const lines = [
+      firstLine,
+      yearLine,
+      fuel,
+      color,
+      [city, uf].filter(Boolean).join(' - ').trim(),
+      plate ? `PLACA: ${plate}` : '',
+    ].filter(Boolean);
+
     return lines.length > 0 ? lines.join('\n') : null;
   }
 
@@ -2937,18 +2957,43 @@ function App() {
       }
     }
 
-    try {
-      const response = await fetch(requestUrl);
+    const fallbackUrls = [requestUrl];
 
-      if (!response.ok) {
-        return null;
-      }
-
-      const data = await response.json();
-      return buildVehicleDetailsFromLookup(data);
-    } catch {
-      return null;
+    if (requestUrl.startsWith('/api-placas/')) {
+      fallbackUrls.push(`https://wdapi2.com.br/${requestUrl.slice('/api-placas/'.length)}`);
+    } else if (requestUrl.includes('wdapi2.com.br/')) {
+      fallbackUrls.push(requestUrl.replace('https://wdapi2.com.br/', '/api-placas/'));
     }
+
+    const uniqueUrls = [...new Set(fallbackUrls)];
+
+    for (const url of uniqueUrls) {
+      try {
+        const response = await fetch(url);
+        if (!response.ok) continue;
+
+        let data: unknown;
+        const contentType = response.headers.get('content-type') || '';
+
+        if (contentType.toLowerCase().includes('application/json')) {
+          data = await response.json();
+        } else {
+          const text = await response.text();
+          try {
+            data = JSON.parse(text);
+          } catch {
+            continue;
+          }
+        }
+
+        const details = buildVehicleDetailsFromLookup(data);
+        if (details) return details;
+      } catch {
+        continue;
+      }
+    }
+
+    return null;
   }
 
   async function handlePlateLookup(target: 'quote' | 'appointment' | 'sale', plateValue: string) {
