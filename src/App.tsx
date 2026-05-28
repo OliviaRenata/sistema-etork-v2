@@ -4911,7 +4911,6 @@ function App() {
             <td>${escapeHtml(row.vehicle || 'SEM VEICULO')}</td>
             <td>${escapeHtml(formatMoney(row.total))}</td>
             <td>${row.laborRequired ? 'SIM' : 'NAO'}</td>
-            <td>${escapeHtml(row.note || '-')}</td>
           </tr>
         `
       )
@@ -4946,12 +4945,11 @@ function App() {
               <th>PLACA</th>
               <th>VEICULO</th>
               <th>TOTAL</th>
-              <th>MAO DE OBRA</th>
-              <th>OBSERVACAO</th>
+              <th>M.O</th>
             </tr>
           </thead>
           <tbody>
-            ${rows || '<tr><td colspan="8">Nenhuma venda encontrada com os filtros atuais.</td></tr>'}
+            ${rows || '<tr><td colspan="7">Nenhuma venda encontrada com os filtros atuais.</td></tr>'}
           </tbody>
         </table>
       </body>
