@@ -22,6 +22,9 @@ import logoEtork from './assets/logoetork.png';
 import logoEtorkBrasil from './assets/logoetorkbrasil.png';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 
+const plateLookupApiUrl = (import.meta.env.VITE_CAMPS_API_URL as string | undefined)?.trim();
+const plateLookupApiToken = (import.meta.env.VITE_CAMPS_API_TOKEN as string | undefined)?.trim();
+
 type Screen =
   | 'intro-brand'
   | 'intro-system'
@@ -849,6 +852,7 @@ function AppointmentEditModal({
   onWhatsapp,
   onClose,
   onDataChange,
+  onPlateLookup,
 }: {
   isOpen: boolean;
   data: CalendarAppointment | null;
@@ -859,6 +863,7 @@ function AppointmentEditModal({
   onWhatsapp: () => void;
   onClose: () => void;
   onDataChange: (patch: Partial<CalendarAppointment>) => void;
+  onPlateLookup: (plateValue: string) => void;
 }) {
   if (!isOpen || !data) return null;
 
@@ -908,6 +913,7 @@ function AppointmentEditModal({
               className="modal-input"
               value={data.plate}
               onChange={(e) => onDataChange({ plate: e.target.value.toUpperCase() })}
+              onBlur={(e) => onPlateLookup(e.target.value)}
               placeholder="AAA-0000"
             />
           </div>
@@ -1081,6 +1087,7 @@ function SaleScreen({
   formatMoney,
   setScreen,
   applyMatchedClient,
+  onPlateLookup,
 }: {
   saleData: SaleData;
   setSaleData: (updater: (prev: SaleData) => SaleData) => void;
@@ -1111,6 +1118,7 @@ function SaleScreen({
   formatMoney: (value: number) => string;
   setScreen: (next: Screen) => void;
   applyMatchedClient: (target: 'quote' | 'appointment' | 'sale', customerValue: string) => void;
+  onPlateLookup: (target: 'quote' | 'appointment' | 'sale', plateValue: string) => void;
 }) {
   function patchSale(patch: Partial<SaleData>) {
     setSaleData((prev) => ({ ...prev, ...patch }));
@@ -1229,7 +1237,7 @@ function SaleScreen({
                           </div>
                           <div className="col-12 col-md-6">
                             <div className="form-floating">
-                              <input id="sales-customer-plate" className="form-control sales-premium-input" value={saleData.plate} onChange={(e) => patchSale({ plate: e.target.value.toUpperCase() })} placeholder="Placa" />
+                              <input id="sales-customer-plate" className="form-control sales-premium-input" value={saleData.plate} onChange={(e) => patchSale({ plate: e.target.value.toUpperCase() })} onBlur={(e) => onPlateLookup('sale', e.target.value)} placeholder="Placa" />
                               <label htmlFor="sales-customer-plate">Placa</label>
                             </div>
                           </div>
@@ -1444,6 +1452,7 @@ function QuoteScreen({
   formatMoney,
   setScreen,
   applyMatchedClient,
+  onPlateLookup,
 }: {
   quoteData: QuoteData;
   setQuoteData: (updater: (prev: QuoteData) => QuoteData) => void;
@@ -1457,6 +1466,7 @@ function QuoteScreen({
   formatMoney: (value: number) => string;
   setScreen: (next: Screen) => void;
   applyMatchedClient: (target: 'quote' | 'appointment' | 'sale', customerValue: string) => void;
+  onPlateLookup: (target: 'quote' | 'appointment' | 'sale', plateValue: string) => void;
 }) {
   function patchQuote(patch: Partial<QuoteData>) {
     setQuoteData((prev) => ({ ...prev, ...patch }));
@@ -1565,7 +1575,7 @@ function QuoteScreen({
                           </div>
                           <div className="col-12 col-md-6">
                             <div className="form-floating">
-                              <input id="quote-customer-plate" className="form-control sales-premium-input" value={quoteData.plate} onChange={(e) => patchQuote({ plate: e.target.value.toUpperCase() })} placeholder="Placa" />
+                              <input id="quote-customer-plate" className="form-control sales-premium-input" value={quoteData.plate} onChange={(e) => patchQuote({ plate: e.target.value.toUpperCase() })} onBlur={(e) => onPlateLookup('quote', e.target.value)} placeholder="Placa" />
                               <label htmlFor="quote-customer-plate">Placa</label>
                             </div>
                           </div>
@@ -2840,6 +2850,117 @@ function App() {
       phone: client.phone,
       plate: client.plate,
     }));
+  }
+
+  function normalizePlateForLookup(raw: string) {
+    return raw.toUpperCase().replace(/[^A-Z0-9]/g, '').trim();
+  }
+
+  function buildVehicleDetailsFromLookup(payload: unknown) {
+    const source =
+      Array.isArray(payload) ? payload[0] : (payload as { data?: unknown; resultado?: unknown })?.data || (payload as { resultado?: unknown })?.resultado || payload;
+
+    if (!source || typeof source !== 'object') {
+      return null;
+    }
+
+    const row = source as Record<string, unknown>;
+    const model =
+      (row.modelo as string) ||
+      (row.model as string) ||
+      (row.veiculo as string) ||
+      (row.vehicle as string) ||
+      (row.descricao as string) ||
+      (row.modeloCompleto as string) ||
+      (row.marcaModelo as string) ||
+      '';
+    const brand = (row.marca as string) || '';
+    const fuel = (row.combustivel as string) || (row.fuel as string) || '';
+    const year =
+      (row.anoModelo as string) ||
+      (row.ano_modelo as string) ||
+      (row.ano as string) ||
+      (row.year as string) ||
+      '';
+
+    const firstLine = [brand, model].filter(Boolean).join(' ').trim();
+    const lines = [firstLine, String(year || '').trim(), String(fuel || '').trim()].filter(Boolean);
+    return lines.length > 0 ? lines.join('\n') : null;
+  }
+
+  async function fetchVehicleDetailsByPlate(plateValue: string) {
+    if (!plateLookupApiUrl || !plateLookupApiToken) return null;
+
+    const normalizedPlate = normalizePlateForLookup(plateValue);
+    if (normalizedPlate.length < 7) return null;
+
+    let requestUrl = plateLookupApiUrl;
+
+    if (requestUrl.includes('{placa}')) {
+      requestUrl = requestUrl.replace('{placa}', encodeURIComponent(normalizedPlate));
+    }
+
+    if (requestUrl.includes('{token}')) {
+      requestUrl = requestUrl.replace('{token}', encodeURIComponent(plateLookupApiToken));
+    }
+
+    if (!requestUrl.includes('{placa}') && !requestUrl.includes('{token}')) {
+      try {
+        const url = new URL(requestUrl);
+        if (!url.searchParams.has('placa')) {
+          url.searchParams.set('placa', normalizedPlate);
+        }
+        if (!url.searchParams.has('token')) {
+          url.searchParams.set('token', plateLookupApiToken);
+        }
+        requestUrl = url.toString();
+      } catch {
+        requestUrl = `${requestUrl}${requestUrl.includes('?') ? '&' : '?'}placa=${encodeURIComponent(normalizedPlate)}&token=${encodeURIComponent(plateLookupApiToken)}`;
+      }
+    }
+
+    try {
+      const response = await fetch(requestUrl, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${plateLookupApiToken}`,
+          'x-api-key': plateLookupApiToken,
+        },
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const data = await response.json();
+      return buildVehicleDetailsFromLookup(data);
+    } catch {
+      return null;
+    }
+  }
+
+  async function handlePlateLookup(target: 'quote' | 'appointment' | 'sale', plateValue: string) {
+    const details = await fetchVehicleDetailsByPlate(plateValue);
+    if (!details) return;
+
+    if (target === 'quote') {
+      setQuoteData((prev) => ({ ...prev, vehicle: details }));
+      return;
+    }
+
+    if (target === 'appointment') {
+      setAppointmentData((prev) => ({ ...prev, vehicleDetails: details }));
+      return;
+    }
+
+    setSaleData((prev) => ({ ...prev, vehicleDetails: details }));
+  }
+
+  async function handleCalendarPlateLookup(plateValue: string) {
+    const details = await fetchVehicleDetailsByPlate(plateValue);
+    if (!details) return;
+    setCalendarEditData((prev) => (prev ? { ...prev, vehicleDetails: details } : prev));
   }
 
   function resolveCustomerType(customerName: string, fallback: string) {
@@ -6116,6 +6237,7 @@ function App() {
           formatMoney={formatMoney}
           setScreen={setScreen}
           applyMatchedClient={applyMatchedClient}
+          onPlateLookup={handlePlateLookup}
         />
       )}
 
@@ -6149,7 +6271,7 @@ function App() {
             <aside className="vehicle-info">
               <div className="line side-top"><strong>TEL:</strong> <input className="input-look" value={appointmentData.phone} onChange={(event) => setAppointmentData((prev) => ({ ...prev, phone: event.target.value }))} /></div>
               <div className="line side-top line-check"><strong>MAO DE OBRA</strong> <input type="checkbox" checked={appointmentData.laborRequired} onChange={(event) => setAppointmentData((prev) => ({ ...prev, laborRequired: event.target.checked }))} /></div>
-              <div className="line side-top"><strong>PLACA:</strong> <input className="input-look plate" value={appointmentData.plate} onChange={(event) => setAppointmentData((prev) => ({ ...prev, plate: event.target.value.toUpperCase() }))} /></div>
+              <div className="line side-top"><strong>PLACA:</strong> <input className="input-look plate" value={appointmentData.plate} onChange={(event) => setAppointmentData((prev) => ({ ...prev, plate: event.target.value.toUpperCase() }))} onBlur={(event) => void handlePlateLookup('appointment', event.target.value)} /></div>
               <textarea className="vehicle-card vehicle-input" value={appointmentData.vehicleDetails} onChange={(event) => setAppointmentData((prev) => ({ ...prev, vehicleDetails: event.target.value }))} />
             </aside>
           </section>
@@ -6202,6 +6324,7 @@ function App() {
           formatMoney={formatMoney}
           setScreen={setScreen}
           applyMatchedClient={applyMatchedClient}
+          onPlateLookup={handlePlateLookup}
         />
       )}
 
@@ -6497,6 +6620,7 @@ function App() {
         onWhatsapp={openCalendarAppointmentWhatsapp}
         onClose={() => setCalendarEditData(null)}
         onDataChange={(patch) => setCalendarEditData((prev) => prev ? { ...prev, ...patch } : prev)}
+        onPlateLookup={(plateValue) => void handleCalendarPlateLookup(plateValue)}
       />
 
       <ServiceStatusModal
