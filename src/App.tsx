@@ -1464,6 +1464,7 @@ function QuoteScreen({
   setScreen,
   applyMatchedClient,
   onPlateLookup,
+  clearQuoteForm,
 }: {
   quoteData: QuoteData;
   setQuoteData: (updater: (prev: QuoteData) => QuoteData) => void;
@@ -1478,6 +1479,7 @@ function QuoteScreen({
   setScreen: (next: Screen) => void;
   applyMatchedClient: (target: 'quote' | 'appointment' | 'sale', customerValue: string) => void;
   onPlateLookup: (target: 'quote' | 'appointment' | 'sale', plateValue: string) => void;
+  clearQuoteForm: () => void;
 }) {
   function patchQuote(patch: Partial<QuoteData>) {
     setQuoteData((prev) => ({ ...prev, ...patch }));
@@ -1542,6 +1544,9 @@ function QuoteScreen({
         <div className="sales-premium-header-actions">
           <button className="sales-premium-btn ghost sales-premium-btn-back" onClick={() => setScreen('dashboard')}>
             <CalendarClock size={16} /> Voltar
+          </button>
+          <button className="sales-premium-btn ghost" onClick={clearQuoteForm}>
+            Limpar Campos
           </button>
           <button className="sales-premium-btn primary" onClick={() => void handleSendQuote()}>
             <Send size={16} /> Enviar Orcamento
@@ -1749,6 +1754,18 @@ function App() {
   });
   const [quoteData, setQuoteData] = useState<QuoteData>({
     ...createEmptyQuoteData(),
+  });
+  const createEmptyAppointmentData = () => ({
+    date: toDateTimeLocalValue(new Date()),
+    customer: '',
+    customerType: getCustomerTypeLabel(1),
+    phone: '',
+    plate: '',
+    vehicleDetails: '',
+    laborRequired: true,
+    items: [] as ServiceItem[],
+    discount: 0,
+    note: '',
   });
   const [appointmentData, setAppointmentData] = useState({
     date: toDateTimeLocalValue(new Date()),
@@ -3196,6 +3213,13 @@ function App() {
     setAppointmentSelectedQuoteId(rows[0] ? String(rows[0].id) : '');
   }
 
+  function clearAppointmentForm() {
+    setAppointmentData(createEmptyAppointmentData());
+    setAppointmentQuoteSearch('');
+    setAppointmentQuoteResults([]);
+    setAppointmentSelectedQuoteId('');
+  }
+
   async function runSaleQuoteSearch() {
     const rows = await searchDocumentsForImport('orcamento', saleQuoteSearch);
     setSaleQuoteResults(rows);
@@ -3572,7 +3596,7 @@ function App() {
           <div class="box"><span class="label">ITENS/SERVICOS:</span><ul class="services-list">${itemsMarkup}</ul></div>
           <div class="box"><span class="label">VEICULO:</span><br/>${escapeHtml(appointment.vehicleDetails || '-')}</div>
           <div class="box"><span class="label">Observacoes:</span><br/>${escapeHtml(appointment.note || '-')}</div>
-          <div class="line" style="margin-top: 18px;"><span class="label">FINALIZADO EM:</span> __/__/___ &nbsp;&nbsp; <span class="label">AS:</span> _:___h.</div>
+          <div class="line" style="margin-top: 18px;"><span class="label">FINALIZADO EM:</span> __/__/___ &nbsp;&nbsp; <span class="label">AS:</span> __:___h.</div>
           
           <div class="line" style="margin-top: 10px;"><span class="label">RESPONSAVEL:</span> ____________________________</div>
         </body>
@@ -6363,6 +6387,7 @@ function App() {
           setScreen={setScreen}
           applyMatchedClient={applyMatchedClient}
           onPlateLookup={handlePlateLookup}
+          clearQuoteForm={() => setQuoteData(createEmptyQuoteData())}
         />
       )}
 
@@ -6379,6 +6404,7 @@ function App() {
               ))}
             </select>
             <button className="tool-yellow" onClick={() => void importQuoteToAppointmentBySearch()}>IMPORTAR</button>
+            <button className="tool-yellow" onClick={clearAppointmentForm}>LIMPAR CAMPOS</button>
           </section>
           <section className="form-grid">
             <div className="form-main">
