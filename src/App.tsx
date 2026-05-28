@@ -2910,17 +2910,19 @@ function App() {
     const normalizedPlate = normalizePlateForLookup(plateValue);
     if (normalizedPlate.length < 7) return null;
 
+    const hasPlatePlaceholder = plateLookupApiUrl.includes('{placa}');
+    const hasTokenPlaceholder = plateLookupApiUrl.includes('{token}');
     let requestUrl = plateLookupApiUrl;
 
-    if (requestUrl.includes('{placa}')) {
+    if (hasPlatePlaceholder) {
       requestUrl = requestUrl.replace('{placa}', encodeURIComponent(normalizedPlate));
     }
 
-    if (requestUrl.includes('{token}')) {
+    if (hasTokenPlaceholder) {
       requestUrl = requestUrl.replace('{token}', encodeURIComponent(plateLookupApiToken));
     }
 
-    if (!requestUrl.includes('{placa}') && !requestUrl.includes('{token}')) {
+    if (!hasPlatePlaceholder && !hasTokenPlaceholder) {
       try {
         const url = new URL(requestUrl);
         if (!url.searchParams.has('placa')) {
@@ -2936,14 +2938,7 @@ function App() {
     }
 
     try {
-      const response = await fetch(requestUrl, {
-        method: 'GET',
-        headers: {
-          Accept: 'application/json',
-          Authorization: `Bearer ${plateLookupApiToken}`,
-          'x-api-key': plateLookupApiToken,
-        },
-      });
+      const response = await fetch(requestUrl);
 
       if (!response.ok) {
         return null;
