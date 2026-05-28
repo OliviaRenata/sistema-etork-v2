@@ -967,7 +967,7 @@ button,
   height: 40px;
   width: 100%;
   max-width: 720px;
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  border: 1px solid #3a3a3a;
   background: rgba(232, 232, 232, 0.12);
   color: #fff;
   font: inherit;
@@ -993,7 +993,7 @@ select,
 .vehicle-card,
 .vehicle-input,
 .note-input {
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  border: 1px solid #3a3a3a;
 }
 
 .input-look option,
