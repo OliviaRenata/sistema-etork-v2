@@ -5003,6 +5003,8 @@ function App() {
       return;
     }
 
+    const filteredSalesTotalAmount = filteredSalesHistory.reduce((acc, row) => acc + (Number(row.total) || 0), 0);
+
     const rows = filteredSalesHistory
       .map(
         (row) => `
@@ -5031,6 +5033,7 @@ function App() {
           body { font-family: Arial, sans-serif; margin: 20px; color: #111; }
           h1 { margin: 0 0 10px; font-size: 18px; }
           .meta { margin-bottom: 12px; font-size: 12px; }
+          .summary { margin-bottom: 12px; font-size: 12px; font-weight: 700; }
           table { width: 100%; border-collapse: collapse; }
           th, td { border: 1px solid #bbb; padding: 6px; font-size: 10px; vertical-align: top; white-space: nowrap; }
           th { background: #f2f2f2; text-align: left; }
@@ -5039,6 +5042,7 @@ function App() {
       <body>
         <h1>${escapeHtml(title)}</h1>
         <div class="meta">Periodo: ${escapeHtml(salesHistoryFilters.startDate || 'INICIO')} ate ${escapeHtml(salesHistoryFilters.endDate || 'HOJE')} | Gerado em ${escapeHtml(new Date().toLocaleString('pt-BR'))}</div>
+        <div class="summary">QTD VENDAS: ${escapeHtml(formatNumberValue(filteredSalesHistory.length))} | TOTAL VENDAS: ${escapeHtml(formatMoney(filteredSalesTotalAmount))}</div>
         <table>
           <thead>
             <tr>
