@@ -1250,6 +1250,61 @@ function SaleScreen({
                   </div>
                 </div>
 
+                <div className="card sales-premium-inner sales-premium-import-card border-0">
+                  <div className="card-body p-3">
+                    <h6 className="sales-premium-section-title mb-3"><Search size={15} /> Importar Orcamento e Agendamento</h6>
+                    <div className="row g-2 align-items-center mb-2">
+                      <div className="col-12 col-md-6 col-xl-4">
+                        <div className="form-floating">
+                          <input id="sales-search-quote" className="form-control sales-premium-input" value={saleQuoteSearch} onChange={(e) => setSaleQuoteSearch(e.target.value)} placeholder="Buscar orcamento" />
+                          <label htmlFor="sales-search-quote">Buscar orcamento</label>
+                        </div>
+                      </div>
+                      <div className="col-12 col-md-6 col-xl-4">
+                        <div className="form-floating">
+                          <select id="sales-select-quote" className="form-select sales-premium-input" value={saleSelectedQuoteId} onChange={(e) => setSaleSelectedQuoteId(e.target.value)}>
+                            <option value="">Selecione um orcamento</option>
+                            {saleQuoteResults.map((row) => (
+                              <option key={row.id} value={row.id}>{`${row.customer} | ${row.plate} | ${formatMoney(row.total)}`}</option>
+                            ))}
+                          </select>
+                          <label htmlFor="sales-select-quote">Resultados de orcamento</label>
+                        </div>
+                      </div>
+                      <div className="col-12 col-xl-4 sales-premium-inline-actions">
+                        <button className="sales-premium-btn ghost" onClick={runSaleQuoteSearch}>Buscar</button>
+                        <button className="sales-premium-btn primary" onClick={importQuoteToSaleBySearch}>Importar</button>
+                        <button className="sales-premium-btn success" onClick={importQuoteToSale}>Ultimo</button>
+                      </div>
+                    </div>
+
+                    <div className="row g-2 align-items-center">
+                      <div className="col-12 col-md-6 col-xl-4">
+                        <div className="form-floating">
+                          <input id="sales-search-appointment" className="form-control sales-premium-input" value={saleAppointmentSearch} onChange={(e) => setSaleAppointmentSearch(e.target.value)} placeholder="Buscar agendamento" />
+                          <label htmlFor="sales-search-appointment">Buscar agendamento</label>
+                        </div>
+                      </div>
+                      <div className="col-12 col-md-6 col-xl-4">
+                        <div className="form-floating">
+                          <select id="sales-select-appointment" className="form-select sales-premium-input" value={saleSelectedAppointmentId} onChange={(e) => setSaleSelectedAppointmentId(e.target.value)}>
+                            <option value="">Selecione um agendamento</option>
+                            {saleAppointmentResults.map((row) => (
+                              <option key={row.id} value={row.id}>{`${row.customer} | ${row.plate} | ${formatMoney(row.total)}`}</option>
+                            ))}
+                          </select>
+                          <label htmlFor="sales-select-appointment">Resultados de agendamento</label>
+                        </div>
+                      </div>
+                      <div className="col-12 col-xl-4 sales-premium-inline-actions">
+                        <button className="sales-premium-btn ghost" onClick={runSaleAppointmentSearch}>Buscar</button>
+                        <button className="sales-premium-btn primary" onClick={importAppointmentToSaleBySearch}>Importar</button>
+                        <button className="sales-premium-btn success" onClick={importAppointmentToSale}>Ultimo</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="card sales-premium-inner sales-premium-services-card border-0">
                   <div className="card-body p-3">
                     <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
