@@ -1131,7 +1131,7 @@ function SaleScreen({
       title: 'Servico enviado',
       text: 'A OS foi enviada para a fila interna de producao.',
       icon: 'success',
-      confirmButtonColor: '#3b82f6',
+      confirmButtonColor: '#6b7280',
       background: '#111827',
       color: '#f3f4f6',
     });
@@ -1475,7 +1475,7 @@ function QuoteScreen({
       title: 'Orcamento enviado',
       text: 'O orcamento foi enviado para aprovacao interna.',
       icon: 'success',
-      confirmButtonColor: '#3b82f6',
+      confirmButtonColor: '#6b7280',
       background: '#111827',
       color: '#f3f4f6',
     });

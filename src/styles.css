@@ -1113,7 +1113,7 @@ select option {
 /* BALCAO DE VENDAS PREMIUM */
 .sales-premium {
   height: calc(100vh - 92px);
-  background: radial-gradient(circle at 15% 0%, rgba(59, 130, 246, 0.12), transparent 40%), #0b0f17;
+  background: radial-gradient(circle at 15% 0%, rgba(148, 163, 184, 0.12), transparent 40%), #0b0f17;
   color: #f3f4f6;
   padding: 10px 10px calc(64px + var(--floating-footer-clearance));
   font-family: 'Inter', 'Rajdhani', sans-serif;
@@ -1172,9 +1172,9 @@ select option {
   gap: 2px 8px;
   padding: 8px 12px;
   border-radius: 12px;
-  border: 1px solid #243247;
-  background: #0f172a;
-  color: #dbeafe;
+  border: 1px solid #3a3f48;
+  background: #12161d;
+  color: #e5e7eb;
 }
 
 .sales-premium-clock strong {
@@ -1203,7 +1203,7 @@ select option {
   right: 14px;
   top: 50%;
   transform: translateY(-50%);
-  color: #60a5fa;
+  color: #9ca3af;
   pointer-events: none;
 }
 
@@ -1222,8 +1222,8 @@ select option {
   border-radius: 999px;
   font-size: 10px;
   color: #cbd5e1;
-  border: 1px solid #26344a;
-  background: #0f172a;
+  border: 1px solid #3a3f48;
+  background: #12161d;
 }
 
 .sales-premium-header-actions {
@@ -1256,7 +1256,7 @@ select option {
 
 .sales-premium-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.35), 0 8px 22px rgba(37, 99, 235, 0.2);
+  box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.35), 0 8px 22px rgba(55, 65, 81, 0.28);
 }
 
 .sales-premium-btn.ghost {
@@ -1265,8 +1265,8 @@ select option {
 }
 
 .sales-premium-btn.primary {
-  background: linear-gradient(120deg, #3b82f6, #2563eb);
-  border-color: #3b82f6;
+  background: linear-gradient(120deg, #6b7280, #4b5563);
+  border-color: #6b7280;
   color: #f8fafc;
 }
 
@@ -1340,15 +1340,15 @@ select option {
 .sales-premium-input {
   border-radius: 12px !important;
   min-height: 34px;
-  background: #0f172a !important;
+  background: #12161d !important;
   border: 1px solid #243244 !important;
   color: #f3f4f6 !important;
   font-size: 10px;
 }
 
 .sales-premium-input:focus {
-  border-color: #3b82f6 !important;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.22) !important;
+  border-color: #6b7280 !important;
+  box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.22) !important;
 }
 
 .sales-premium-note {
@@ -1400,7 +1400,7 @@ select option {
   text-transform: uppercase;
 }
 
-.chip.blue { background: rgba(59, 130, 246, 0.22); border-color: rgba(59, 130, 246, 0.38); color: #bfdbfe; }
+.chip.blue { background: rgba(148, 163, 184, 0.2); border-color: rgba(148, 163, 184, 0.35); color: #e2e8f0; }
 .chip.green { background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.42); color: #bbf7d0; }
 .chip.orange { background: rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.42); color: #fde68a; }
 .chip.neutral { background: rgba(148, 163, 184, 0.18); border-color: rgba(148, 163, 184, 0.35); color: #e2e8f0; }
@@ -1409,7 +1409,7 @@ select option {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #93c5fd;
+  color: #cbd5e1;
   font-size: 12px;
 }
 
@@ -1425,8 +1425,8 @@ select option {
   gap: 8px;
   padding: 5px 8px;
   border-radius: 8px;
-  background: rgba(15, 23, 42, 0.5);
-  border: 1px solid #25344b;
+  background: rgba(23, 28, 36, 0.55);
+  border: 1px solid #3a3f48;
 }
 
 .sales-premium-pdv-lines span {
@@ -1488,16 +1488,16 @@ select option {
 }
 
 .sales-premium-table-row {
-  background: rgba(15, 23, 42, 0.55);
-  border: 1px solid #233146;
+  background: rgba(23, 28, 36, 0.55);
+  border: 1px solid #343b45;
   border-radius: 12px;
   padding: 4px;
   transition: border-color 0.2s ease, background 0.2s ease;
 }
 
 .sales-premium-table-row:hover {
-  border-color: #334a69;
-  background: rgba(15, 23, 42, 0.75);
+  border-color: #495261;
+  background: rgba(23, 28, 36, 0.78);
 }
 
 .sales-premium-stepper {
@@ -1510,14 +1510,14 @@ select option {
   width: 26px;
   height: 26px;
   border-radius: 10px;
-  border: 1px solid #2d3f58;
-  background: #162236;
-  color: #dbeafe;
+  border: 1px solid #3c4451;
+  background: #1f252f;
+  color: #e5e7eb;
 }
 
 .sales-premium-subtotal {
   text-align: right;
-  color: #93c5fd;
+  color: #d1d5db;
   font-weight: 700;
   font-size: 10px;
   padding-right: 6px;
@@ -1537,15 +1537,15 @@ select option {
 }
 
 .sales-premium-total-box {
-  border: 1px solid #2b3f5a;
-  background: linear-gradient(145deg, rgba(30, 58, 138, 0.35), rgba(15, 23, 42, 0.9));
+  border: 1px solid #3b4350;
+  background: linear-gradient(145deg, rgba(75, 85, 99, 0.45), rgba(23, 28, 36, 0.92));
   border-radius: 14px;
   padding: 7px;
 }
 
 .sales-premium-total-box small {
   display: block;
-  color: #bfdbfe;
+  color: #e5e7eb;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   font-size: 10px;
@@ -1607,9 +1607,9 @@ select option {
   display: grid;
   grid-template-columns: 10px 1fr;
   gap: 8px;
-  border: 1px solid #25344b;
+  border: 1px solid #3a3f48;
   border-radius: 12px;
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(23, 28, 36, 0.6);
   padding: 5px;
 }
 
@@ -1747,8 +1747,8 @@ select option {
   height: 10px;
   border-radius: 999px;
   margin-top: 6px;
-  background: #3b82f6;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.18);
+  background: #6b7280;
+  box-shadow: 0 0 0 4px rgba(107, 114, 128, 0.22);
 }
 
 .sales-premium-timeline-top,
@@ -1993,12 +1993,12 @@ select option {
 }
 
 .sale-import-btn.blue {
-  border-color: #3b82f6;
-  color: #3b82f6;
+  border-color: #6b7280;
+  color: #d1d5db;
 }
 
 .sale-import-btn.blue:hover {
-  background: #1d3a6e;
+  background: #2f3540;
 }
 
 .sale-import-btn.green {
