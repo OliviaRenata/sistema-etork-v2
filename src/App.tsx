@@ -2873,40 +2873,72 @@ function App() {
   }
 
   function buildVehicleDetailsFromLookup(payload: unknown) {
-    const source =
-      Array.isArray(payload) ? payload[0] : (payload as { data?: unknown; resultado?: unknown })?.data || (payload as { resultado?: unknown })?.resultado || payload;
-
-    if (!source || typeof source !== 'object') {
+    function parseToObject(value: unknown): Record<string, unknown> | null {
+      if (!value) return null;
+      if (Array.isArray(value)) {
+        return parseToObject(value[0]);
+      }
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (!trimmed) return null;
+        try {
+          return parseToObject(JSON.parse(trimmed));
+        } catch {
+          return null;
+        }
+      }
+      if (typeof value === 'object') {
+        return value as Record<string, unknown>;
+      }
       return null;
     }
 
-    const row = source as Record<string, unknown>;
-    const extra = (row.extra && typeof row.extra === 'object' ? row.extra : null) as Record<string, unknown> | null;
-    const pickString = (obj: Record<string, unknown> | null, keys: string[]) => {
+    const root = parseToObject(payload);
+    if (!root) return null;
+
+    const source =
+      parseToObject(root.data) ||
+      parseToObject(root.resultado) ||
+      root;
+
+    const row = source;
+    const extra = parseToObject(row.extra);
+
+    function pickString(obj: Record<string, unknown> | null, keys: string[]) {
       if (!obj) return '';
+      const normalizedEntries = Object.entries(obj).map(([key, value]) => [key.toLowerCase(), value] as const);
       for (const key of keys) {
-        const value = obj[key];
+        const targetKey = key.toLowerCase();
+        const match = normalizedEntries.find(([entryKey]) => entryKey === targetKey);
+        if (!match) continue;
+        const value = match[1];
         if (typeof value === 'string' && value.trim()) return value.trim();
         if (typeof value === 'number') return String(value);
       }
       return '';
-    };
+    }
 
+    const brand = pickString(row, ['marca']) || pickString(extra, ['marca']);
     const model =
-      pickString(row, ['modelo', 'MODELO', 'model', 'veiculo', 'VEICULO', 'vehicle', 'descricao', 'DESCRICAO', 'modeloCompleto', 'marcaModelo']) ||
-      pickString(extra, ['modelo', 'MODELO', 'marcaModelo']);
-    const brand = pickString(row, ['marca', 'MARCA']) || pickString(extra, ['marca', 'MARCA']);
-    const fuel = pickString(row, ['combustivel', 'COMBUSTIVEL', 'fuel']) || pickString(extra, ['combustivel', 'COMBUSTIVEL']);
-    const yearModel =
-      pickString(row, ['anoModelo', 'ano_modelo', 'ANO_MODELO', 'ano', 'year']) ||
-      pickString(extra, ['ano_modelo', 'anoModelo']);
-    const yearBuild = pickString(extra, ['ano_fabricacao', 'anoFabricacao']);
-    const color = pickString(row, ['cor', 'COR']) || pickString(extra, ['cor', 'COR']);
-    const city = pickString(row, ['municipio', 'MUNICIPIO']) || pickString(extra, ['municipio', 'MUNICIPIO']);
-    const uf = pickString(row, ['uf', 'UF']) || pickString(extra, ['uf', 'UF', 'uf_placa']);
-    const plate = pickString(row, ['placa', 'PLACA']) || pickString(extra, ['placa', 'PLACA']);
+      pickString(row, ['modelo', 'model', 'veiculo', 'vehicle', 'descricao', 'modelocompleto', 'marcamodelo']) ||
+      pickString(extra, ['modelo', 'marcamodelo', 'grupo']);
+    const subModel = pickString(row, ['submodelo']) || pickString(extra, ['submodelo']);
+    const version = pickString(row, ['versao']) || pickString(extra, ['versao']);
+    const fuel = pickString(row, ['combustivel', 'fuel']) || pickString(extra, ['combustivel']);
+    const yearModel = pickString(row, ['anomodelo', 'ano_modelo', 'ano', 'year']) || pickString(extra, ['ano_modelo', 'anomodelo']);
+    const yearBuild = pickString(extra, ['ano_fabricacao', 'anofabricacao']);
+    const color = pickString(row, ['cor']) || pickString(extra, ['cor']);
+    const city = pickString(row, ['municipio']) || pickString(extra, ['municipio']);
+    const uf = pickString(row, ['uf']) || pickString(extra, ['uf', 'uf_placa']);
+    const plate = pickString(row, ['placa']) || pickString(extra, ['placa', 'placa_modelo_novo', 'placa_modelo_antigo']);
 
-    const firstLine = [brand, model].filter(Boolean).join(' ').trim() || model || brand;
+    const modelLine = [brand, model, subModel, version]
+      .filter(Boolean)
+      .filter((value, index, arr) => arr.indexOf(value) === index)
+      .join(' ')
+      .trim();
+
+    const firstLine = modelLine || model || brand;
     const yearLine =
       yearBuild && yearModel
         ? `${yearBuild}/${yearModel}`
@@ -3005,9 +3037,25 @@ function App() {
     return null;
   }
 
+  function showPlateLookupSuccessToast() {
+    void Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'success',
+      title: 'Dados do veiculo carregados',
+      showConfirmButton: false,
+      timer: 1400,
+      timerProgressBar: true,
+      background: '#111827',
+      color: '#f3f4f6',
+    });
+  }
+
   async function handlePlateLookup(target: 'quote' | 'appointment' | 'sale', plateValue: string) {
     const details = await fetchVehicleDetailsByPlate(plateValue);
     if (!details) return;
+
+    showPlateLookupSuccessToast();
 
     if (target === 'quote') {
       setQuoteData((prev) => ({ ...prev, vehicle: details }));
@@ -3025,6 +3073,7 @@ function App() {
   async function handleCalendarPlateLookup(plateValue: string) {
     const details = await fetchVehicleDetailsByPlate(plateValue);
     if (!details) return;
+    showPlateLookupSuccessToast();
     setCalendarEditData((prev) => (prev ? { ...prev, vehicleDetails: details } : prev));
   }
 
@@ -3035,6 +3084,7 @@ function App() {
     const vehicleName = details.split('\n').map((line) => line.trim()).filter(Boolean)[0];
     if (!vehicleName) return;
 
+    showPlateLookupSuccessToast();
     updateReceipt(receiptId, { car: vehicleName });
   }
 
