@@ -2959,10 +2959,19 @@ function App() {
 
     const fallbackUrls = [requestUrl];
 
-    if (requestUrl.startsWith('/api-placas/')) {
+    if (requestUrl.startsWith('/.netlify/functions/plate-lookup')) {
+      fallbackUrls.push(`/api/plate-lookup?placa=${encodeURIComponent(normalizedPlate)}&token=${encodeURIComponent(plateLookupApiToken)}`);
+      fallbackUrls.push(`/api-placas/consulta/${encodeURIComponent(normalizedPlate)}/${encodeURIComponent(plateLookupApiToken)}`);
+      fallbackUrls.push(`https://wdapi2.com.br/consulta/${encodeURIComponent(normalizedPlate)}/${encodeURIComponent(plateLookupApiToken)}`);
+    } else if (requestUrl.startsWith('/api-placas/')) {
+      fallbackUrls.push(`/api/plate-lookup?placa=${encodeURIComponent(normalizedPlate)}&token=${encodeURIComponent(plateLookupApiToken)}`);
       fallbackUrls.push(`https://wdapi2.com.br/${requestUrl.slice('/api-placas/'.length)}`);
+    } else if (requestUrl.startsWith('/api/plate-lookup')) {
+      fallbackUrls.push(`/api-placas/consulta/${encodeURIComponent(normalizedPlate)}/${encodeURIComponent(plateLookupApiToken)}`);
+      fallbackUrls.push(`https://wdapi2.com.br/consulta/${encodeURIComponent(normalizedPlate)}/${encodeURIComponent(plateLookupApiToken)}`);
     } else if (requestUrl.includes('wdapi2.com.br/')) {
       fallbackUrls.push(requestUrl.replace('https://wdapi2.com.br/', '/api-placas/'));
+      fallbackUrls.push(`/api/plate-lookup?placa=${encodeURIComponent(normalizedPlate)}&token=${encodeURIComponent(plateLookupApiToken)}`);
     }
 
     const uniqueUrls = [...new Set(fallbackUrls)];
