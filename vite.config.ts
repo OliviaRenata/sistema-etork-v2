@@ -7,6 +7,13 @@ export default defineConfig({
   server: {
     port: 3000,
     host: true,
+    proxy: {
+      '/api-placas': {
+        target: 'https://wdapi2.com.br',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api-placas/, ''),
+      },
+    },
   },
   build: {
     outDir: 'dist',
