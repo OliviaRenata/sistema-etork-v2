@@ -106,7 +106,7 @@ type CalendarAppointment = {
 };
 
 type ReceiptRow = {
-  id: number;
+  id: string | number;
   date: string;
   customer: string;
   car: string;
@@ -3063,7 +3063,7 @@ function App() {
     setCalendarEditData((prev) => (prev ? { ...prev, vehicleDetails: details } : prev));
   }
 
-  async function handleReceiptPlateLookup(receiptId: number, plateValue: string) {
+  async function handleReceiptPlateLookup(receiptId: ReceiptRow['id'], plateValue: string) {
     const details = await fetchVehicleDetailsByPlate(plateValue);
     if (!details) return;
 
@@ -3869,11 +3869,11 @@ function App() {
     await sb.from('financial_entries_v2').delete().eq('id', id);
   }
 
-  function updateReceipt(id: number, patch: Partial<ReceiptRow>) {
+  function updateReceipt(id: ReceiptRow['id'], patch: Partial<ReceiptRow>) {
     setReceipts((prev) => prev.map((row) => (row.id === id ? { ...row, ...patch } : row)));
   }
 
-  function removeReceipt(id: number) {
+  function removeReceipt(id: ReceiptRow['id']) {
     setReceipts((prev) => prev.filter((row) => row.id !== id));
   }
 
@@ -4317,11 +4317,7 @@ function App() {
       return;
     }
 
-    const receiptId = Number(result.id);
-    if (!receiptId) {
-      window.alert('Nao foi possivel determinar o numero do recibo a partir do banco.');
-      return;
-    }
+    const receiptId = String(result.id);
 
     const persistedReceipt: ReceiptRow = {
       id: receiptId,
