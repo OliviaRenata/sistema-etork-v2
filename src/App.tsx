@@ -354,51 +354,6 @@ function sanitizePrintSettings(input: unknown): PrintSettings {
   };
 }
 
-const appointmentItems: ServiceItem[] = [
-  { description: 'REMAP STAGE 1', quantity: 1, price: 1800 },
-  { description: 'DIFUSOR INOX 2,5" POLEGADAS', quantity: 1, price: 1400 },
-];
-
-const saleItems: ServiceItem[] = [
-  { description: 'DOWNPIPE + INTERMEDIARIO AMAROK V6', quantity: 1, price: 2200 },
-  { description: 'ESCAPE FINAL 4" POLEGADAS', quantity: 1, price: 1800 },
-  { description: 'REMAP STG2 DPF/EGR', quantity: 1, price: 2000 },
-  { description: 'ADD HARDCUT', quantity: 1, price: 400 },
-];
-
-const receiptRows: ReceiptRow[] = [
-  { id: 1, date: '25/04/2026', customer: 'JOAO HENRIQUE DE ALMEIDA', car: 'AMAROK V6', plate: 'QAN-2H95', total: 4300 },
-  { id: 2, date: '25/04/2026', customer: 'CLEBER ANTUNES RICARDO FREITAS', car: 'RAM 3500 NIGHT', plate: 'QAU-1V55', total: 12100 },
-  { id: 3, date: '25/04/2026', customer: 'LEANDRO RODRIGUES QUEIROZ', car: 'S10 LTZ', plate: 'QAN-2H95', total: 4300 },
-  { id: 4, date: '25/04/2026', customer: 'CLEBER ANTUNES RICARDO FREITAS', car: 'RAM 3500 NIGHT', plate: 'QAU-1V55', total: 12100 },
-  { id: 5, date: '24/04/2026', customer: 'JOAO HENRIQUE DE ALMEIDA', car: 'AMAROK V6', plate: 'QAN-2H95', total: 4300 },
-  { id: 6, date: '24/04/2026', customer: 'CLEBER ANTUNES RICARDO FREITAS', car: 'RAM 3500 NIGHT', plate: 'QAU-1V55', total: 12100 },
-  { id: 7, date: '24/04/2026', customer: 'JOAO HENRIQUE DE ALMEIDA', car: 'AMAROK V6', plate: 'QAN-2H95', total: 4300 },
-  { id: 8, date: '23/04/2026', customer: 'CLEBER ANTUNES RICARDO FREITAS', car: 'RAM 3500 NIGHT', plate: 'QAU-1V55', total: 12100 },
-];
-
-const defaultServiceCatalog: CatalogRow[] = [
-  { id: null, itemType: 'SERVICO', description: 'REMAP STAGE 1', priceTable1: 1800, priceTable2: 1800, quantity: 1 },
-  { id: null, itemType: 'SERVICO', description: 'REMAP STG2 DPF/EGR', priceTable1: 2000, priceTable2: 2000, quantity: 1 },
-  { id: null, itemType: 'PRODUTO', description: 'DIFUSOR INOX 2,5" POLEGADAS', priceTable1: 1400, priceTable2: 1400, quantity: 1 },
-  { id: null, itemType: 'PRODUTO', description: 'DIFUSOR INOX 3" POLEGADAS', priceTable1: 1500, priceTable2: 1500, quantity: 1 },
-  { id: null, itemType: 'PRODUTO', description: 'ESCAPE FINAL 4" POLEGADAS', priceTable1: 1800, priceTable2: 1800, quantity: 1 },
-  { id: null, itemType: 'SERVICO', description: 'ADD HARDCUT', priceTable1: 400, priceTable2: 400, quantity: 1 },
-  { id: null, itemType: 'SERVICO', description: 'DOWNPIPE + INTERMEDIARIO AMAROK V6', priceTable1: 2200, priceTable2: 2200, quantity: 1 },
-];
-
-const defaultClients: ClientRow[] = [
-  { id: 1, name: 'JOAO HENRIQUE DE ALMEIDA', phone: '67 99871-1313', plate: 'QAN-2H92', priceTable: 1 },
-  { id: 2, name: 'MILENNA DE OLIVEIRA FELICIANO', phone: '67 99260-0928', plate: 'QUA-9J17', priceTable: 1 },
-  { id: 3, name: 'CLEBER ANTUNES RICARDO FREITAS', phone: '67 99111-2233', plate: 'QAU-1V55', priceTable: 2 },
-];
-
-const defaultFinancialEntries: FinancialEntry[] = [
-  { id: 1, date: '2026-04-25', description: 'Venda oficina', amount: 4300 },
-  { id: 2, date: '2026-04-25', description: 'Venda oficina', amount: 12100 },
-  { id: 3, date: '2026-04-24', description: 'Venda oficina', amount: 4300 },
-];
-
 function formatMoney(value: number) {
   if (!Number.isFinite(value) || value === 0) return 'N/A';
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -1739,7 +1694,7 @@ function App() {
   const [forgotEmail, setForgotEmail] = useState('');
   const [resetPassword, setResetPassword] = useState('');
   const [resetPasswordConfirm, setResetPasswordConfirm] = useState('');
-  const [serviceCatalogData, setServiceCatalogData] = useState(defaultServiceCatalog);
+  const [serviceCatalogData, setServiceCatalogData] = useState<CatalogRow[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const createEmptyQuoteData = (): QuoteData => ({
     customer: '',
@@ -1767,18 +1722,7 @@ function App() {
     discount: 0,
     note: '',
   });
-  const [appointmentData, setAppointmentData] = useState({
-    date: toDateTimeLocalValue(new Date()),
-    customer: 'MILENNA DE OLIVEIRA FELICIANO',
-    customerType: getCustomerTypeLabel(1),
-    phone: '67 99260-0928',
-    plate: 'QUA-9J17',
-    vehicleDetails: 'HYUNDAI H20 1.0\nMANUAL\n2019/2019\nFLEX',
-    laborRequired: true,
-    items: cloneItems(appointmentItems),
-    discount: 0,
-    note: '',
-  });
+  const [appointmentData, setAppointmentData] = useState<ReturnType<typeof createEmptyAppointmentData>>(createEmptyAppointmentData());
   const createEmptySaleData = (): SaleData => ({
     customer: '',
     customerType: getCustomerTypeLabel(1),
@@ -1793,7 +1737,7 @@ function App() {
     note: '',
   });
   const [saleData, setSaleData] = useState<SaleData>(() => createEmptySaleData());
-  const [receipts, setReceipts] = useState<ReceiptRow[]>(receiptRows);
+  const [receipts, setReceipts] = useState<ReceiptRow[]>([]);
   const [savedQuote, setSavedQuote] = useState<SavedQuote | null>(null);
   const [savedAppointment, setSavedAppointment] = useState<SavedAppointment | null>(null);
   const [receiptFilters, setReceiptFilters] = useState({
@@ -1817,14 +1761,11 @@ function App() {
       return { ...defaultPrintSettings };
     }
   });
-  const [nextReceiptId, setNextReceiptId] = useState(9);
   const [searchQuery, setSearchQuery] = useState('');
   const [productSearchQuery, setProductSearchQuery] = useState('');
-  const [clients, setClients] = useState<ClientRow[]>(defaultClients);
-  const [nextClientId, setNextClientId] = useState(defaultClients.length + 1);
-  const [financialEntries, setFinancialEntries] = useState<FinancialEntry[]>(defaultFinancialEntries);
+  const [clients, setClients] = useState<ClientRow[]>([]);
+  const [financialEntries, setFinancialEntries] = useState<FinancialEntry[]>([]);
   const [financialSalesRows, setFinancialSalesRows] = useState<FinancialSaleRow[]>([]);
-  const [nextFinancialId, setNextFinancialId] = useState(defaultFinancialEntries.length + 1);
   const [financialFilters, setFinancialFilters] = useState<FinancialFilters>({
     query: '',
     startDate: '',
@@ -1851,7 +1792,6 @@ function App() {
     priceTable1: 0,
     priceTable2: 0,
   });
-    const [isLocalMode, setIsLocalMode] = useState(false);
   const [productEditingIndex, setProductEditingIndex] = useState<number | null>(null);
   const [catalogPickerOpen, setCatalogPickerOpen] = useState(false);
   const [catalogPickerTarget, setCatalogPickerTarget] = useState<CatalogPickerTarget>('sale');
@@ -1993,7 +1933,7 @@ function App() {
   }, [screen]);
 
   useEffect(() => {
-    if (!isAuthenticated || isLocalMode || !isSupabaseConfigured || !supabase) return;
+    if (!isAuthenticated || !isSupabaseConfigured || !supabase) return;
 
     const sb = supabase;
     let active = true;
@@ -2062,7 +2002,6 @@ function App() {
           total: Number(row.total_amount) || 0,
         }));
         setReceipts(mapped);
-        setNextReceiptId(mapped.length + 1);
       }
 
       if (!clientsResult.error && clientsResult.data && clientsResult.data.length > 0) {
@@ -2074,7 +2013,6 @@ function App() {
           priceTable: Number((item as { price_table?: number | null }).price_table) === 2 ? 2 : 1,
         }));
         setClients(mappedClients);
-        setNextClientId(Math.max(...mappedClients.map((client) => client.id)) + 1);
       }
 
       if (!financialResult.error && financialResult.data && financialResult.data.length > 0) {
@@ -2099,7 +2037,6 @@ function App() {
           };
         });
         setFinancialEntries(mappedEntries);
-        setNextFinancialId(Math.max(...mappedEntries.map((entry) => entry.id)) + 1);
       }
 
       if (!salesResult.error && salesResult.data) {
@@ -2153,22 +2090,6 @@ function App() {
           };
         });
         setDashboardServices(mappedDashboardServices);
-      } else if (savedAppointment) {
-        setCalendarAppointments([
-          {
-            id: 'local-saved-appointment',
-            dayKey: toCalendarDateKey(savedAppointment.date),
-            date: savedAppointment.date,
-            customer: savedAppointment.customer,
-            phone: savedAppointment.phone,
-            plate: savedAppointment.plate,
-            vehicleDetails: savedAppointment.vehicleDetails,
-            note: savedAppointment.note,
-            total: savedAppointment.items.reduce((acc, item) => acc + item.price * item.quantity, 0) - savedAppointment.discount,
-            status: 'CONFIRMADO',
-          },
-        ]);
-        setDashboardServices([]);
       }
 
       if (active) {
@@ -2185,9 +2106,9 @@ function App() {
     return () => {
       active = false;
     };
-  }, [isAuthenticated, isLocalMode]);
+  }, [isAuthenticated]);
 
-  const shouldWaitDashboardRealData = isAuthenticated && !isLocalMode && isSupabaseConfigured && !dashboardRealDataReady;
+  const shouldWaitDashboardRealData = isAuthenticated && isSupabaseConfigured && !dashboardRealDataReady;
 
   const quoteSubtotal = useMemo(
     () => quoteData.items.reduce((acc, item) => acc + item.price * item.quantity, 0),
@@ -2371,23 +2292,7 @@ function App() {
 
       if (!isSupabaseConfigured || !supabase) {
         if (!active) return;
-        const fallback = receipts.map((row) => ({
-          id: String(row.id),
-          createdAtIso: '',
-          createdAt: row.date,
-          customer: row.customer,
-          phone: '',
-          plate: row.plate,
-          vehicle: row.car,
-          subtotal: row.total,
-          discount: 0,
-          surcharge: 0,
-          total: row.total,
-          note: '',
-          timeDays: 1,
-          laborRequired: true,
-        }));
-        setSalesHistory(fallback);
+        setSalesHistory([]);
         setSalesHistoryLoading(false);
         return;
       }
@@ -2445,7 +2350,7 @@ function App() {
     const quoteId = lastSavedDocumentIds.orcamento;
     const saleId = lastSavedDocumentIds.venda;
     const quoteNumber = quoteId ? `ORC-${String(quoteId).slice(0, 8).toUpperCase()}` : `ORC-${savedQuote ? 'ATUAL' : 'RASCUNHO'}`;
-    const saleNumber = saleId ? `VEN-${String(saleId).slice(0, 8).toUpperCase()}` : `VEN-${receipts[0]?.id ?? nextReceiptId}`;
+    const saleNumber = saleId ? `VEN-${String(saleId).slice(0, 8).toUpperCase()}` : 'VEN-RASCUNHO';
 
     return [
       {
@@ -2487,7 +2392,7 @@ function App() {
         laborRequired: saleData.laborRequired,
       },
     ];
-  }, [lastSavedDocumentIds.orcamento, lastSavedDocumentIds.venda, now, nextReceiptId, quoteData, receipts, saleData, saleSubtotal, saleTotal, savedQuote]);
+  }, [lastSavedDocumentIds.orcamento, lastSavedDocumentIds.venda, now, quoteData, receipts, saleData, saleSubtotal, saleTotal, savedQuote]);
 
   const selectedPrintableDocument = useMemo(
     () => printableDocuments.find((doc) => doc.kind === selectedPrintKind) || printableDocuments[0] || null,
@@ -2654,25 +2559,8 @@ function App() {
   );
 
   const effectiveFinancialSalesRows = useMemo(() => {
-    if (financialSalesRows.length > 0) return financialSalesRows;
-
-    return receipts.map((row) => ({
-      id: `local-${row.id}`,
-      date: row.date,
-      createdAtIso: '',
-      customer: row.customer,
-      phone: '',
-      plate: row.plate,
-      vehicle: row.car,
-      note: '',
-      subtotal: row.total,
-      discount: 0,
-      surcharge: 0,
-      total: row.total,
-      timeDays: 0,
-      laborRequired: null,
-    }));
-  }, [financialSalesRows, receipts]);
+    return financialSalesRows;
+  }, [financialSalesRows]);
 
   const filteredFinancialSalesRows = useMemo(() => {
     if (financialFilters.kind === 'despesa') return [];
@@ -3455,7 +3343,7 @@ function App() {
       )
     );
 
-    if (isSupabaseConfigured && supabase && !updated.id.startsWith('local-')) {
+    if (isSupabaseConfigured && supabase) {
       const sb = supabase;
       const { error } = await sb
         .from('documents_v2')
@@ -3492,7 +3380,7 @@ function App() {
     setCalendarAppointments((prev) => prev.filter((item) => item.id !== target.id));
     setDashboardServices((prev) => prev.filter((service) => service.sourceDocumentId !== target.id));
 
-    if (isSupabaseConfigured && supabase && !target.id.startsWith('local-')) {
+    if (isSupabaseConfigured && supabase) {
       const sb = supabase;
       await sb
         .from('documents_v2')
@@ -3521,7 +3409,7 @@ function App() {
       )
     );
 
-    if (isSupabaseConfigured && supabase && !updated.id.startsWith('local-')) {
+    if (isSupabaseConfigured && supabase) {
       const sb = supabase;
       await sb
         .from('documents_v2')
@@ -3543,7 +3431,7 @@ function App() {
     setCalendarAppointments((prev) => prev.filter((item) => item.id !== appointment.id));
     setDashboardServices((prev) => prev.filter((service) => service.id !== selectedDashboardService?.id));
 
-    if (isSupabaseConfigured && supabase && !appointment.id.startsWith('local-')) {
+    if (isSupabaseConfigured && supabase) {
       const sb = supabase;
       await sb
         .from('documents_v2')
@@ -3657,43 +3545,33 @@ function App() {
   }
 
   async function addClient() {
-    const nextLocalClientId = Math.max(nextClientId, ...clients.map((client) => client.id)) + 1;
-
-    if (isSupabaseConfigured && supabase) {
-      const sb = supabase;
-      const payload = {
-        name: 'NOVO CLIENTE',
-        phone: '67 90000-0000',
-        plate: 'AAA-0000',
-        price_table: 1,
-      };
-
-      const { data, error } = await sb.from('clients_v2').insert(payload).select('id, name, phone, plate, price_table').single();
-      if (!error && data) {
-        const candidateId = Number(data.id);
-        const safeId = clients.some((client) => client.id === candidateId) ? nextLocalClientId : candidateId;
-        const dbClient: ClientRow = {
-          id: safeId,
-          name: data.name || payload.name,
-          phone: data.phone || payload.phone,
-          plate: data.plate || payload.plate,
-          priceTable: Number(data.price_table) === 2 ? 2 : 1,
-        };
-        setClients((prev) => [dbClient, ...prev]);
-        setNextClientId((prev) => Math.max(prev, nextLocalClientId + 1, dbClient.id + 1));
-        return;
-      }
+    if (!isSupabaseConfigured || !supabase) {
+      window.alert('Adicionar cliente requer Supabase configurado.');
+      return;
     }
 
-    const newClient: ClientRow = {
-      id: nextLocalClientId,
+    const sb = supabase;
+    const payload = {
       name: 'NOVO CLIENTE',
       phone: '67 90000-0000',
       plate: 'AAA-0000',
-      priceTable: 1,
+      price_table: 1,
     };
-    setClients((prev) => [newClient, ...prev]);
-    setNextClientId((prev) => Math.max(prev + 1, nextLocalClientId + 1));
+
+    const { data, error } = await sb.from('clients_v2').insert(payload).select('id, name, phone, plate, price_table').single();
+    if (error || !data) {
+      window.alert(`Nao foi possivel salvar cliente no banco: ${error?.message ?? 'Erro desconhecido'}`);
+      return;
+    }
+
+    const dbClient: ClientRow = {
+      id: Number(data.id),
+      name: data.name || payload.name,
+      phone: data.phone || payload.phone,
+      plate: data.plate || payload.plate,
+      priceTable: Number(data.price_table) === 2 ? 2 : 1,
+    };
+    setClients((prev) => [dbClient, ...prev]);
   }
 
   async function removeClient(id: number) {
@@ -3742,52 +3620,46 @@ function App() {
     }
 
     if (productModalMode === 'add') {
-      if (isSupabaseConfigured && supabase) {
-        const sb = supabase;
-        const payload = {
-          name: productModalData.description,
-          default_price: productModalData.priceTable1,
-          price_table_1: productModalData.priceTable1,
-          price_table_2: productModalData.priceTable2,
-          quantity: productModalData.quantity,
-          item_type: productModalData.itemType,
-          is_active: true,
-        };
+      if (!isSupabaseConfigured || !supabase) {
+        window.alert('Salvar produto requer Supabase configurado.');
+        return;
+      }
 
-        const { data, error } = await sb
-          .from('service_catalog_v2')
-          .insert(payload)
-          .select('id, name, default_price, price_table_1, price_table_2, quantity, item_type')
-          .single();
+      const sb = supabase;
+      const payload = {
+        name: productModalData.description,
+        default_price: productModalData.priceTable1,
+        price_table_1: productModalData.priceTable1,
+        price_table_2: productModalData.priceTable2,
+        quantity: productModalData.quantity,
+        item_type: productModalData.itemType,
+        is_active: true,
+      };
 
-        if (!error && data) {
-          setServiceCatalogData((prev) => [
-            {
-              id: normalizeEntityId(data.id),
-              itemType: data.item_type === 'PRODUTO' ? 'PRODUTO' : 'SERVICO',
-              description: data.name,
-              priceTable1: Number(data.price_table_1 ?? data.default_price) || 0,
-              priceTable2: Number(data.price_table_2 ?? data.default_price) || 0,
-              quantity: Number(data.quantity) || productModalData.quantity,
-            },
-            ...prev,
-          ]);
-          setProductModalOpen(false);
-          return;
-        }
+      const { data, error } = await sb
+        .from('service_catalog_v2')
+        .insert(payload)
+        .select('id, name, default_price, price_table_1, price_table_2, quantity, item_type')
+        .single();
+
+      if (error || !data) {
+        window.alert(`Nao foi possivel salvar produto no banco: ${error?.message ?? 'Erro desconhecido'}`);
+        return;
       }
 
       setServiceCatalogData((prev) => [
         {
-          id: null,
-          itemType: productModalData.itemType,
-          description: productModalData.description,
-          priceTable1: productModalData.priceTable1,
-          priceTable2: productModalData.priceTable2,
-          quantity: productModalData.quantity,
+          id: normalizeEntityId(data.id),
+          itemType: data.item_type === 'PRODUTO' ? 'PRODUTO' : 'SERVICO',
+          description: data.name,
+          priceTable1: Number(data.price_table_1 ?? data.default_price) || 0,
+          priceTable2: Number(data.price_table_2 ?? data.default_price) || 0,
+          quantity: Number(data.quantity) || productModalData.quantity,
         },
         ...prev,
       ]);
+      setProductModalOpen(false);
+      return;
     } else if (productEditingIndex !== null) {
       // Edit mode
       const product = serviceCatalogData[productEditingIndex];
@@ -3870,50 +3742,41 @@ function App() {
   }
 
   async function addFinancialEntry(kind: 'receita' | 'despesa') {
-    const label = kind === 'despesa' ? 'DESPESA' : 'RECEITA';
-    if (isSupabaseConfigured && supabase) {
-      const sb = supabase;
-      const payload = {
-        entry_date: new Date().toISOString().slice(0, 10),
-        description: label,
-        amount: 0,
-      };
-
-      const { data, error } = await sb
-        .from('financial_entries_v2')
-        .insert(payload)
-        .select('id, entry_date, description, amount')
-        .single();
-
-      if (!error && data) {
-        const dbEntry: FinancialEntry = {
-          id: Number(data.id),
-          date: data.entry_date,
-          description: data.description,
-          amount: 0,
-          sourceType: null,
-          sourceId: null,
-          isNew: true,
-          entryKind: kind,
-        };
-        setFinancialEntries((prev) => [dbEntry, ...prev]);
-        setNextFinancialId((prev) => Math.max(prev, dbEntry.id + 1));
-        return;
-      }
+    if (!isSupabaseConfigured || !supabase) {
+      window.alert('Adicionar lancamento financeiro requer Supabase configurado.');
+      return;
     }
 
-    const newEntry: FinancialEntry = {
-      id: nextFinancialId,
-      date: new Date().toISOString().slice(0, 10),
+    const label = kind === 'despesa' ? 'DESPESA' : 'RECEITA';
+    const sb = supabase;
+    const payload = {
+      entry_date: new Date().toISOString().slice(0, 10),
       description: label,
+      amount: 0,
+    };
+
+    const { data, error } = await sb
+      .from('financial_entries_v2')
+      .insert(payload)
+      .select('id, entry_date, description, amount')
+      .single();
+
+    if (error || !data) {
+      window.alert(`Nao foi possivel salvar lancamento no banco: ${error?.message ?? 'Erro desconhecido'}`);
+      return;
+    }
+
+    const dbEntry: FinancialEntry = {
+      id: Number(data.id),
+      date: data.entry_date,
+      description: data.description,
       amount: 0,
       sourceType: null,
       sourceId: null,
       isNew: true,
       entryKind: kind,
     };
-    setFinancialEntries((prev) => [newEntry, ...prev]);
-    setNextFinancialId((prev) => prev + 1);
+    setFinancialEntries((prev) => [dbEntry, ...prev]);
   }
 
   async function removeFinancialEntry(id: number) {
@@ -3940,16 +3803,7 @@ function App() {
   }
 
   function addReceipt() {
-    const newRow: ReceiptRow = {
-      id: nextReceiptId,
-      date: now.toLocaleDateString('pt-BR'),
-      customer: 'NOVO CLIENTE',
-      car: 'NOVO VEICULO',
-      plate: 'AAA-0000',
-      total: 0,
-    };
-    setReceipts((prev) => [newRow, ...prev]);
-    setNextReceiptId((prev) => prev + 1);
+    window.alert('Adicionar recibo manualmente nao e suportado. Use vendas salvas no Supabase.');
   }
 
   async function persistDocument(
@@ -4071,8 +3925,6 @@ function App() {
     };
 
     setIsSaving(true);
-    setSavedQuote(payload);
-
     const result = await persistDocument(
       'orcamento',
       {
@@ -4090,10 +3942,13 @@ function App() {
 
     setIsSaving(false);
     if (result.ok && result.id) {
+      setSavedQuote(payload);
       setLastSavedDocumentIds((prev) => ({ ...prev, orcamento: String(result.id) }));
+      window.alert('Orcamento salvo com sucesso no banco.');
+      setScreen('dashboard');
+    } else {
+      window.alert(`Nao foi possivel salvar o orcamento no banco: ${result.error ?? 'Erro desconhecido'}`);
     }
-    window.alert(result.ok ? 'Orcamento salvo com sucesso no banco.' : 'Orcamento salvo localmente (falha no banco).');
-    setScreen('dashboard');
   }
 
   async function finalizeAppointment() {
@@ -4119,22 +3974,6 @@ function App() {
     };
 
     setIsSaving(true);
-    setSavedAppointment(payload);
-    setCalendarAppointments((prev) => [
-      {
-        id: `local-${Date.now()}`,
-        dayKey: toCalendarDateKey(payload.date),
-        date: payload.date,
-        customer: payload.customer,
-        phone: payload.phone,
-        plate: payload.plate,
-        vehicleDetails: payload.vehicleDetails,
-        note: payload.note,
-        total: appointmentData.items.reduce((acc, item) => acc + item.price * item.quantity, 0) - appointmentData.discount,
-        status: 'CONFIRMADO',
-      },
-      ...prev,
-    ]);
 
     const result = await persistDocument(
       'agendamento',
@@ -4153,8 +3992,29 @@ function App() {
     );
 
     setIsSaving(false);
-    window.alert(result.ok ? 'Agendamento salvo com sucesso no banco.' : 'Agendamento salvo localmente (falha no banco).');
-    setScreen('dashboard');
+    if (result.ok && result.id) {
+      const appointmentId = String(result.id);
+      setSavedAppointment(payload);
+      setCalendarAppointments((prev) => [
+        {
+          id: appointmentId,
+          dayKey: toCalendarDateKey(payload.date),
+          date: payload.date,
+          customer: payload.customer,
+          phone: payload.phone,
+          plate: payload.plate,
+          vehicleDetails: payload.vehicleDetails,
+          note: payload.note,
+          total: appointmentData.items.reduce((acc, item) => acc + item.price * item.quantity, 0) - appointmentData.discount,
+          status: 'CONFIRMADO',
+        },
+        ...prev,
+      ]);
+      window.alert('Agendamento salvo com sucesso no banco.');
+      setScreen('dashboard');
+    } else {
+      window.alert(`Nao foi possivel salvar o agendamento no banco: ${result.error ?? 'Erro desconhecido'}`);
+    }
   }
 
   async function importQuoteToSale() {
@@ -4359,14 +4219,6 @@ function App() {
 
     const nowDate = now.toLocaleDateString('pt-BR');
     const car = saleData.vehicleDetails.split('\n')[0] || saleData.vehicleDetails;
-    const newReceipt: ReceiptRow = {
-      id: nextReceiptId,
-      date: nowDate,
-      customer: saleData.customer,
-      car,
-      plate: saleData.plate,
-      total: saleTotal,
-    };
 
     setIsSaving(true);
     const result = await persistDocument(
@@ -4385,13 +4237,29 @@ function App() {
       saleData.items
     );
     setIsSaving(false);
-    if (result.ok && result.id) {
-      setLastSavedDocumentIds((prev) => ({ ...prev, venda: String(result.id) }));
+    if (!result.ok || !result.id) {
+      window.alert(`Nao foi possivel salvar a venda no banco: ${result.error ?? 'Erro desconhecido'}`);
+      return;
     }
 
-    setReceipts((prev) => [newReceipt, ...prev]);
-    setNextReceiptId((prev) => prev + 1);
-    window.alert(result.ok ? 'Venda finalizada e salva no banco.' : 'Venda finalizada localmente (falha no banco).');
+    const receiptId = Number(result.id);
+    if (!receiptId) {
+      window.alert('Nao foi possivel determinar o numero do recibo a partir do banco.');
+      return;
+    }
+
+    const persistedReceipt: ReceiptRow = {
+      id: receiptId,
+      date: nowDate,
+      customer: saleData.customer,
+      car,
+      plate: saleData.plate,
+      total: saleTotal,
+    };
+
+    setLastSavedDocumentIds((prev) => ({ ...prev, venda: String(result.id) }));
+    setReceipts((prev) => [persistedReceipt, ...prev]);
+    window.alert('Venda finalizada e salva no banco.');
     setSelectedPrintKind('venda');
     setScreen('print-receipt');
   }
@@ -4536,10 +4404,7 @@ function App() {
     }
 
     if (!isSupabaseConfigured || !supabase) {
-      setIsLocalMode(true);
-      setIsAuthenticated(true);
-      setAuthMessage('Supabase nao configurado. Entrando em modo local.');
-      setScreen('dashboard');
+      setAuthMessage('Supabase nao configurado. Configuracao e login requerem Supabase valido.');
       return;
     }
 
@@ -4557,7 +4422,6 @@ function App() {
     }
 
     setIsAuthenticated(true);
-    setIsLocalMode(false);
     setScreen('dashboard');
   }
 
@@ -4675,16 +4539,8 @@ function App() {
       const sb = supabase;
       await sb.auth.signOut();
     }
-    setIsLocalMode(false);
     setIsAuthenticated(false);
     setScreen('auth-login');
-  }
-
-  function enterLocalMode() {
-    setIsLocalMode(true);
-    setIsAuthenticated(true);
-    setAuthMessage('Modo local ativo. Dados podem ser salvos apenas localmente quando o Supabase falhar.');
-    setScreen('dashboard');
   }
 
   function escapeCsv(value: unknown) {
@@ -5479,7 +5335,6 @@ function App() {
           <div className="auth-links">
             <button onClick={() => setScreen('auth-register')}>Criar conta</button>
             <button onClick={() => setScreen('auth-forgot')}>Esqueci a senha</button>
-            <button onClick={enterLocalMode}>Entrar em modo local</button>
           </div>
           {authMessage && <p className="auth-message">{authMessage}</p>}
         </section>
