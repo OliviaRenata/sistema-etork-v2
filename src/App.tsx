@@ -2341,7 +2341,7 @@ function App() {
     return () => {
       active = false;
     };
-  }, [screen, isSupabaseConfigured, receipts, supabase]);
+  }, [screen, isSupabaseConfigured, supabase]);
 
   const printableDocuments = useMemo<PrintableDocument[]>(() => {
     const nowStamp = now.toLocaleString('pt-BR');
