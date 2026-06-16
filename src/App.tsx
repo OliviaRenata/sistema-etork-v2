@@ -24,7 +24,7 @@ import { isSupabaseConfigured, supabase } from './lib/supabase';
 
 const plateLookupApiUrl = (import.meta.env.VITE_CAMPS_API_URL as string | undefined)?.trim();
 const plateLookupApiToken = (import.meta.env.VITE_CAMPS_API_TOKEN as string | undefined)?.trim();
-
+ 
 type Screen =
   | 'intro-brand'
   | 'intro-system'
@@ -1884,6 +1884,7 @@ function App() {
           prev === 'menu-financial' ||
           prev === 'menu-products' ||
           prev === 'menu-reports' ||
+          prev === 'sales-history' ||
           prev === 'appointment-calendar' ||
           prev === 'new-quote' ||
           prev === 'new-appointment' ||
@@ -1911,6 +1912,8 @@ function App() {
       screen === 'menu-financial' ||
       screen === 'menu-products' ||
       screen === 'menu-reports' ||
+      screen === 'sales-history' ||
+      screen === 'appointment-calendar' ||
       screen === 'new-quote' ||
       screen === 'new-appointment' ||
       screen === 'new-sale' ||
@@ -2290,7 +2293,7 @@ function App() {
     async function loadSalesHistory() {
       setSalesHistoryLoading(true);
 
-      if (!isSupabaseConfigured || !supabase) {
+      if (!isAuthenticated || !isSupabaseConfigured || !supabase) {
         if (!active) return;
         setSalesHistory([]);
         setSalesHistoryLoading(false);
@@ -2341,7 +2344,7 @@ function App() {
     return () => {
       active = false;
     };
-  }, [screen, isSupabaseConfigured, supabase]);
+  }, [screen, isAuthenticated, isSupabaseConfigured, supabase]);
 
   const printableDocuments = useMemo<PrintableDocument[]>(() => {
     const nowStamp = now.toLocaleString('pt-BR');
@@ -2705,15 +2708,25 @@ function App() {
     setSalesHistoryPage((current) => Math.min(current, salesHistoryTotalPages));
   }, [salesHistoryTotalPages]);
 
-  const nextAppointmentSource = calendarAppointments[0] || savedAppointment;
+  const nextAppointmentCards = useMemo(() => {
+    const currentTime = new Date().getTime();
 
-  const nextAppointmentCard = nextAppointmentSource
-    ? {
-        model: nextAppointmentSource.vehicleDetails.split('\n')[0] || 'SEM VEICULO',
-        plate: nextAppointmentSource.plate,
-        date: nextAppointmentSource.date,
-      }
-    : { model: 'HB20 1.0', plate: 'QUA-9J17', date: '27/04/2026 08:00' };
+    return calendarAppointments
+      .filter((appointment) => appointment.status !== 'CANCELADO')
+      .map((appointment) => ({
+        appointment,
+        scheduledAt: parseBrDateTime(appointment.date),
+      }))
+      .filter((item) => item.scheduledAt && item.scheduledAt.getTime() >= currentTime)
+      .sort((a, b) => (a.scheduledAt?.getTime() || 0) - (b.scheduledAt?.getTime() || 0))
+      .slice(0, 3)
+      .map(({ appointment }) => ({
+        id: appointment.id,
+        model: appointment.vehicleDetails.split('\n')[0] || 'SEM VEICULO',
+        plate: appointment.plate || 'SEM PLACA',
+        date: appointment.date,
+      }));
+  }, [calendarAppointments, now]);
 
   function askAndApplyDiscount(current: number, apply: (next: number) => void) {
     const answer = window.prompt('Informe o desconto em R$', String(current).replace('.', ','));
@@ -6102,11 +6115,17 @@ function App() {
               )}
 
               <div className="next-title">PROXIMOS AGENDAMENTOS</div>
-              <article className="next-card">
-                <strong>{nextAppointmentCard.model}</strong>
-                <span>{nextAppointmentCard.plate}</span>
-                <small>{nextAppointmentCard.date}</small>
-              </article>
+              {nextAppointmentCards.length > 0 ? (
+                nextAppointmentCards.map((appointment) => (
+                  <article className="next-card" key={appointment.id}>
+                    <strong>{appointment.model}</strong>
+                    <span>{appointment.plate}</span>
+                    <small>{appointment.date}</small>
+                  </article>
+                ))
+              ) : (
+                <div className="receipt-empty">Nenhum proximo agendamento encontrado.</div>
+              )}
             </section>
 
             <aside className="right-actions">
