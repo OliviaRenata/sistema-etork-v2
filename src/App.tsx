@@ -2285,6 +2285,68 @@ function App() {
     };
   }, [isAuthenticated, isSupabaseConfigured, printSettings, supabase]);
 
+  const salesHistoryFromFinancialRows = useMemo<SaleHistoryRow[]>(
+    () =>
+      financialSalesRows.map((row) => ({
+        id: row.id,
+        createdAtIso: row.createdAtIso,
+        createdAt: row.createdAtIso ? new Date(row.createdAtIso).toLocaleString('pt-BR') : row.date,
+        customer: row.customer,
+        phone: row.phone,
+        plate: row.plate,
+        vehicle: row.vehicle,
+        subtotal: row.subtotal,
+        discount: row.discount,
+        surcharge: row.surcharge,
+        total: row.total,
+        note: row.note,
+        timeDays: row.timeDays || 1,
+        laborRequired: row.laborRequired ?? false,
+      })),
+    [financialSalesRows]
+  );
+
+  const salesHistoryFromFinancialEntries = useMemo<SaleHistoryRow[]>(() => {
+    const documentSaleIds = new Set(salesHistoryFromFinancialRows.map((row) => row.id));
+
+    return financialEntries
+      .filter((entry) => entry.sourceType === 'venda' || entry.description.trim().toUpperCase().startsWith('VENDA #'))
+      .filter((entry) => Number(entry.amount) > 0)
+      .map((entry) => {
+        const sourceId = entry.sourceId || `FIN-${entry.id}`;
+        const descriptionMatch = entry.description.match(/^VENDA\s+#([^\s]+)\s+-\s+(.+)$/i);
+        const customer = descriptionMatch?.[2]?.trim() || entry.description.replace(/^VENDA\s+#?[^\s]*\s*-?\s*/i, '').trim() || 'SEM CLIENTE';
+
+        return {
+          id: sourceId,
+          createdAtIso: entry.date ? `${entry.date}T12:00:00` : '',
+          createdAt: entry.date ? new Date(`${entry.date}T12:00:00`).toLocaleString('pt-BR') : '',
+          customer,
+          phone: '',
+          plate: '',
+          vehicle: '',
+          subtotal: Number(entry.amount) || 0,
+          discount: 0,
+          surcharge: 0,
+          total: Number(entry.amount) || 0,
+          note: entry.description,
+          timeDays: 1,
+          laborRequired: false,
+        };
+      })
+      .filter((row) => !documentSaleIds.has(row.id))
+      .sort((a, b) => {
+        const aDate = a.createdAtIso ? new Date(a.createdAtIso).getTime() : 0;
+        const bDate = b.createdAtIso ? new Date(b.createdAtIso).getTime() : 0;
+        return bDate - aDate;
+      });
+  }, [financialEntries, salesHistoryFromFinancialRows]);
+
+  const fallbackSalesHistory = useMemo(
+    () => [...salesHistoryFromFinancialRows, ...salesHistoryFromFinancialEntries],
+    [salesHistoryFromFinancialEntries, salesHistoryFromFinancialRows]
+  );
+
   useEffect(() => {
     if (screen !== 'sales-history') return;
 
@@ -2292,10 +2354,10 @@ function App() {
 
     async function loadSalesHistory() {
       setSalesHistoryLoading(true);
+      setSalesHistory(fallbackSalesHistory);
 
       if (!isAuthenticated || !isSupabaseConfigured || !supabase) {
         if (!active) return;
-        setSalesHistory([]);
         setSalesHistoryLoading(false);
         return;
       }
@@ -2313,7 +2375,7 @@ function App() {
       if (!active) return;
 
       if (error || !data) {
-        setSalesHistory([]);
+        setSalesHistory(fallbackSalesHistory);
         setSalesHistoryLoading(false);
         return;
       }
@@ -2335,7 +2397,7 @@ function App() {
         laborRequired: Boolean(row.labor_required),
       }));
 
-      setSalesHistory(mapped);
+      setSalesHistory(mapped.length > 0 ? mapped : fallbackSalesHistory);
       setSalesHistoryLoading(false);
     }
 
@@ -2344,7 +2406,7 @@ function App() {
     return () => {
       active = false;
     };
-  }, [screen, isAuthenticated, isSupabaseConfigured, supabase]);
+  }, [screen, fallbackSalesHistory, isAuthenticated, isSupabaseConfigured, supabase]);
 
   const printableDocuments = useMemo<PrintableDocument[]>(() => {
     const nowStamp = now.toLocaleString('pt-BR');
