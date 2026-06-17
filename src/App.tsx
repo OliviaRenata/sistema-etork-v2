@@ -3701,16 +3701,18 @@ function App() {
       }
 
       const sb = supabase;
-      const payload = {
-        name: productModalData.description,
-        default_price: productModalData.priceTable1,
-        price_table_1: productModalData.priceTable1,
-        price_table_2: productModalData.priceTable2,
-        quantity: productModalData.quantity,
-        item_type: productModalData.itemType,
-        is_active: true,
-      };
-
+const codePrefix = productModalData.itemType === 'PRODUTO' ? 'PRD' : 'SRV';
+const codeSuffix = Date.now().toString(36).toUpperCase().slice(-6);
+const payload = {
+  code: `${codePrefix}-${codeSuffix}`,
+  name: productModalData.description,
+  default_price: productModalData.priceTable1,
+  price_table_1: productModalData.priceTable1,
+  price_table_2: productModalData.priceTable2,
+  quantity: productModalData.quantity,
+  item_type: productModalData.itemType,
+  is_active: true,
+};
       const { data, error } = await sb
         .from('service_catalog_v2')
         .insert(payload)
