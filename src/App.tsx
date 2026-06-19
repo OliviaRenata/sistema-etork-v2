@@ -1683,6 +1683,7 @@ function App() {
   const [screen, setScreen] = useState<Screen>('intro-brand');
   const [now, setNow] = useState(() => new Date());
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authInitialized, setAuthInitialized] = useState(!isSupabaseConfigured);
   const [authLoading, setAuthLoading] = useState(false);
   const [authMessage, setAuthMessage] = useState('');
   const [loginEmail, setLoginEmail] = useState('');
@@ -1827,16 +1828,18 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (!authInitialized) return;
+
     if (screen === 'intro-brand') {
-      const timer = window.setTimeout(() => setScreen('auth-login'), 1800);
+      const timer = window.setTimeout(() => setScreen(isAuthenticated ? 'dashboard' : 'auth-login'), 1800);
       return () => window.clearTimeout(timer);
     }
 
     if (screen === 'intro-system') {
-      const timer = window.setTimeout(() => setScreen('auth-login'), 50);
+      const timer = window.setTimeout(() => setScreen(isAuthenticated ? 'dashboard' : 'auth-login'), 50);
       return () => window.clearTimeout(timer);
     }
-  }, [screen]);
+  }, [authInitialized, isAuthenticated, screen]);
 
   useEffect(() => {
     const path = window.location.pathname.toLowerCase();
@@ -1847,8 +1850,10 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
-    if (!isSupabaseConfigured || !supabase) return;
+    if (!isSupabaseConfigured || !supabase) {
+      setAuthInitialized(true);
+      return;
+    }
 
     const sb = supabase;
     let active = true;
@@ -1858,22 +1863,29 @@ function App() {
 
       const hasSession = Boolean(data.session);
       setIsAuthenticated(hasSession);
+      setAuthInitialized(true);
       if (hasSession) {
         setScreen((prev) =>
           prev === 'intro-brand' || prev === 'intro-system' || prev.startsWith('auth-') ? 'dashboard' : prev
         );
       }
+    }).catch(() => {
+      if (!active) return;
+      setIsAuthenticated(false);
+      setAuthInitialized(true);
     });
 
     const { data: authListener } = sb.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
         setAuthMessage('Defina sua nova senha para concluir a recuperacao.');
         setScreen('auth-reset');
+        setAuthInitialized(true);
         return;
       }
 
       const hasSession = Boolean(session);
       setIsAuthenticated(hasSession);
+      setAuthInitialized(true);
       if (hasSession) {
         setScreen((prev) => (prev === 'auth-login' || prev === 'auth-register' || prev === 'auth-forgot' ? 'dashboard' : prev));
       } else {
@@ -1903,6 +1915,7 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (!authInitialized) return;
     if (isAuthenticated) return;
 
     if (
@@ -1921,7 +1934,7 @@ function App() {
     ) {
       setScreen('auth-login');
     }
-  }, [isAuthenticated, screen]);
+  }, [authInitialized, isAuthenticated, screen]);
 
   useEffect(() => {
     if (screen === 'appointment-calendar') {
@@ -4434,7 +4447,7 @@ const payload = {
   async function deleteSaleFromHistory(saleId: string) {
     const confirmResult = await Swal.fire({
       title: 'Excluir venda?',
-      text: 'Essa acao remove a venda da lista.',
+      text: 'Essa acao exclui definitivamente a venda e seus lancamentos vinculados.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Excluir',
@@ -4449,19 +4462,56 @@ const payload = {
 
     if (isSupabaseConfigured && supabase) {
       const sb = supabase;
-      const { error } = await sb
-        .from('documents_v2')
-        .delete()
-        .eq('id', saleId)
-        .eq('doc_type', 'venda');
+      const financialEntryId = saleId.startsWith('FIN-') ? Number(saleId.replace('FIN-', '')) : null;
 
-      if (error) {
-        window.alert(`Nao foi possivel excluir a venda: ${error.message}`);
-        return;
+      if (financialEntryId) {
+        const { error } = await sb.from('financial_entries_v2').delete().eq('id', financialEntryId);
+
+        if (error) {
+          window.alert(`Nao foi possivel excluir a venda: ${error.message}`);
+          return;
+        }
+      } else {
+        const { error: itemsError } = await sb
+          .from('document_items_v2')
+          .delete()
+          .eq('document_id', saleId);
+
+        if (itemsError) {
+          window.alert(`Nao foi possivel excluir os itens da venda: ${itemsError.message}`);
+          return;
+        }
+
+        const { error: financialError } = await sb
+          .from('financial_entries_v2')
+          .delete()
+          .eq('source_type', 'venda')
+          .eq('source_id', saleId);
+
+        if (financialError) {
+          window.alert(`Nao foi possivel excluir o lancamento financeiro da venda: ${financialError.message}`);
+          return;
+        }
+
+        const { error } = await sb
+          .from('documents_v2')
+          .delete()
+          .eq('id', saleId)
+          .eq('doc_type', 'venda');
+
+        if (error) {
+          window.alert(`Nao foi possivel excluir a venda: ${error.message}`);
+          return;
+        }
       }
     }
 
     setSalesHistory((prev) => prev.filter((sale) => sale.id !== saleId));
+    setFinancialSalesRows((prev) => prev.filter((sale) => sale.id !== saleId));
+    setFinancialEntries((prev) =>
+      prev.filter((entry) => entry.sourceId !== saleId && `FIN-${entry.id}` !== saleId)
+    );
+    setReceipts((prev) => prev.filter((receipt) => String(receipt.id) !== saleId));
     setSelectedSalePrintable((current) => {
       if (!current) return current;
       return current.number.includes(String(saleId).slice(0, 8).toUpperCase()) ? null : current;
