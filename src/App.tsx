@@ -317,15 +317,24 @@ type SalesHistoryFilters = {
 
 const PRINT_SETTINGS_STORAGE_KEY = 'etork_print_settings_v1';
 
+const fixedCompanyPrintSettings = {
+  companyName: 'ETORK BRASIL PERFORMANCE AUTOMOTIVA',
+  companyDocument: 'CNPJ 27.557.075/0001-24',
+  companyPhone: '(67) 99254-9181',
+  companyEmail: 'comercial@etorkbrasil.com.br',
+  companyAddress: 'AV. PRESIDENTE CASTELO BRANCO, 41 CORONEL ANTONINO',
+  validityDays: 30,
+};
+
 const defaultPrintSettings: PrintSettings = {
-  companyName: 'ETORK BRASIL',
-  companyDocument: 'CNPJ 00.000.000/0001-00',
-  companyPhone: '(67) 0000-0000',
-  companyEmail: 'contato@etorkbrasil.com',
-  companyAddress: 'Rua Exemplo, 123 - Campo Grande/MS',
+  companyName: fixedCompanyPrintSettings.companyName,
+  companyDocument: fixedCompanyPrintSettings.companyDocument,
+  companyPhone: fixedCompanyPrintSettings.companyPhone,
+  companyEmail: fixedCompanyPrintSettings.companyEmail,
+  companyAddress: fixedCompanyPrintSettings.companyAddress,
   paymentMethod: 'PIX, Cartao de Credito/Debito ou Dinheiro',
   warrantyDays: 90,
-  validityDays: 15,
+  validityDays: fixedCompanyPrintSettings.validityDays,
   responsibleName: 'Responsavel Tecnico',
 };
 
@@ -337,19 +346,16 @@ function sanitizePrintSettings(input: unknown): PrintSettings {
   const value = input as Partial<PrintSettings>;
 
   return {
-    companyName: typeof value.companyName === 'string' && value.companyName.trim() ? value.companyName : defaultPrintSettings.companyName,
-    companyDocument:
-      typeof value.companyDocument === 'string' && value.companyDocument.trim() ? value.companyDocument : defaultPrintSettings.companyDocument,
-    companyPhone: typeof value.companyPhone === 'string' && value.companyPhone.trim() ? value.companyPhone : defaultPrintSettings.companyPhone,
-    companyEmail: typeof value.companyEmail === 'string' && value.companyEmail.trim() ? value.companyEmail : defaultPrintSettings.companyEmail,
-    companyAddress:
-      typeof value.companyAddress === 'string' && value.companyAddress.trim() ? value.companyAddress : defaultPrintSettings.companyAddress,
+    companyName: fixedCompanyPrintSettings.companyName,
+    companyDocument: fixedCompanyPrintSettings.companyDocument,
+    companyPhone: fixedCompanyPrintSettings.companyPhone,
+    companyEmail: fixedCompanyPrintSettings.companyEmail,
+    companyAddress: fixedCompanyPrintSettings.companyAddress,
     paymentMethod:
       typeof value.paymentMethod === 'string' && value.paymentMethod.trim() ? value.paymentMethod : defaultPrintSettings.paymentMethod,
     warrantyDays:
       typeof value.warrantyDays === 'number' && Number.isFinite(value.warrantyDays) ? Math.max(0, Math.floor(value.warrantyDays)) : defaultPrintSettings.warrantyDays,
-    validityDays:
-      typeof value.validityDays === 'number' && Number.isFinite(value.validityDays) ? Math.max(0, Math.floor(value.validityDays)) : defaultPrintSettings.validityDays,
+    validityDays: fixedCompanyPrintSettings.validityDays,
     responsibleName:
       typeof value.responsibleName === 'string' && value.responsibleName.trim() ? value.responsibleName : defaultPrintSettings.responsibleName,
   };
@@ -6599,7 +6605,7 @@ const payload = {
                     <input
                       className="input-look"
                       value={printSettings.companyName}
-                      onChange={(event) => setPrintSettings((prev) => ({ ...prev, companyName: event.target.value }))}
+                      readOnly
                     />
                   </label>
                   <label>
@@ -6607,7 +6613,7 @@ const payload = {
                     <input
                       className="input-look"
                       value={printSettings.companyDocument}
-                      onChange={(event) => setPrintSettings((prev) => ({ ...prev, companyDocument: event.target.value }))}
+                      readOnly
                     />
                   </label>
                   <label>
@@ -6615,7 +6621,7 @@ const payload = {
                     <input
                       className="input-look"
                       value={printSettings.companyPhone}
-                      onChange={(event) => setPrintSettings((prev) => ({ ...prev, companyPhone: event.target.value }))}
+                      readOnly
                     />
                   </label>
                   <label>
@@ -6623,7 +6629,7 @@ const payload = {
                     <input
                       className="input-look"
                       value={printSettings.companyEmail}
-                      onChange={(event) => setPrintSettings((prev) => ({ ...prev, companyEmail: event.target.value }))}
+                      readOnly
                     />
                   </label>
                   <label className="wide">
@@ -6631,7 +6637,7 @@ const payload = {
                     <input
                       className="input-look"
                       value={printSettings.companyAddress}
-                      onChange={(event) => setPrintSettings((prev) => ({ ...prev, companyAddress: event.target.value }))}
+                      readOnly
                     />
                   </label>
                   <label className="wide">
@@ -6661,9 +6667,7 @@ const payload = {
                       min={0}
                       className="input-look"
                       value={printSettings.validityDays}
-                      onChange={(event) =>
-                        setPrintSettings((prev) => ({ ...prev, validityDays: Math.max(0, Number(event.target.value) || 0) }))
-                      }
+                      readOnly
                     />
                   </label>
                   <label>
