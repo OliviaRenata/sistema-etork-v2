@@ -172,6 +172,7 @@ type DashboardService = {
   id: string;
   title: string;
   plate: string;
+  customer: string;
   status: DashboardServiceStatus;
   tone: DashboardServiceTone;
   sourceDocumentId?: string | null;
@@ -742,6 +743,37 @@ function CatalogPickerModal({
   onConfirm: () => void;
   formatMoney: (value: number) => string;
 }) {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    if (isOpen) setSearchQuery('');
+  }, [isOpen]);
+
+  const searchTerm = searchQuery.trim().toUpperCase();
+  const filteredRows = useMemo(
+    () =>
+      rows
+        .map((item, index) => ({ item, index }))
+        .filter(({ item }) => {
+          if (!searchTerm) return true;
+          return `${item.itemType} ${normalizeCatalogKey(item.description)}`.includes(searchTerm);
+        })
+        .slice(0, 10),
+    [rows, searchTerm]
+  );
+
+  const selectedItem = rows[selectedIndex];
+
+  function handleSearchChange(value: string) {
+    setSearchQuery(value);
+
+    const nextTerm = value.trim().toUpperCase();
+    if (!nextTerm) return;
+
+    const firstMatch = rows.findIndex((item) => `${item.itemType} ${normalizeCatalogKey(item.description)}`.includes(nextTerm));
+    if (firstMatch >= 0) onSelectedIndex(firstMatch);
+  }
+
   if (!isOpen) return null;
 
   return (
@@ -751,17 +783,39 @@ function CatalogPickerModal({
         <div className="modal-body">
           <div className="form-field">
             <label>ITEM</label>
-            <select
+            <input
+              type="text"
               className="modal-input"
-              value={selectedIndex}
-              onChange={(e) => onSelectedIndex(Math.max(0, Number(e.target.value) || 0))}
-            >
-              {rows.map((item, index) => (
-                <option key={`${item.id ?? 'local'}-${item.description}-${index}`} value={index}>
-                  [{item.itemType}] {item.description} | T1 {formatMoney(item.priceTable1)} | T2 {formatMoney(item.priceTable2)}
-                </option>
-              ))}
-            </select>
+              value={searchQuery}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              placeholder="Pesquisar servico ou produto"
+              autoFocus
+            />
+            <div className="catalog-suggestions" role="listbox" aria-label="Sugestoes de itens">
+              {filteredRows.length === 0 ? (
+                <div className="catalog-suggestion-empty">Nenhum item encontrado</div>
+              ) : (
+                filteredRows.map(({ item, index }) => (
+                  <button
+                    type="button"
+                    className={`catalog-suggestion ${selectedIndex === index ? 'selected' : ''}`}
+                    key={`${item.id ?? 'local'}-${item.description}-${index}`}
+                    onClick={() => {
+                      onSelectedIndex(index);
+                      setSearchQuery(item.description);
+                    }}
+                    role="option"
+                    aria-selected={selectedIndex === index}
+                  >
+                    <span className="catalog-suggestion-type">{item.itemType}</span>
+                    <span className="catalog-suggestion-name">{item.description}</span>
+                    <span className="catalog-suggestion-price">
+                      T1 {formatMoney(item.priceTable1)} | T2 {formatMoney(item.priceTable2)}
+                    </span>
+                  </button>
+                ))
+              )}
+            </div>
           </div>
 
           <div className="form-field">
@@ -775,14 +829,14 @@ function CatalogPickerModal({
             />
           </div>
 
-          {rows[selectedIndex] && (
+          {selectedItem && (
             <div className="form-field">
               <label>PRECO APLICADO</label>
               <input
                 type="text"
                 className="modal-input"
                 readOnly
-                value={`${priceTable === 2 ? 'TABELA 2' : 'TABELA 1'} - ${formatMoney(getCatalogPrice(rows[selectedIndex], priceTable))}`}
+                value={`${priceTable === 2 ? 'TABELA 2' : 'TABELA 1'} - ${formatMoney(getCatalogPrice(selectedItem, priceTable))}`}
               />
             </div>
           )}
@@ -790,7 +844,7 @@ function CatalogPickerModal({
 
         <div className="modal-footer">
           <button className="btn-cancel" onClick={onClose}>CANCELAR</button>
-          <button className="btn-save" onClick={onConfirm}>ADICIONAR</button>
+          <button className="btn-save" onClick={onConfirm} disabled={!selectedItem}>ADICIONAR</button>
         </div>
       </div>
     </div>
@@ -2100,6 +2154,7 @@ function App() {
             id: `appt-${String(item.id)}`,
             title: (item.vehicle_snapshot || '').split('\n')[0] || item.customer_name_snapshot || 'SERVICO',
             plate: item.plate_snapshot || 'SEM PLACA',
+            customer: item.customer_name_snapshot || 'SEM CLIENTE',
             status: dashboardStatus,
             tone: dashboardToneByStatus(dashboardStatus),
             sourceDocumentId: String(item.id),
@@ -3424,6 +3479,9 @@ function App() {
         service.sourceDocumentId === updated.id
           ? {
               ...service,
+              title: (updated.vehicleDetails || '').split('\n')[0] || updated.customer || 'SERVICO',
+              plate: updated.plate || 'SEM PLACA',
+              customer: updated.customer || 'SEM CLIENTE',
               status: updated.status === 'CANCELADO' ? 'AVISAR CLIENTE' : 'CONCLUIDO',
               tone: updated.status === 'CANCELADO' ? 'info' : 'success',
             }
@@ -6214,6 +6272,7 @@ const payload = {
                       >
                         <strong>{service.title}</strong>
                         <span>{service.plate}</span>
+                        <span className="service-chip-customer">{service.customer}</span>
                         <small className={`tone-${service.tone}`}>{service.status}</small>
                       </article>
                     ))}
