@@ -1252,10 +1252,10 @@ select option {
 .print-doc-signatures > div {
   border-top: 1px solid #888;
   text-align: center;
-  padding-top: 12px;
+  padding-top: 16px;
   font-size: 12px;
   color: #444;
-  min-height: 44px;
+  min-height: 64px;
 }
 
 .print-doc-signatures > div span {
