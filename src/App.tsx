@@ -1332,7 +1332,21 @@ function SaleScreen({
                         <div className="row g-2">
                           <div className="col-12 col-md-6">
                             <div className="form-floating">
-                              <input id="sales-customer-name" list="client-suggestions" className="form-control sales-premium-input" value={saleData.customer} onChange={(e) => patchSale({ customer: e.target.value })} onBlur={(e) => applyMatchedClient('sale', e.target.value)} placeholder="Cliente" />
+                              <input
+                                id="sales-customer-name"
+                                list="client-suggestions"
+                                className="form-control sales-premium-input"
+                                value={saleData.customer}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  patchSale({ customer: value });
+                                  if (value.trim().toLowerCase() === 'cadastrar novo cliente') {
+                                    onQuickCreateClient('sale');
+                                  }
+                                }}
+                                onBlur={(e) => applyMatchedClient('sale', e.target.value)}
+                                placeholder="Cliente"
+                              />
                               <label htmlFor="sales-customer-name">Cliente</label>
                             </div>
                           </div>
@@ -1708,7 +1722,21 @@ function QuoteScreen({
                         <div className="row g-2">
                           <div className="col-12 col-md-6">
                             <div className="form-floating">
-                              <input id="quote-customer-name" list="client-suggestions" className="form-control sales-premium-input" value={quoteData.customer} onChange={(e) => patchQuote({ customer: e.target.value })} onBlur={(e) => applyMatchedClient('quote', e.target.value)} placeholder="Cliente" />
+                              <input
+                                id="quote-customer-name"
+                                list="client-suggestions"
+                                className="form-control sales-premium-input"
+                                value={quoteData.customer}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  patchQuote({ customer: value });
+                                  if (value.trim().toLowerCase() === 'cadastrar novo cliente') {
+                                    onQuickCreateClient('quote');
+                                  }
+                                }}
+                                onBlur={(e) => applyMatchedClient('quote', e.target.value)}
+                                placeholder="Cliente"
+                              />
                               <label htmlFor="quote-customer-name">Cliente</label>
                             </div>
                           </div>
@@ -3250,6 +3278,10 @@ row.paymentStatus !== financialFilters.paymentStatus
         <input id="swal-client-name" class="swal2-input" placeholder="Nome" value="${escapeHtml(draft.name || '')}" />
         <input id="swal-client-phone" class="swal2-input" placeholder="Telefone" value="${escapeHtml(draft.phone || '')}" />
         <input id="swal-client-plate" class="swal2-input" placeholder="Placa" value="${escapeHtml((draft.plate || '').toUpperCase())}" />
+        <select id="swal-client-price-table" class="swal2-select">
+          <option value="1" ${draft.price_table === 1 ? 'selected' : ''}>Tabela 1 - Cliente Final</option>
+          <option value="2" ${draft.price_table === 2 ? 'selected' : ''}>Tabela 2 - Franqueado</option>
+        </select>
       `,
       showCancelButton: true,
       confirmButtonText: 'Salvar',
@@ -3259,13 +3291,26 @@ row.paymentStatus !== financialFilters.paymentStatus
         const nameInput = document.getElementById('swal-client-name') as HTMLInputElement | null;
         const phoneInput = document.getElementById('swal-client-phone') as HTMLInputElement | null;
         const plateInput = document.getElementById('swal-client-plate') as HTMLInputElement | null;
+        const priceTableInput = document.getElementById('swal-client-price-table') as HTMLSelectElement | null;
 
         const name = nameInput?.value.trim() || '';
         const phone = phoneInput?.value.trim() || '';
         const plate = (plateInput?.value || '').toUpperCase().trim();
+        const parsedTable = Number(priceTableInput?.value || draft.price_table);
+        const price_table = parsedTable === 2 ? 2 : 1;
 
         if (!name) {
           Swal.showValidationMessage('Informe o nome do cliente.');
+          return null;
+        }
+
+        if (!phone) {
+          Swal.showValidationMessage('Informe o telefone do cliente.');
+          return null;
+        }
+
+        if (!plate) {
+          Swal.showValidationMessage('Informe a placa do cliente.');
           return null;
         }
 
@@ -3273,6 +3318,7 @@ row.paymentStatus !== financialFilters.paymentStatus
           name,
           phone,
           plate,
+          price_table,
         };
       },
     });
@@ -3283,7 +3329,7 @@ row.paymentStatus !== financialFilters.paymentStatus
       name: result.value.name,
       phone: result.value.phone,
       plate: result.value.plate,
-      price_table: draft.price_table,
+      price_table: result.value.price_table,
     });
 
     if (!dbClient) {
@@ -7037,7 +7083,13 @@ const basePrintable: PrintableDocument = {
             <div className="form-main appointment-main-card">
               <div className="section-label">DADOS DO AGENDAMENTO</div>
               <div className="line"><strong>DATA:</strong> <input type="datetime-local" className="input-look" value={appointmentData.date} onChange={(event) => setAppointmentData((prev) => ({ ...prev, date: event.target.value }))} title={toDisplayAppointmentDate(appointmentData.date)} /></div>
-              <div className="line"><strong>CLIENTE:</strong> <input list="client-suggestions" className="input-look" value={appointmentData.customer} onChange={(event) => setAppointmentData((prev) => ({ ...prev, customer: event.target.value }))} onBlur={(event) => applyMatchedClient('appointment', event.target.value)} /> <select className="input-look" value={appointmentData.customerType} onChange={(event) => setAppointmentData((prev) => ({ ...prev, customerType: event.target.value }))}><option value={getCustomerTypeLabel(1)}>{getCustomerTypeLabel(1)}</option><option value={getCustomerTypeLabel(2)}>{getCustomerTypeLabel(2)}</option></select> <button type="button" className="tool-blue" onClick={() => void openQuickClientModal('appointment')}>Cadastrar novo cliente</button></div>
+              <div className="line"><strong>CLIENTE:</strong> <input list="client-suggestions" className="input-look" value={appointmentData.customer} onChange={(event) => {
+                const value = event.target.value;
+                setAppointmentData((prev) => ({ ...prev, customer: value }));
+                if (value.trim().toLowerCase() === 'cadastrar novo cliente') {
+                  void openQuickClientModal('appointment');
+                }
+              }} onBlur={(event) => applyMatchedClient('appointment', event.target.value)} /> <select className="input-look" value={appointmentData.customerType} onChange={(event) => setAppointmentData((prev) => ({ ...prev, customerType: event.target.value }))}><option value={getCustomerTypeLabel(1)}>{getCustomerTypeLabel(1)}</option><option value={getCustomerTypeLabel(2)}>{getCustomerTypeLabel(2)}</option></select> <button type="button" className="tool-blue" onClick={() => void openQuickClientModal('appointment')}>Cadastrar novo cliente</button></div>
               <div className="line line-mini"><strong>LISTAR</strong> <button onClick={addItemToAppointment}>+</button></div>
               <ServiceRows
                 items={appointmentData.items}
