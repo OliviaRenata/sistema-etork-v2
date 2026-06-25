@@ -4136,6 +4136,9 @@ row.paymentStatus !== financialFilters.paymentStatus
             .box { margin-top: 14px; border: 1px solid #ccc; padding: 10px; white-space: pre-wrap; }
             .services-list { margin: 8px 0 0 18px; padding: 0; }
             .services-list li { margin: 4px 0; }
+            .responsavel { margin-top: 14px; font-size: 14px; }
+            .responsavel-title { font-weight: 700; margin-bottom: 10px; }
+            .responsavel-line { margin: 14px 0; }
           </style>
         </head>
         <body>
@@ -4146,16 +4149,14 @@ row.paymentStatus !== financialFilters.paymentStatus
           <div class="box"><span class="label">VEICULO:</span><br/>${escapeHtml(appointment.vehicleDetails || '-')}</div>
           <div class="box"><span class="label">Observacoes:</span><br/>${escapeHtml(appointment.note || '-')}</div>
           <div class="line" style="margin-top: 18px;"><span class="label">FINALIZADO EM:</span> __/__/___ &nbsp;&nbsp; <span class="label">AS:</span> __:___h.</div>
-          
-          <div class="line" style="margin-top: 10px;"><span class="label">RESPONSAVEL:</span>
-        
-          1. ____________________________________
-           
-          2 . ____________________________________
-           
-          3. ____________________________________
-           
-          4. ____________________________________</div>
+
+          <div class="responsavel">
+            <div class="responsavel-title">RESPONSAVEL:</div>
+            <div class="responsavel-line">1. ____________________________________</div>
+            <div class="responsavel-line">2. ____________________________________</div>
+            <div class="responsavel-line">3. ____________________________________</div>
+            <div class="responsavel-line">4. ____________________________________</div>
+          </div>
         </body>
       </html>
     `;
@@ -7469,13 +7470,7 @@ const basePrintable: PrintableDocument = {
                     <p><strong>Forma de pagamento:</strong> {printSettings.paymentMethod}</p>
                     <p><strong>Garantia:</strong> {formatDaysValue(printSettings.warrantyDays)}</p>
                     <p><strong>Validade do orcamento:</strong> {formatDaysValue(printSettings.validityDays)}</p>
-                    <div className="print-doc-responsible-lines">
-                      <p className="print-doc-responsible-heading"><strong>RESPONSAVEL:</strong></p>
-                      <div className="print-doc-responsible-line"><strong>1.</strong><span>____________________________________</span></div>
-                      <div className="print-doc-responsible-line"><strong>2.</strong><span>____________________________________</span></div>
-                      <div className="print-doc-responsible-line"><strong>3.</strong><span>____________________________________</span></div>
-                      <div className="print-doc-responsible-line"><strong>4.</strong><span>____________________________________</span></div>
-                    </div>
+                    <p><strong>Responsavel:</strong> {printSettings.responsibleName}</p>
                   </section>
 
                   <section className="print-doc-company">

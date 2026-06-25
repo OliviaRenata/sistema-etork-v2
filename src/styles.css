@@ -1238,29 +1238,6 @@ select option {
   margin-top: 10px;
 }
 
-.print-doc-responsible-lines {
-  margin-top: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.print-doc-responsible-lines .print-doc-responsible-heading {
-  margin: 0;
-}
-
-.print-doc-responsible-line {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  line-height: 1.35;
-}
-
-.print-doc-responsible-line span {
-  letter-spacing: 0.4px;
-}
-
 .print-doc-company p + p {
   margin-top: 4px;
 }
