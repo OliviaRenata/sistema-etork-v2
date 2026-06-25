@@ -1238,6 +1238,18 @@ select option {
   margin-top: 10px;
 }
 
+.print-doc-responsible-lines {
+  margin-top: 10px;
+}
+
+.print-doc-responsible-lines .print-doc-responsible-heading {
+  margin: 0;
+}
+
+.print-doc-responsible-lines p + p {
+  margin-top: 12px;
+}
+
 .print-doc-company p + p {
   margin-top: 4px;
 }

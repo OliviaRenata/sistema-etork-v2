@@ -124,6 +124,8 @@ type ClientRow = {
   state?: string;
 };
 
+type PaymentStatus = 'PAGO' | 'PENDENTE' | 'NAO_INFORMADO';
+
 type FinancialEntry = {
   id: number;
 
@@ -137,7 +139,7 @@ type FinancialEntry = {
 
   sourceId: string | null;
 
-  paymentStatus: 'PAGO' | 'PENDENTE';
+  paymentStatus: PaymentStatus;
 
   isNew?: boolean;
 
@@ -175,7 +177,7 @@ type FinancialSaleRow = {
 
   paymentMethod: string;
 
-  paymentStatus: 'PAGO' | 'PENDENTE';
+  paymentStatus: PaymentStatus;
 };
 
 type FinancialFilters = {
@@ -190,7 +192,8 @@ type FinancialFilters = {
   paymentStatus:
     | 'all'
     | 'PAGO'
-    | 'PENDENTE';
+    | 'PENDENTE'
+    | 'NAO_INFORMADO';
 };
 
 type ReportFilters = {
@@ -254,6 +257,18 @@ function normalizeAppointmentStatus(value: string | null | undefined): Appointme
   const normalized = (value || '').trim().toLowerCase();
   if (normalized === 'cancelado') return 'CANCELADO';
   return 'CONFIRMADO';
+}
+
+function normalizePaymentStatus(value: string | null | undefined): PaymentStatus {
+  const normalized = (value || '').trim().toUpperCase();
+  if (normalized === 'PAGO') return 'PAGO';
+  if (normalized === 'PENDENTE') return 'PENDENTE';
+  return 'NAO_INFORMADO';
+}
+
+function mapPaymentStatusToDb(status: PaymentStatus): 'PAGO' | 'PENDENTE' | null {
+  if (status === 'NAO_INFORMADO') return null;
+  return status;
 }
 
 function mapAppointmentStatusToDocumentStatus(status: AppointmentStatus): string {
@@ -401,7 +416,7 @@ type SaleHistoryRow = {
 
   paymentMethod: string;
 
-  paymentStatus: 'PAGO' | 'PENDENTE';
+  paymentStatus: PaymentStatus;
 };
 
 type SalesHistoryFilters = {
@@ -2315,10 +2330,7 @@ sb
     sourceType: item.source_type || null,
     sourceId: item.source_id ? String(item.source_id) : null,
 
-    paymentStatus:
-      item.payment_status === 'PAGO'
-        ? 'PAGO'
-        : 'PENDENTE',
+    paymentStatus: normalizePaymentStatus(item.payment_status),
 
     isNew: false,
 
@@ -2374,10 +2386,7 @@ salesResult.data.map((item) => ({
     paymentMethod:
         item.payment_method || '',
 
-    paymentStatus:
-        item.payment_status === 'PAGO'
-            ? 'PAGO'
-            : 'PENDENTE',
+    paymentStatus: normalizePaymentStatus(item.payment_status),
 }));
        
         setFinancialSalesRows(mappedSales);
@@ -2740,10 +2749,7 @@ return {
 
   paymentMethod: row.payment_method || '',
 
-  paymentStatus:
-    row.payment_status === 'PAGO'
-      ? 'PAGO'
-      : 'PENDENTE',
+  paymentStatus: normalizePaymentStatus(row.payment_status),
 }));
 
       setSalesHistory(mapped.length > 0 ? mapped : fallbackSalesHistory);
@@ -4392,7 +4398,7 @@ const payload = {
         entry_date: current.date,
         description: current.description || 'LANCAMENTO',
         amount: current.amount,
-         payment_status: current.paymentStatus,
+         payment_status: mapPaymentStatusToDb(current.paymentStatus),
       })
       .eq('id', id);
   }
@@ -4432,7 +4438,7 @@ const payload = {
       sourceId: null,
       isNew: true,
       entryKind: kind,
-       paymentStatus: data.payment_status as 'PAGO' | 'PENDENTE',
+       paymentStatus: normalizePaymentStatus(data.payment_status),
     };
     setFinancialEntries((prev) => [dbEntry, ...prev]);
   }
@@ -4453,7 +4459,7 @@ const payload = {
   }
 async function updateSalePaymentStatus(
   id: string,
-  status: 'PAGO' | 'PENDENTE'
+  status: PaymentStatus
 ) {
   setFinancialSalesRows((prev) =>
     prev.map((sale) =>
@@ -4482,7 +4488,7 @@ async function updateSalePaymentStatus(
   const { error } = await supabase
     .from('documents_v2')
     .update({
-      payment_status: status,
+      payment_status: mapPaymentStatusToDb(status),
     })
     .eq('id', id);
 
@@ -6557,6 +6563,7 @@ const basePrintable: PrintableDocument = {
   <option value="all">TODOS STATUS</option>
   <option value="PAGO">PAGO</option>
   <option value="PENDENTE">PENDENTE</option>
+  <option value="NAO_INFORMADO">NAO INFORMADO</option>
 </select>
               </div>
 
@@ -6613,13 +6620,14 @@ const basePrintable: PrintableDocument = {
   value={entry.paymentStatus}
   onChange={(event) => {
     updateFinancialEntry(entry.id, {
-      paymentStatus: event.target.value as 'PAGO' | 'PENDENTE',
+      paymentStatus: event.target.value as PaymentStatus,
     });
     void persistFinancialEntry(entry.id);
   }}
 >
   <option value="PENDENTE">PENDENTE</option>
   <option value="PAGO">PAGO</option>
+  <option value="NAO_INFORMADO">NAO INFORMADO</option>
 </select>
                 </div>
               ))}
@@ -6674,12 +6682,13 @@ const basePrintable: PrintableDocument = {
                           onChange={(event) =>
                             void updateSalePaymentStatus(
                               sale.id,
-                              event.target.value as 'PAGO' | 'PENDENTE'
+                              event.target.value as PaymentStatus
                             )
                           }
                         >
                           <option value="PENDENTE">PENDENTE</option>
                           <option value="PAGO">PAGO</option>
+                          <option value="NAO_INFORMADO">NAO INFORMADO</option>
                         </select>
                       </span>
                     </div>
@@ -7460,7 +7469,13 @@ const basePrintable: PrintableDocument = {
                     <p><strong>Forma de pagamento:</strong> {printSettings.paymentMethod}</p>
                     <p><strong>Garantia:</strong> {formatDaysValue(printSettings.warrantyDays)}</p>
                     <p><strong>Validade do orcamento:</strong> {formatDaysValue(printSettings.validityDays)}</p>
-                    <p><strong>Responsavel:</strong> {printSettings.responsibleName}</p>
+                    <div className="print-doc-responsible-lines">
+                      <p className="print-doc-responsible-heading"><strong>RESPONSAVEL:</strong></p>
+                      <p><strong>1.</strong> ____________________________________</p>
+                      <p><strong>2.</strong> ____________________________________</p>
+                      <p><strong>3.</strong> ____________________________________</p>
+                      <p><strong>4.</strong> ____________________________________</p>
+                    </div>
                   </section>
 
                   <section className="print-doc-company">
