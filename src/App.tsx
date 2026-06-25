@@ -7473,6 +7473,10 @@ const basePrintable: PrintableDocument = {
                   </section>
 
                   <section className="print-doc-signatures">
+                   
+                   
+                   
+                   
                     <div>
                       <span>Assinatura da Empresa</span>
                     </div>
