@@ -252,6 +252,7 @@ type PrintableDocument = {
   note: string;
   serviceTimeDays: number;
   laborRequired: boolean | null;
+  paymentMethod: string;
 };
 
 type PrintSettings = {
@@ -2531,6 +2532,7 @@ function App() {
         note: quoteSource.note,
         serviceTimeDays: quoteSource.timeDays,
         laborRequired: null,
+        paymentMethod: '',
       },
       {
         kind: 'venda',
@@ -2552,6 +2554,7 @@ function App() {
         note: saleData.note,
         serviceTimeDays: saleData.timeDays,
         laborRequired: saleData.laborRequired,
+        paymentMethod: saleData.paymentMethod,
       },
     ];
   }, [lastSavedDocumentIds.orcamento, lastSavedDocumentIds.venda, now, quoteData, receipts, saleData, saleSubtotal, saleTotal, savedQuote]);
@@ -4487,6 +4490,7 @@ const payload = {
       note: saleRow.note,
       serviceTimeDays: saleRow.timeDays,
       laborRequired: saleRow.laborRequired,
+      paymentMethod: saleData.paymentMethod,
     };
 
     // Abre imediatamente o recibo para evitar sensacao de travamento enquanto busca itens detalhados.
@@ -6760,6 +6764,12 @@ const payload = {
                       )}
                     </div>
                   </section>
+<section className="print-doc-totals">
+  <div><strong>Subtotal:</strong> {formatMoney(selectedPrintableDocument.subtotal)}</div>
+  <div><strong>Desconto:</strong> {formatMoney(selectedPrintableDocument.discount)}</div>
+  <div><strong>Total:</strong> {formatMoney(selectedPrintableDocument.total)}</div>
+  <div><strong>Forma de pagamento:</strong> {selectedPrintableDocument.paymentMethod || 'Não informado'}</div>
+</section>
 
                   <table className="print-doc-items">
                     <thead>
@@ -6770,6 +6780,7 @@ const payload = {
                         <th>Subtotal</th>
                       </tr>
                     </thead>
+
                     <tbody>
                       {selectedPrintableDocument.items.map((item, index) => (
                         <tr key={`${item.description}-${index}`}>
