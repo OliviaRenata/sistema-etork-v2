@@ -4082,6 +4082,14 @@ select option {
     margin: 0 !important;
     padding: 0 !important;
     color: #000 !important;
+    min-height: 260mm;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .print-doc-signatures {
+    margin-top: auto !important;
+    padding-top: 22mm;
   }
 
   .print-doc-items th {
