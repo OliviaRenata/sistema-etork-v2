@@ -2880,10 +2880,11 @@ select option {
 .financial-sales-header,
 .financial-sales-row {
   display: grid;
-  grid-template-columns: 140px minmax(220px, 1fr) 130px minmax(220px, 1fr) 130px;
+  grid-template-columns: 132px minmax(220px, 0.95fr) 132px minmax(360px, 1.35fr) minmax(260px, 0.9fr);
   gap: 8px;
   align-items: center;
   padding: 8px 10px;
+  min-width: 1240px;
 }
 
 .financial-sales-header {
@@ -2907,21 +2908,31 @@ select option {
 }
 
 .financial-sales-row span {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
   font-size: 13px;
+  line-height: 1.25;
+}
+
+.financial-sales-header span:nth-child(1),
+.financial-sales-header span:nth-child(3),
+.financial-sales-row span:nth-child(1),
+.financial-sales-row span:nth-child(3) {
+  white-space: nowrap;
 }
 
 .financial-total-status-cell {
   display: inline-flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   white-space: nowrap;
+  min-width: 240px;
 }
 
 .financial-status-select {
-  min-width: 112px;
+  min-width: 130px;
   height: 32px;
   padding: 4px 10px;
 }
