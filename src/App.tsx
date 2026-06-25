@@ -124,37 +124,71 @@ type ClientRow = {
 
 type FinancialEntry = {
   id: number;
+
   date: string;
+
   description: string;
+
   amount: number;
-  sourceType?: string | null;
-  sourceId?: string | null;
+
+  sourceType: string | null;
+
+  sourceId: string | null;
+
+  paymentStatus: 'PAGO' | 'PENDENTE';
+
   isNew?: boolean;
+
   entryKind?: 'receita' | 'despesa';
 };
 
 type FinancialSaleRow = {
   id: string;
+
   date: string;
+
   createdAtIso: string;
+
   customer: string;
+
   phone: string;
+
   plate: string;
+
   vehicle: string;
+
   note: string;
+
   subtotal: number;
+
   discount: number;
+
   surcharge: number;
+
   total: number;
+
   timeDays: number;
+
   laborRequired: boolean | null;
+
+  paymentMethod: string;
+
+  paymentStatus: 'PAGO' | 'PENDENTE';
 };
 
 type FinancialFilters = {
   query: string;
+
   startDate: string;
+
   endDate: string;
+
   kind: 'all' | 'receita' | 'despesa';
+
+  paymentStatus:
+    | 'all'
+    | 'PAGO'
+    | 'PENDENTE';
 };
 
 type ReportFilters = {
@@ -238,20 +272,34 @@ type CatalogRow = {
 
 type PrintableDocument = {
   kind: 'orcamento' | 'venda';
+
   number: string;
+
   issuedAt: string;
+
   customer: string;
   customerType: string;
+
   phone: string;
+
   plate: string;
+
   vehicle: string;
+
   items: ServiceItem[];
+
   subtotal: number;
+
   discount: number;
+
   total: number;
+
   note: string;
+
   serviceTimeDays: number;
+
   laborRequired: boolean | null;
+
   paymentMethod: string;
 };
 
@@ -273,15 +321,41 @@ type SaleData = {
   phone: string;
   plate: string;
   vehicleDetails: string;
+
   laborRequired: boolean;
   timeDays: number;
+
   items: ServiceItem[];
+
   discount: number;
   surcharge: number;
+
   paymentMethod: string;
+
   note: string;
 };
+type AppointmentData = {
+  date: string;
 
+  customer: string;
+  customerType: string;
+  phone: string;
+
+  plate: string;
+  vehicleDetails: string;
+
+  laborRequired: boolean;
+
+  timeDays: number;
+
+  items: ServiceItem[];
+
+  discount: number;
+
+  paymentMethod: string;
+
+  note: string;
+};
 type QuoteData = {
   customer: string;
   customerType: string;
@@ -296,19 +370,36 @@ type QuoteData = {
 
 type SaleHistoryRow = {
   id: string;
+
   createdAtIso: string;
+
   createdAt: string;
+
   customer: string;
+
   phone: string;
+
   plate: string;
+
   vehicle: string;
+
   subtotal: number;
+
   discount: number;
+
   surcharge: number;
+
   total: number;
+
   note: string;
+
   timeDays: number;
+
   laborRequired: boolean;
+
+  paymentMethod: string;
+
+  paymentStatus: 'PAGO' | 'PENDENTE';
 };
 
 type SalesHistoryFilters = {
@@ -1111,6 +1202,7 @@ function SaleScreen({
   setScreen,
   applyMatchedClient,
   onPlateLookup,
+  onQuickCreateClient,
 }: {
   saleData: SaleData;
   setSaleData: (updater: (prev: SaleData) => SaleData) => void;
@@ -1142,6 +1234,7 @@ function SaleScreen({
   setScreen: (next: Screen) => void;
   applyMatchedClient: (target: 'quote' | 'appointment' | 'sale', customerValue: string) => void;
   onPlateLookup: (target: 'quote' | 'appointment' | 'sale', plateValue: string) => void;
+  onQuickCreateClient: (target: 'quote' | 'appointment' | 'sale') => void;
 }) {
   function patchSale(patch: Partial<SaleData>) {
     setSaleData((prev) => ({ ...prev, ...patch }));
@@ -1155,7 +1248,7 @@ function SaleScreen({
   const vehicleGear = vehicleLines[1] || 'AUTOMATICO';
   const vehicleYear = vehicleLines[2] || '2024/2024';
 
-  const paymentStatusLabel = saleTotal > 0 ? 'EM ABERTO' : 'SEM VALOR';
+  const paymentStatusLabel = saleTotal > 0 ? 'PENDENTE' : 'SEM VALOR';
 
   async function handleSendService() {
     await Swal.fire({
@@ -1242,6 +1335,11 @@ function SaleScreen({
                               <input id="sales-customer-name" list="client-suggestions" className="form-control sales-premium-input" value={saleData.customer} onChange={(e) => patchSale({ customer: e.target.value })} onBlur={(e) => applyMatchedClient('sale', e.target.value)} placeholder="Cliente" />
                               <label htmlFor="sales-customer-name">Cliente</label>
                             </div>
+                          </div>
+                          <div className="col-12 col-md-6 d-flex align-items-center">
+                            <button type="button" className="sales-premium-btn ghost" onClick={() => onQuickCreateClient('sale')}>
+                              Cadastrar novo cliente
+                            </button>
                           </div>
                           <div className="col-12 col-md-6">
                             <div className="form-floating">
@@ -1503,6 +1601,7 @@ function QuoteScreen({
   applyMatchedClient,
   onPlateLookup,
   clearQuoteForm,
+  onQuickCreateClient,
 }: {
   quoteData: QuoteData;
   setQuoteData: (updater: (prev: QuoteData) => QuoteData) => void;
@@ -1518,6 +1617,7 @@ function QuoteScreen({
   applyMatchedClient: (target: 'quote' | 'appointment' | 'sale', customerValue: string) => void;
   onPlateLookup: (target: 'quote' | 'appointment' | 'sale', plateValue: string) => void;
   clearQuoteForm: () => void;
+  onQuickCreateClient: (target: 'quote' | 'appointment' | 'sale') => void;
 }) {
   function patchQuote(patch: Partial<QuoteData>) {
     setQuoteData((prev) => ({ ...prev, ...patch }));
@@ -1611,6 +1711,11 @@ function QuoteScreen({
                               <input id="quote-customer-name" list="client-suggestions" className="form-control sales-premium-input" value={quoteData.customer} onChange={(e) => patchQuote({ customer: e.target.value })} onBlur={(e) => applyMatchedClient('quote', e.target.value)} placeholder="Cliente" />
                               <label htmlFor="quote-customer-name">Cliente</label>
                             </div>
+                          </div>
+                          <div className="col-12 col-md-6 d-flex align-items-center">
+                            <button type="button" className="sales-premium-btn ghost" onClick={() => onQuickCreateClient('quote')}>
+                              Cadastrar novo cliente
+                            </button>
                           </div>
                           <div className="col-12 col-md-6">
                             <div className="form-floating">
@@ -1794,34 +1899,65 @@ function App() {
   const [quoteData, setQuoteData] = useState<QuoteData>({
     ...createEmptyQuoteData(),
   });
-  const createEmptyAppointmentData = () => ({
-    date: toDateTimeLocalValue(new Date()),
-    customer: '',
-    customerType: getCustomerTypeLabel(1),
-    phone: '',
-    plate: '',
-    vehicleDetails: '',
-    laborRequired: true,
-    items: [] as ServiceItem[],
-    discount: 0,
-    note: '',
-  });
-  const [appointmentData, setAppointmentData] = useState<ReturnType<typeof createEmptyAppointmentData>>(createEmptyAppointmentData());
-  const createEmptySaleData = (): SaleData => ({
-    customer: '',
-    customerType: getCustomerTypeLabel(1),
-    phone: '',
-    plate: '',
-    vehicleDetails: '',
-    laborRequired: true,
-    timeDays: 1,
-    items: [],
-    discount: 0,
-    surcharge: 0,
-     paymentMethod: 'PIX',
-    note: '',
-  });
-  const [saleData, setSaleData] = useState<SaleData>(() => createEmptySaleData());
+ const createEmptyAppointmentData = (): AppointmentData => ({
+  date: '',
+
+  customer: '',
+
+  customerType: getCustomerTypeLabel(1),
+
+  phone: '',
+
+  plate: '',
+
+  vehicleDetails: '',
+
+  laborRequired: true,
+
+  timeDays: 1,
+
+  items: [],
+
+  discount: 0,
+
+  paymentMethod: 'PIX',
+
+  note: '',
+});
+
+ const [appointmentData, setAppointmentData] =
+  useState<ReturnType<typeof createEmptyAppointmentData>>(
+    createEmptyAppointmentData()
+  );
+const createEmptySaleData = (): SaleData => ({
+  customer: '',
+  customerType: getCustomerTypeLabel(1),
+
+  phone: '',
+
+  plate: '',
+
+  vehicleDetails: '',
+
+  laborRequired: true,
+
+  timeDays: 1,
+
+  items: [],
+
+  discount: 0,
+
+  surcharge: 0,
+
+  paymentMethod: 'PIX',
+
+  note: '',
+});
+
+  const [saleData, setSaleData] =
+  useState<ReturnType<typeof createEmptySaleData>>(
+    createEmptySaleData()
+  );
   const [receipts, setReceipts] = useState<ReceiptRow[]>([]);
   const [savedQuote, setSavedQuote] = useState<SavedQuote | null>(null);
   const [savedAppointment, setSavedAppointment] = useState<SavedAppointment | null>(null);
@@ -1851,12 +1987,19 @@ function App() {
   const [clients, setClients] = useState<ClientRow[]>([]);
   const [financialEntries, setFinancialEntries] = useState<FinancialEntry[]>([]);
   const [financialSalesRows, setFinancialSalesRows] = useState<FinancialSaleRow[]>([]);
-  const [financialFilters, setFinancialFilters] = useState<FinancialFilters>({
+const [financialFilters, setFinancialFilters] =
+  useState<FinancialFilters>({
     query: '',
+
     startDate: '',
+
     endDate: '',
+
     kind: 'all',
+
+    paymentStatus: 'all',
   });
+
   const [reportFilters, setReportFilters] = useState<ReportFilters>({
     query: '',
     startDate: '',
@@ -2059,20 +2202,32 @@ function App() {
           .from('clients_v2')
           .select('id, name, phone, plate, price_table')
           .order('id', { ascending: false }),
-        sb
-          .from('financial_entries_v2')
-          .select('id, entry_date, description, amount, source_type, source_id')
-          .order('id', { ascending: false }),
+
+sb
+  .from('financial_entries_v2')
+  .select(`
+    id,
+    entry_date,
+    description,
+    amount,
+    source_type,
+    source_id,
+    payment_status
+  `)
+  .order('id', { ascending: false }),
+
         sb
           .from('documents_v2')
           .select('id, customer_name_snapshot, phone_snapshot, plate_snapshot, vehicle_snapshot, notes, discount_amount, scheduled_for, total_amount, created_at, status')
           .eq('doc_type', 'agendamento')
           .order('scheduled_for', { ascending: true, nullsFirst: false })
           .order('created_at', { ascending: false }),
-        sb
-          .from('documents_v2')
-          .select('id, customer_name_snapshot, phone_snapshot, plate_snapshot, vehicle_snapshot, notes, subtotal_amount, discount_amount, surcharge_amount, total_amount, service_time_days, labor_required, created_at')
-          .eq('doc_type', 'venda')
+sb
+  .from('documents_v2')
+  .select(
+    'id, customer_name_snapshot, phone_snapshot, plate_snapshot, vehicle_snapshot, notes, subtotal_amount, discount_amount, surcharge_amount, total_amount, service_time_days, labor_required, created_at, payment_method, payment_status'
+  )
+  .eq('doc_type', 'venda')
           .order('created_at', { ascending: false })
           .limit(250),
       ]);
@@ -2116,46 +2271,83 @@ function App() {
       }
 
       if (!financialResult.error && financialResult.data && financialResult.data.length > 0) {
-        const mappedEntries: FinancialEntry[] = financialResult.data.map((item) => {
-          const amount = Number(item.amount) || 0;
-          const description = item.description || '';
-          return {
-          id: Number(item.id),
-          date: item.entry_date || new Date().toISOString().slice(0, 10),
-          description,
-          amount,
-          sourceType: item.source_type || null,
-          sourceId: item.source_id ? String(item.source_id) : null,
-          entryKind:
-            item.source_type === 'venda'
-              ? 'receita'
-              : amount < 0
-                ? 'despesa'
-                : description.trim().toUpperCase().startsWith('DESPESA')
-                  ? 'despesa'
-                  : 'receita',
-          };
-        });
-        setFinancialEntries(mappedEntries);
+   const mappedEntries: FinancialEntry[] = financialResult.data.map((item) => {
+  const amount = Number(item.amount) || 0;
+  const description = item.description || '';
+
+  return {
+    id: Number(item.id),
+    date: item.entry_date || new Date().toISOString().slice(0, 10),
+    description,
+    amount,
+    sourceType: item.source_type || null,
+    sourceId: item.source_id ? String(item.source_id) : null,
+
+    paymentStatus:
+      item.payment_status === 'PAGO'
+        ? 'PAGO'
+        : 'PENDENTE',
+
+    isNew: false,
+
+    entryKind:
+      item.source_type === 'venda'
+        ? 'receita'
+        : amount < 0
+          ? 'despesa'
+          : description.trim().toUpperCase().startsWith('DESPESA')
+            ? 'despesa'
+            : 'receita',
+  };
+});
+
+setFinancialEntries(mappedEntries);
       }
 
       if (!salesResult.error && salesResult.data) {
-        const mappedSales: FinancialSaleRow[] = salesResult.data.map((item) => ({
-          id: String(item.id),
-          date: toBrDate(item.created_at || ''),
-          createdAtIso: item.created_at || '',
-          customer: item.customer_name_snapshot || 'SEM CLIENTE',
-          phone: item.phone_snapshot || '',
-          plate: item.plate_snapshot || '',
-          vehicle: item.vehicle_snapshot || '',
-          note: item.notes || '',
-          subtotal: Number(item.subtotal_amount) || 0,
-          discount: Number(item.discount_amount) || 0,
-          surcharge: Number(item.surcharge_amount) || 0,
-          total: Number(item.total_amount) || 0,
-          timeDays: Number(item.service_time_days) || 0,
-          laborRequired: typeof item.labor_required === 'boolean' ? item.labor_required : null,
-        }));
+const mappedSales: FinancialSaleRow[] =
+salesResult.data.map((item) => ({
+
+    id: String(item.id),
+
+    date: toBrDate(item.created_at || ''),
+
+    createdAtIso: item.created_at || '',
+
+    customer: item.customer_name_snapshot || 'SEM CLIENTE',
+
+    phone: item.phone_snapshot || '',
+
+    plate: item.plate_snapshot || '',
+
+    vehicle: item.vehicle_snapshot || '',
+
+    note: item.notes || '',
+
+    subtotal: Number(item.subtotal_amount) || 0,
+
+    discount: Number(item.discount_amount) || 0,
+
+    surcharge: Number(item.surcharge_amount) || 0,
+
+    total: Number(item.total_amount) || 0,
+
+    timeDays: Number(item.service_time_days) || 0,
+
+    laborRequired:
+        typeof item.labor_required === 'boolean'
+            ? item.labor_required
+            : null,
+
+    paymentMethod:
+        item.payment_method || '',
+
+    paymentStatus:
+        item.payment_status === 'PAGO'
+            ? 'PAGO'
+            : 'PENDENTE',
+}));
+       
         setFinancialSalesRows(mappedSales);
       }
 
@@ -2400,6 +2592,8 @@ function App() {
         note: row.note,
         timeDays: row.timeDays || 1,
         laborRequired: row.laborRequired ?? false,
+        paymentMethod: row.paymentMethod,
+        paymentStatus: row.paymentStatus,
       })),
     [financialSalesRows]
   );
@@ -2415,22 +2609,25 @@ function App() {
         const descriptionMatch = entry.description.match(/^VENDA\s+#([^\s]+)\s+-\s+(.+)$/i);
         const customer = descriptionMatch?.[2]?.trim() || entry.description.replace(/^VENDA\s+#?[^\s]*\s*-?\s*/i, '').trim() || 'SEM CLIENTE';
 
-        return {
-          id: sourceId,
-          createdAtIso: entry.date ? `${entry.date}T12:00:00` : '',
-          createdAt: entry.date ? new Date(`${entry.date}T12:00:00`).toLocaleString('pt-BR') : '',
-          customer,
-          phone: '',
-          plate: '',
-          vehicle: '',
-          subtotal: Number(entry.amount) || 0,
-          discount: 0,
-          surcharge: 0,
-          total: Number(entry.amount) || 0,
-          note: entry.description,
-          timeDays: 1,
-          laborRequired: false,
-        };
+return {
+  id: sourceId,
+  createdAtIso: entry.date ? `${entry.date}T12:00:00` : '',
+  createdAt: entry.date ? new Date(`${entry.date}T12:00:00`).toLocaleString('pt-BR') : '',
+  customer,
+  phone: '',
+  plate: '',
+  vehicle: '',
+  subtotal: Number(entry.amount) || 0,
+  discount: 0,
+  surcharge: 0,
+  total: Number(entry.amount) || 0,
+  note: entry.description,
+  timeDays: 1,
+  laborRequired: false,
+
+  paymentMethod: '',
+  paymentStatus: entry.paymentStatus,
+};
       })
       .filter((row) => !documentSaleIds.has(row.id))
       .sort((a, b) => {
@@ -2464,7 +2661,7 @@ function App() {
       const { data, error } = await sb
         .from('documents_v2')
         .select(
-          'id, created_at, customer_name_snapshot, phone_snapshot, plate_snapshot, vehicle_snapshot, subtotal_amount, discount_amount, surcharge_amount, total_amount, notes, service_time_days, labor_required'
+          'id, created_at, customer_name_snapshot, phone_snapshot, plate_snapshot, vehicle_snapshot, subtotal_amount, discount_amount, surcharge_amount, total_amount, notes, service_time_days, labor_required, payment_method, payment_status'
         )
         .eq('doc_type', 'venda')
         .order('created_at', { ascending: false })
@@ -2478,22 +2675,44 @@ function App() {
         return;
       }
 
-      const mapped = data.map((row) => ({
-        id: String(row.id),
-        createdAtIso: row.created_at || '',
-        createdAt: row.created_at ? new Date(row.created_at).toLocaleString('pt-BR') : '',
-        customer: row.customer_name_snapshot || 'SEM CLIENTE',
-        phone: row.phone_snapshot || '',
-        plate: row.plate_snapshot || '',
-        vehicle: row.vehicle_snapshot || '',
-        subtotal: Number(row.subtotal_amount) || 0,
-        discount: Number(row.discount_amount) || 0,
-        surcharge: Number(row.surcharge_amount) || 0,
-        total: Number(row.total_amount) || 0,
-        note: row.notes || '',
-        timeDays: Number(row.service_time_days) || 1,
-        laborRequired: Boolean(row.labor_required),
-      }));
+     const mapped: SaleHistoryRow[] = data.map((row) => ({
+  id: String(row.id),
+
+  createdAtIso: row.created_at || '',
+
+  createdAt: row.created_at
+    ? new Date(row.created_at).toLocaleString('pt-BR')
+    : '',
+
+  customer: row.customer_name_snapshot || 'SEM CLIENTE',
+
+  phone: row.phone_snapshot || '',
+
+  plate: row.plate_snapshot || '',
+
+  vehicle: row.vehicle_snapshot || '',
+
+  subtotal: Number(row.subtotal_amount) || 0,
+
+  discount: Number(row.discount_amount) || 0,
+
+  surcharge: Number(row.surcharge_amount) || 0,
+
+  total: Number(row.total_amount) || 0,
+
+  note: row.notes || '',
+
+  timeDays: Number(row.service_time_days) || 1,
+
+  laborRequired: Boolean(row.labor_required),
+
+  paymentMethod: row.payment_method || '',
+
+  paymentStatus:
+    row.payment_status === 'PAGO'
+      ? 'PAGO'
+      : 'PENDENTE',
+}));
 
       setSalesHistory(mapped.length > 0 ? mapped : fallbackSalesHistory);
       setSalesHistoryLoading(false);
@@ -2646,14 +2865,16 @@ function App() {
           financialFilters.kind === 'all' ||
           (financialFilters.kind === 'receita' && entryKind === 'receita') ||
           (financialFilters.kind === 'despesa' && entryKind === 'despesa');
-
+        const matchesPaymentStatus =
+          financialFilters.paymentStatus === 'all' ||
+          entry.paymentStatus === financialFilters.paymentStatus;
         const entryDate = new Date(`${entry.date}T12:00:00`);
         if (Number.isNaN(entryDate.getTime())) return false;
 
         if (start && entryDate < start) return false;
         if (end && entryDate > end) return false;
 
-        return matchesQuery && matchesKind;
+        return matchesQuery && matchesKind && matchesPaymentStatus;
       })
       .sort((a, b) => {
         const dateDiff = new Date(`${b.date}T12:00:00`).getTime() - new Date(`${a.date}T12:00:00`).getTime();
@@ -2742,6 +2963,13 @@ function App() {
         if (start && rowDate && rowDate < start) return false;
         if (end && rowDate && rowDate > end) return false;
 
+        if (
+financialFilters.paymentStatus !== 'all' &&
+row.paymentStatus !== financialFilters.paymentStatus
+) {
+    return false;
+}
+
         if (!query) return true;
 
         return matchesSearchTokens(
@@ -2769,7 +2997,7 @@ function App() {
         const bDate = b.createdAtIso ? new Date(b.createdAtIso).getTime() : parseBrDate(b.date)?.getTime() || 0;
         return bDate - aDate;
       });
-  }, [effectiveFinancialSalesRows, financialFilters.endDate, financialFilters.kind, financialFilters.query, financialFilters.startDate]);
+  }, [effectiveFinancialSalesRows, financialFilters.endDate, financialFilters.kind, financialFilters.paymentStatus, financialFilters.query, financialFilters.startDate]);
 
   const financialSalesTotal = useMemo(
     () => filteredFinancialSalesRows.reduce((acc, row) => acc + row.total, 0),
@@ -2828,6 +3056,7 @@ function App() {
       if (end && entryDate > end) return false;
 
       if (!query) return true;
+      
 
       return matchesSearchTokens(
         [
@@ -2856,7 +3085,7 @@ function App() {
 
   useEffect(() => {
     setFinancialPage(1);
-  }, [financialFilters.query, financialFilters.startDate, financialFilters.endDate, financialFilters.kind]);
+  }, [financialFilters.query, financialFilters.startDate, financialFilters.endDate, financialFilters.kind, financialFilters.paymentStatus]);
 
   useEffect(() => {
     setFinancialPage((current) => Math.min(current, financialTotalPages));
@@ -2918,9 +3147,7 @@ function App() {
     return getCustomerPriceTable(customerType);
   }
 
-  function applyMatchedClient(target: 'quote' | 'appointment' | 'sale', customerValue: string) {
-    const client = findClientMatch(customerValue);
-    if (!client) return;
+  function applyClientToTarget(target: 'quote' | 'appointment' | 'sale', client: ClientRow) {
     const customerType = getCustomerTypeLabel(client.priceTable);
 
     if (target === 'quote') {
@@ -2952,6 +3179,131 @@ function App() {
       phone: client.phone,
       plate: client.plate,
     }));
+  }
+
+  function getDraftClientByTarget(target: 'quote' | 'appointment' | 'sale') {
+    if (target === 'quote') {
+      return {
+        name: quoteData.customer,
+        phone: quoteData.phone,
+        plate: quoteData.plate,
+        price_table: getSelectedPriceTable(quoteData.customerType),
+      };
+    }
+
+    if (target === 'appointment') {
+      return {
+        name: appointmentData.customer,
+        phone: appointmentData.phone,
+        plate: appointmentData.plate,
+        price_table: getSelectedPriceTable(appointmentData.customerType),
+      };
+    }
+
+    return {
+      name: saleData.customer,
+      phone: saleData.phone,
+      plate: saleData.plate,
+      price_table: getSelectedPriceTable(saleData.customerType),
+    };
+  }
+
+  async function createClientRecord(payload: {
+    name: string;
+    phone: string;
+    plate: string;
+    price_table: number;
+  }) {
+    if (!isSupabaseConfigured || !supabase) {
+      return null;
+    }
+
+    const { data, error } = await supabase
+      .from('clients_v2')
+      .insert(payload)
+      .select('id, name, phone, plate, price_table')
+      .single();
+
+    if (error || !data) return null;
+
+    const dbClient: ClientRow = {
+      id: Number(data.id),
+      name: data.name || payload.name,
+      phone: data.phone || payload.phone,
+      plate: data.plate || payload.plate,
+      priceTable: Number(data.price_table) === 2 ? 2 : 1,
+    };
+
+    return dbClient;
+  }
+
+  async function openQuickClientModal(target: 'quote' | 'appointment' | 'sale') {
+    if (!isSupabaseConfigured || !supabase) {
+      window.alert('Cadastro rapido exige Supabase configurado.');
+      return;
+    }
+
+    const draft = getDraftClientByTarget(target);
+    const result = await Swal.fire({
+      title: 'Cadastrar novo cliente',
+      html: `
+        <input id="swal-client-name" class="swal2-input" placeholder="Nome" value="${escapeHtml(draft.name || '')}" />
+        <input id="swal-client-phone" class="swal2-input" placeholder="Telefone" value="${escapeHtml(draft.phone || '')}" />
+        <input id="swal-client-plate" class="swal2-input" placeholder="Placa" value="${escapeHtml((draft.plate || '').toUpperCase())}" />
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Salvar',
+      cancelButtonText: 'Cancelar',
+      focusConfirm: false,
+      preConfirm: () => {
+        const nameInput = document.getElementById('swal-client-name') as HTMLInputElement | null;
+        const phoneInput = document.getElementById('swal-client-phone') as HTMLInputElement | null;
+        const plateInput = document.getElementById('swal-client-plate') as HTMLInputElement | null;
+
+        const name = nameInput?.value.trim() || '';
+        const phone = phoneInput?.value.trim() || '';
+        const plate = (plateInput?.value || '').toUpperCase().trim();
+
+        if (!name) {
+          Swal.showValidationMessage('Informe o nome do cliente.');
+          return null;
+        }
+
+        return {
+          name,
+          phone,
+          plate,
+        };
+      },
+    });
+
+    if (!result.isConfirmed || !result.value) return;
+
+    const dbClient = await createClientRecord({
+      name: result.value.name,
+      phone: result.value.phone,
+      plate: result.value.plate,
+      price_table: draft.price_table,
+    });
+
+    if (!dbClient) {
+      window.alert('Nao foi possivel salvar cliente no banco.');
+      return;
+    }
+
+    setClients((prev) => [dbClient, ...prev]);
+    applyClientToTarget(target, dbClient);
+  }
+
+  function applyMatchedClient(target: 'quote' | 'appointment' | 'sale', customerValue: string) {
+    if (customerValue.trim().toLowerCase() === 'cadastrar novo cliente') {
+      void openQuickClientModal(target);
+      return;
+    }
+
+    const client = findClientMatch(customerValue);
+    if (!client) return;
+    applyClientToTarget(target, client);
   }
 
   function normalizePlateForLookup(raw: string) {
@@ -3728,7 +4080,6 @@ function App() {
       return;
     }
 
-    const sb = supabase;
     const payload = {
       name: 'NOVO CLIENTE',
       phone: '67 90000-0000',
@@ -3736,19 +4087,12 @@ function App() {
       price_table: 1,
     };
 
-    const { data, error } = await sb.from('clients_v2').insert(payload).select('id, name, phone, plate, price_table').single();
-    if (error || !data) {
-      window.alert(`Nao foi possivel salvar cliente no banco: ${error?.message ?? 'Erro desconhecido'}`);
+    const dbClient = await createClientRecord(payload);
+    if (!dbClient) {
+      window.alert('Nao foi possivel salvar cliente no banco.');
       return;
     }
 
-    const dbClient: ClientRow = {
-      id: Number(data.id),
-      name: data.name || payload.name,
-      phone: data.phone || payload.phone,
-      plate: data.plate || payload.plate,
-      priceTable: Number(data.price_table) === 2 ? 2 : 1,
-    };
     setClients((prev) => [dbClient, ...prev]);
   }
 
@@ -3917,6 +4261,7 @@ const payload = {
         entry_date: current.date,
         description: current.description || 'LANCAMENTO',
         amount: current.amount,
+         payment_status: current.paymentStatus,
       })
       .eq('id', id);
   }
@@ -3933,12 +4278,13 @@ const payload = {
       entry_date: new Date().toISOString().slice(0, 10),
       description: label,
       amount: 0,
+       payment_status: 'PENDENTE',
     };
 
     const { data, error } = await sb
       .from('financial_entries_v2')
       .insert(payload)
-      .select('id, entry_date, description, amount')
+     .select('id, entry_date, description, amount, payment_status')
       .single();
 
     if (error || !data) {
@@ -3955,6 +4301,7 @@ const payload = {
       sourceId: null,
       isNew: true,
       entryKind: kind,
+       paymentStatus: data.payment_status as 'PAGO' | 'PENDENTE',
     };
     setFinancialEntries((prev) => [dbEntry, ...prev]);
   }
@@ -3973,7 +4320,46 @@ const payload = {
     const sb = supabase;
     await sb.from('financial_entries_v2').delete().eq('id', id);
   }
+async function updateSalePaymentStatus(
+  id: string,
+  status: 'PAGO' | 'PENDENTE'
+) {
+  setFinancialSalesRows((prev) =>
+    prev.map((sale) =>
+      sale.id === id
+        ? {
+            ...sale,
+            paymentStatus: status,
+          }
+        : sale
+    )
+  );
 
+  setSalesHistory((prev) =>
+    prev.map((sale) =>
+      sale.id === id
+        ? {
+            ...sale,
+            paymentStatus: status,
+          }
+        : sale
+    )
+  );
+
+  if (!isSupabaseConfigured || !supabase) return;
+
+  const { error } = await supabase
+    .from('documents_v2')
+    .update({
+      payment_status: status,
+    })
+    .eq('id', id);
+
+  if (error) {
+    console.error(error);
+    window.alert('Não foi possível atualizar o status do pagamento.');
+  }
+}
   function updateReceipt(id: ReceiptRow['id'], patch: Partial<ReceiptRow>) {
     setReceipts((prev) => prev.map((row) => (row.id === id ? { ...row, ...patch } : row)));
   }
@@ -3986,23 +4372,24 @@ const payload = {
     window.alert('Adicionar recibo manualmente nao e suportado. Use vendas salvas no Supabase.');
   }
 
-  async function persistDocument(
-    docType: 'orcamento' | 'agendamento' | 'venda',
-    payload: {
-      customerName: string;
-      phone: string;
-      plate: string;
-      vehicleSnapshot: string;
-      laborRequired: boolean;
-      serviceTimeDays: number;
-      discount: number;
-      surcharge?: number;
-      paymentMethod?: string;
-      note: string;
-      scheduledFor?: string;
-    },
-    items: ServiceItem[]
-  ) {
+async function persistDocument(
+  docType: 'orcamento' | 'agendamento' | 'venda',
+  payload: {
+    customerName: string;
+    phone: string;
+    plate: string;
+    vehicleSnapshot: string;
+    laborRequired: boolean;
+    serviceTimeDays: number;
+    discount: number;
+    surcharge?: number;
+    paymentMethod?: string;
+    note: string;
+    scheduledFor?: string;
+  },
+  items: ServiceItem[]
+)
+ {
     if (!isSupabaseConfigured || !supabase) return { ok: false as const, error: 'Supabase nao configurado' };
 
     const sb = supabase;
@@ -4011,26 +4398,43 @@ const payload = {
     const surcharge = Math.max(0, payload.surcharge ?? 0);
     const total = Math.max(subtotal - payload.discount + surcharge, 0);
 
-    const { data: documentRow, error: documentError } = await sb
-      .from('documents_v2')
-      .insert({
-        doc_type: docType,
-        status: 'aberto',
-        customer_name_snapshot: payload.customerName || null,
-        phone_snapshot: payload.phone || null,
-        plate_snapshot: payload.plate || null,
-        vehicle_snapshot: payload.vehicleSnapshot || null,
-        labor_required: payload.laborRequired,
-        service_time_days: payload.serviceTimeDays,
-        scheduled_for: scheduledForIso,
-        discount_amount: payload.discount,
-        surcharge_amount: surcharge,
-        notes: payload.note || null,
-        subtotal_amount: subtotal,
-        total_amount: total,
-      })
-      .select('id')
-      .single();
+  const { data: documentRow, error: documentError } = await sb
+  .from('documents_v2')
+  .insert({
+    doc_type: docType,
+
+    status: 'aberto',
+
+    customer_name_snapshot: payload.customerName || null,
+
+    phone_snapshot: payload.phone || null,
+
+    plate_snapshot: payload.plate || null,
+
+    vehicle_snapshot: payload.vehicleSnapshot || null,
+
+    labor_required: payload.laborRequired,
+
+    service_time_days: payload.serviceTimeDays,
+
+    scheduled_for: scheduledForIso,
+
+    discount_amount: payload.discount,
+
+    surcharge_amount: surcharge,
+
+    payment_method: payload.paymentMethod ?? null,
+
+    payment_status: 'PENDENTE',
+
+    notes: payload.note || null,
+
+    subtotal_amount: subtotal,
+
+    total_amount: total,
+  })
+  .select()
+  .single();
 
     if (documentError || !documentRow) {
       return { ok: false as const, error: documentError?.message || 'Erro ao salvar documento' };
@@ -4116,6 +4520,7 @@ const payload = {
         laborRequired: false,
         serviceTimeDays: quoteData.timeDays,
         discount: quoteData.discount,
+          paymentMethod: 'PIX',
         note: quoteData.note,
       },
       quoteData.items
@@ -4156,22 +4561,31 @@ const payload = {
 
     setIsSaving(true);
 
-    const result = await persistDocument(
-      'agendamento',
-      {
-        customerName: appointmentData.customer,
-        phone: appointmentData.phone,
-        plate: appointmentData.plate,
-        vehicleSnapshot: appointmentData.vehicleDetails,
-        laborRequired: appointmentData.laborRequired,
-        serviceTimeDays: 1,
-        discount: appointmentData.discount,
-        note: appointmentData.note,
-        scheduledFor: appointmentData.date,
-      },
-      appointmentData.items
-    );
+  const result = await persistDocument(
+  'agendamento',
+  {
+    customerName: appointmentData.customer,
 
+    phone: appointmentData.phone,
+
+    plate: appointmentData.plate,
+
+    vehicleSnapshot: appointmentData.vehicleDetails,
+
+    laborRequired: appointmentData.laborRequired,
+
+    serviceTimeDays: 1,
+
+    discount: appointmentData.discount,
+
+    paymentMethod: appointmentData.paymentMethod,
+
+    note: appointmentData.note,
+
+    scheduledFor: appointmentData.date,
+  },
+  appointmentData.items
+);
     setIsSaving(false);
     if (result.ok && result.id) {
       const appointmentId = String(result.id);
@@ -4402,22 +4816,31 @@ const payload = {
     const car = saleData.vehicleDetails.split('\n')[0] || saleData.vehicleDetails;
 
     setIsSaving(true);
-    const result = await persistDocument(
-      'venda',
-      {
-        customerName: saleData.customer,
-        phone: saleData.phone,
-        plate: saleData.plate,
-        vehicleSnapshot: saleData.vehicleDetails,
-        laborRequired: saleData.laborRequired,
-        serviceTimeDays: saleData.timeDays,
-        discount: saleData.discount,
-          paymentMethod: saleData.paymentMethod,
-        surcharge: saleData.surcharge,
-        note: saleData.note,
-      },
-      saleData.items
-    );
+  const result = await persistDocument(
+  'venda',
+  {
+    customerName: saleData.customer,
+
+    phone: saleData.phone,
+
+    plate: saleData.plate,
+
+    vehicleSnapshot: saleData.vehicleDetails,
+
+    laborRequired: saleData.laborRequired,
+
+    serviceTimeDays: saleData.timeDays,
+
+    discount: saleData.discount,
+
+    surcharge: saleData.surcharge,
+
+    paymentMethod: saleData.paymentMethod,
+
+    note: saleData.note,
+  },
+  saleData.items
+);
     setIsSaving(false);
     if (!result.ok || !result.id) {
       window.alert(`Nao foi possivel salvar a venda no banco: ${result.error ?? 'Erro desconhecido'}`);
@@ -4438,6 +4861,28 @@ const payload = {
     setLastSavedDocumentIds((prev) => ({ ...prev, venda: String(result.id) }));
     setReceipts((prev) => [persistedReceipt, ...prev]);
     window.alert('Venda finalizada e salva no banco.');
+    setFinancialSalesRows((prev) => [
+    {
+        id: String(result.id),
+        date: nowDate,
+        createdAtIso: new Date().toISOString(),
+        customer: saleData.customer,
+        phone: saleData.phone,
+        plate: saleData.plate,
+        vehicle: saleData.vehicleDetails,
+        subtotal: saleSubtotal,
+        discount: saleData.discount,
+        surcharge: saleData.surcharge,
+        total: saleTotal,
+        note: saleData.note,
+        timeDays: saleData.timeDays,
+        laborRequired: saleData.laborRequired,
+
+        paymentMethod: saleData.paymentMethod,
+        paymentStatus: 'PENDENTE',
+    },
+    ...prev,
+]);
     setSelectedPrintKind('venda');
     setScreen('print-receipt');
   }
@@ -4456,6 +4901,7 @@ const payload = {
       discount: printable.discount,
       surcharge: Math.max(printable.total - printable.subtotal + printable.discount, 0),
       note: printable.note,
+        paymentMethod: printable.paymentMethod,
     }));
 
     setSelectedPrintKind('venda');
@@ -4473,27 +4919,33 @@ const payload = {
     if (!saleRow) return;
 
     setSaleReceiptLoading(true);
+const basePrintable: PrintableDocument = {
+  kind: 'venda',
+  number: `VEN-${saleRow.id.slice(0, 8).toUpperCase()}`,
+  issuedAt: saleRow.createdAt,
+  customer: saleRow.customer,
+  customerType: getCustomerTypeLabel(1),
+  phone: saleRow.phone,
+  plate: saleRow.plate,
+  vehicle: saleRow.vehicle,
+  items: [
+    {
+      description: saleRow.vehicle || 'SERVICO',
+      quantity: 1,
+      price: saleRow.total,
+    },
+  ],
+  subtotal: saleRow.subtotal,
+  discount: saleRow.discount,
+  total: saleRow.total,
+  note: saleRow.note,
+  serviceTimeDays: saleRow.timeDays,
+  laborRequired: saleRow.laborRequired,
 
-    const basePrintable: PrintableDocument = {
-      kind: 'venda',
-      number: `VEN-${saleRow.id.slice(0, 8).toUpperCase()}`,
-      issuedAt: saleRow.createdAt,
-      customer: saleRow.customer,
-      customerType: getCustomerTypeLabel(1),
-      phone: saleRow.phone,
-      plate: saleRow.plate,
-      vehicle: saleRow.vehicle,
-      items: [{ description: saleRow.vehicle || 'SERVICO', quantity: 1, price: saleRow.total }],
-      subtotal: saleRow.subtotal,
-      discount: saleRow.discount,
-      total: saleRow.total,
-      note: saleRow.note,
-      serviceTimeDays: saleRow.timeDays,
-      laborRequired: saleRow.laborRequired,
-      paymentMethod: saleData.paymentMethod,
-    };
-
-    // Abre imediatamente o recibo para evitar sensacao de travamento enquanto busca itens detalhados.
+  paymentMethod: saleRow.paymentMethod,
+ 
+};
+// Abre imediatamente o recibo para evitar sensacao de travamento enquanto busca itens detalhados.
     if (openReceipt) {
       openSaleReceiptDocument(basePrintable);
     }
@@ -4998,7 +5450,7 @@ const payload = {
   function exportFinancialCSV() {
     downloadCsv(
       `financeiro-filtrado-${Date.now()}.csv`,
-      ['ID', 'Data', 'Descricao', 'Tipo', 'Valor', 'Vinculado Venda', 'Origem', 'ID Origem'],
+      ['ID', 'Data', 'Descricao', 'Tipo', 'Valor', 'Vinculado Venda', 'Origem', 'ID Origem', 'Status'],
       filteredFinancialEntries.map((row) => {
         const type = row.amount < 0 ? 'DESPESA' : 'RECEITA';
         return [
@@ -5082,6 +5534,7 @@ const payload = {
               <th>DESCRICAO</th>
               <th>TIPO</th>
               <th>VALOR</th>
+               <th>STATUS</th>
             </tr>
           </thead>
           <tbody>
@@ -5293,7 +5746,8 @@ const payload = {
   function exportSalesHistoryCSV() {
     downloadCsv(
       `vendas-filtradas-${Date.now()}.csv`,
-      ['ID', 'Data', 'Cliente', 'Telefone', 'Placa', 'Veiculo', 'Subtotal', 'Desconto', 'Acrescimo', 'Total', 'Prazo Dias', 'Mao de Obra', 'Observacao'],
+      ['ID', 'Data', 'Cliente', 'Telefone', 'Placa', 'Veiculo', 'Subtotal', 'Desconto', 'Acrescimo', 'Total', 'Forma Pagamento',
+    'Status','Prazo Dias', 'Mao de Obra', 'Observacao'],
       filteredSalesHistory.map((row) => [
         row.id,
         row.createdAt,
@@ -5305,6 +5759,8 @@ const payload = {
         row.discount.toFixed(2),
         row.surcharge.toFixed(2),
         row.total.toFixed(2),
+            row.paymentMethod,
+    row.paymentStatus,
         row.timeDays,
         row.laborRequired ? 'SIM' : 'NAO',
         row.note,
@@ -5331,6 +5787,8 @@ const payload = {
             <td>${escapeHtml(row.plate || 'SEM PLACA')}</td>
             <td>${escapeHtml(row.vehicle || 'SEM VEICULO')}</td>
             <td>${escapeHtml(formatMoney(row.total))}</td>
+                    <td>${escapeHtml(row.paymentMethod || '-')}</td>
+        <td>${escapeHtml(row.paymentStatus)}</td>
             <td>${row.laborRequired ? 'SIM' : 'NAO'}</td>
           </tr>
         `
@@ -5368,6 +5826,8 @@ const payload = {
               <th>PLACA</th>
               <th>VEICULO</th>
               <th>TOTAL</th>
+                <th>FORMA PAGAMENTO</th>
+    <th>STATUS</th>
               <th>M.O</th>
             </tr>
           </thead>
@@ -5943,6 +6403,20 @@ const payload = {
                   <option value="receita">SOMENTE RECEITAS</option>
                   <option value="despesa">SOMENTE DESPESAS</option>
                 </select>
+                <select
+  className="input-look"
+  value={financialFilters.paymentStatus}
+  onChange={(event) =>
+    setFinancialFilters((prev) => ({
+      ...prev,
+      paymentStatus: event.target.value as FinancialFilters['paymentStatus'],
+    }))
+  }
+>
+  <option value="all">TODOS STATUS</option>
+  <option value="PAGO">PAGO</option>
+  <option value="PENDENTE">PENDENTE</option>
+</select>
               </div>
 
               <div className="line"><strong>TOTAL GERAL (BASE COMPLETA):</strong> <span>{formatMoney(financialTotal)}</span></div>
@@ -5993,6 +6467,19 @@ const payload = {
                   <button className="item-delete" disabled={entry.isSaleLinked} onClick={() => void removeFinancialEntry(entry.id)}>
                     {entry.isSaleLinked ? '-' : 'X'}
                   </button>
+                  <select
+  className="input-look"
+  value={entry.paymentStatus}
+  onChange={(event) => {
+    updateFinancialEntry(entry.id, {
+      paymentStatus: event.target.value as 'PAGO' | 'PENDENTE',
+    });
+    void persistFinancialEntry(entry.id);
+  }}
+>
+  <option value="PENDENTE">PENDENTE</option>
+  <option value="PAGO">PAGO</option>
+</select>
                 </div>
               ))}
               {filteredFinancialEntries.length === 0 && (
@@ -6031,6 +6518,7 @@ const payload = {
                     <span>PLACA</span>
                     <span>VEICULO</span>
                     <span>TOTAL</span>
+                    <span>STATUS</span>
                   </div>
                   {filteredFinancialSalesRows.map((sale) => (
                     <div className="financial-sales-row" key={sale.id}>
@@ -6038,7 +6526,21 @@ const payload = {
                       <span>{sale.customer}</span>
                       <span>{sale.plate || 'SEM PLACA'}</span>
                       <span>{sale.vehicle || 'SEM VEICULO'}</span>
-                      <span>{formatMoney(sale.total)}</span>
+                     <span>{formatMoney(sale.total)}</span>
+
+<select
+  className="input-look"
+  value={sale.paymentStatus}
+  onChange={(event) =>
+    void updateSalePaymentStatus(
+      sale.id,
+      event.target.value as 'PAGO' | 'PENDENTE'
+    )
+  }
+>
+  <option value="PENDENTE">PENDENTE</option>
+  <option value="PAGO">PAGO</option>
+</select>
                     </div>
                   ))}
                   {filteredFinancialSalesRows.length === 0 && (
@@ -6492,6 +6994,7 @@ const payload = {
           applyMatchedClient={applyMatchedClient}
           onPlateLookup={handlePlateLookup}
           clearQuoteForm={() => setQuoteData(createEmptyQuoteData())}
+          onQuickCreateClient={(target) => void openQuickClientModal(target)}
         />
       )}
 
@@ -6534,7 +7037,7 @@ const payload = {
             <div className="form-main appointment-main-card">
               <div className="section-label">DADOS DO AGENDAMENTO</div>
               <div className="line"><strong>DATA:</strong> <input type="datetime-local" className="input-look" value={appointmentData.date} onChange={(event) => setAppointmentData((prev) => ({ ...prev, date: event.target.value }))} title={toDisplayAppointmentDate(appointmentData.date)} /></div>
-              <div className="line"><strong>CLIENTE:</strong> <input list="client-suggestions" className="input-look" value={appointmentData.customer} onChange={(event) => setAppointmentData((prev) => ({ ...prev, customer: event.target.value }))} onBlur={(event) => applyMatchedClient('appointment', event.target.value)} /> <select className="input-look" value={appointmentData.customerType} onChange={(event) => setAppointmentData((prev) => ({ ...prev, customerType: event.target.value }))}><option value={getCustomerTypeLabel(1)}>{getCustomerTypeLabel(1)}</option><option value={getCustomerTypeLabel(2)}>{getCustomerTypeLabel(2)}</option></select></div>
+              <div className="line"><strong>CLIENTE:</strong> <input list="client-suggestions" className="input-look" value={appointmentData.customer} onChange={(event) => setAppointmentData((prev) => ({ ...prev, customer: event.target.value }))} onBlur={(event) => applyMatchedClient('appointment', event.target.value)} /> <select className="input-look" value={appointmentData.customerType} onChange={(event) => setAppointmentData((prev) => ({ ...prev, customerType: event.target.value }))}><option value={getCustomerTypeLabel(1)}>{getCustomerTypeLabel(1)}</option><option value={getCustomerTypeLabel(2)}>{getCustomerTypeLabel(2)}</option></select> <button type="button" className="tool-blue" onClick={() => void openQuickClientModal('appointment')}>Cadastrar novo cliente</button></div>
               <div className="line line-mini"><strong>LISTAR</strong> <button onClick={addItemToAppointment}>+</button></div>
               <ServiceRows
                 items={appointmentData.items}
@@ -6608,6 +7111,7 @@ const payload = {
           setScreen={setScreen}
           applyMatchedClient={applyMatchedClient}
           onPlateLookup={handlePlateLookup}
+          onQuickCreateClient={(target) => void openQuickClientModal(target)}
         />
       )}
 
@@ -6930,6 +7434,7 @@ const payload = {
       />
 
       <datalist id="client-suggestions">
+        <option value="Cadastrar novo cliente">Opcao rapida</option>
         {clients.map((client, index) => (
           <option key={`${client.id}-${index}-suggestion`} value={client.name}>{`${client.phone} | ${client.plate}`}</option>
         ))}
