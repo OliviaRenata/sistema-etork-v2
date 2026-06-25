@@ -7471,10 +7471,10 @@ const basePrintable: PrintableDocument = {
                     <p><strong>Validade do orcamento:</strong> {formatDaysValue(printSettings.validityDays)}</p>
                     <div className="print-doc-responsible-lines">
                       <p className="print-doc-responsible-heading"><strong>RESPONSAVEL:</strong></p>
-                      <p><strong>1.</strong> ____________________________________</p>
-                      <p><strong>2.</strong> ____________________________________</p>
-                      <p><strong>3.</strong> ____________________________________</p>
-                      <p><strong>4.</strong> ____________________________________</p>
+                      <div className="print-doc-responsible-line"><strong>1.</strong><span>____________________________________</span></div>
+                      <div className="print-doc-responsible-line"><strong>2.</strong><span>____________________________________</span></div>
+                      <div className="print-doc-responsible-line"><strong>3.</strong><span>____________________________________</span></div>
+                      <div className="print-doc-responsible-line"><strong>4.</strong><span>____________________________________</span></div>
                     </div>
                   </section>
 
