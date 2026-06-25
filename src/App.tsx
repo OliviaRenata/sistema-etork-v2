@@ -4141,7 +4141,15 @@ row.paymentStatus !== financialFilters.paymentStatus
           <div class="box"><span class="label">Observacoes:</span><br/>${escapeHtml(appointment.note || '-')}</div>
           <div class="line" style="margin-top: 18px;"><span class="label">FINALIZADO EM:</span> __/__/___ &nbsp;&nbsp; <span class="label">AS:</span> __:___h.</div>
           
-          <div class="line" style="margin-top: 10px;"><span class="label">RESPONSAVEL:</span> ____________________________</div>
+          <div class="line" style="margin-top: 10px;"><span class="label">RESPONSAVEL:</span>
+        
+          . ____________________________________
+           
+          . ____________________________________
+           
+          . ____________________________________
+           
+          . ____________________________________</div>
         </body>
       </html>
     `;
