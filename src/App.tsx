@@ -277,6 +277,7 @@ type SaleData = {
   items: ServiceItem[];
   discount: number;
   surcharge: number;
+  paymentMethod: string;
   note: string;
 };
 
@@ -1423,7 +1424,28 @@ function SaleScreen({
                     </div>
                   </div>
                 </div>
+<div className="mt-3">
+  <div className="form-floating">
+    <select
+      id="sales-payment-method"
+      className="form-select sales-premium-input"
+      value={saleData.paymentMethod}
+      onChange={(e) => patchSale({ paymentMethod: e.target.value })}
+    >
+      <option value="DINHEIRO">Dinheiro</option>
+      <option value="PIX">PIX</option>
+      <option value="CARTAO_DEBITO">Cartão de Débito</option>
+      <option value="CARTAO_CREDITO">Cartão de Crédito</option>
+      <option value="BOLETO">Boleto</option>
+      <option value="CHEQUE">Cheque</option>
+      <option value="SEGURO">Seguro</option>
+    </select>
 
+    <label htmlFor="sales-payment-method">
+      Forma de Pagamento
+    </label>
+  </div>
+</div>
                 <div className="sales-premium-status-grid mt-3">
                   <span className="chip green">EM ANDAMENTO</span>
                   <span className="chip blue">CAIXA ABERTO</span>
@@ -1795,6 +1817,7 @@ function App() {
     items: [],
     discount: 0,
     surcharge: 0,
+     paymentMethod: 'PIX',
     note: '',
   });
   const [saleData, setSaleData] = useState<SaleData>(() => createEmptySaleData());
@@ -3971,6 +3994,7 @@ const payload = {
       serviceTimeDays: number;
       discount: number;
       surcharge?: number;
+      paymentMethod?: string;
       note: string;
       scheduledFor?: string;
     },
@@ -4385,6 +4409,7 @@ const payload = {
         laborRequired: saleData.laborRequired,
         serviceTimeDays: saleData.timeDays,
         discount: saleData.discount,
+          paymentMethod: saleData.paymentMethod,
         surcharge: saleData.surcharge,
         note: saleData.note,
       },
