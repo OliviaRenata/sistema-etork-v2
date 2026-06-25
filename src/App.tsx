@@ -4182,7 +4182,7 @@ row.paymentStatus !== financialFilters.paymentStatus
       return;
     }
     openWhatsappAppointment(appointment);
-  }
+  } 
 
   async function updateClient(id: number, patch: Partial<ClientRow>) {
     setClients((prev) => prev.map((client) => (client.id === id ? { ...client, ...patch } : client)));
