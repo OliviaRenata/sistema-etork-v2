@@ -27,6 +27,8 @@ create table if not exists public.clients_v2 (
   name text not null,
   phone text,
   plate text,
+  city text,
+  state text,
   price_table integer not null default 1,
   created_by uuid references auth.users(id),
   created_at timestamptz not null default now(),
@@ -39,6 +41,12 @@ create index if not exists idx_clients_v2_price_table on public.clients_v2 (pric
 
 alter table public.clients_v2
   add column if not exists price_table integer not null default 1;
+
+alter table public.clients_v2
+  add column if not exists city text;
+
+alter table public.clients_v2
+  add column if not exists state text;
 
 -- Recreate trigger safely
 drop trigger if exists trg_clients_v2_updated_at on public.clients_v2;

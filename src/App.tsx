@@ -120,6 +120,8 @@ type ClientRow = {
   phone: string;
   plate: string;
   priceTable: PriceTable;
+  city?: string;
+  state?: string;
 };
 
 type FinancialEntry = {
@@ -2228,7 +2230,7 @@ const [financialFilters, setFinancialFilters] =
           .limit(150),
         sb
           .from('clients_v2')
-          .select('id, name, phone, plate, price_table')
+          .select('id, name, phone, plate, city, state, price_table')
           .order('id', { ascending: false }),
 
 sb
@@ -2293,6 +2295,8 @@ sb
           name: item.name || '',
           phone: item.phone || '',
           plate: item.plate || '',
+          city: (item as { city?: string | null }).city || '',
+          state: (item as { state?: string | null }).state || '',
           priceTable: Number((item as { price_table?: number | null }).price_table) === 2 ? 2 : 1,
         }));
         setClients(mappedClients);
@@ -2854,7 +2858,9 @@ return {
       (client) =>
         client.name.toLowerCase().includes(query) ||
         client.phone.toLowerCase().includes(query) ||
-        client.plate.toLowerCase().includes(query)
+        client.plate.toLowerCase().includes(query) ||
+        (client.city || '').toLowerCase().includes(query) ||
+        (client.state || '').toLowerCase().includes(query)
     );
   }, [clients, searchQuery]);
 
@@ -3241,16 +3247,51 @@ row.paymentStatus !== financialFilters.paymentStatus
     phone: string;
     plate: string;
     price_table: number;
+    city?: string;
+    state?: string;
   }) {
     if (!isSupabaseConfigured || !supabase) {
       return null;
     }
 
-    const { data, error } = await supabase
+    const basePayload = {
+      name: payload.name,
+      phone: payload.phone,
+      plate: payload.plate,
+      price_table: payload.price_table,
+    };
+
+    const withLocationPayload = {
+      ...basePayload,
+      city: payload.city || null,
+      state: payload.state || null,
+    };
+
+    let { data, error } = await supabase
       .from('clients_v2')
-      .insert(payload)
+      .insert(withLocationPayload)
       .select('id, name, phone, plate, price_table')
       .single();
+
+    if (error) {
+      const normalizedMessage = (error.message || '').toLowerCase();
+      const missingLocationColumn =
+        normalizedMessage.includes("column 'city'") ||
+        normalizedMessage.includes("column 'state'") ||
+        normalizedMessage.includes('city does not exist') ||
+        normalizedMessage.includes('state does not exist');
+
+      if (missingLocationColumn) {
+        const fallbackResult = await supabase
+          .from('clients_v2')
+          .insert(basePayload)
+          .select('id, name, phone, plate, price_table')
+          .single();
+
+        data = fallbackResult.data;
+        error = fallbackResult.error;
+      }
+    }
 
     if (error || !data) return null;
 
@@ -3260,6 +3301,8 @@ row.paymentStatus !== financialFilters.paymentStatus
       phone: data.phone || payload.phone,
       plate: data.plate || payload.plate,
       priceTable: Number(data.price_table) === 2 ? 2 : 1,
+      city: payload.city || '',
+      state: payload.state || '',
     };
 
     return dbClient;
@@ -3278,6 +3321,8 @@ row.paymentStatus !== financialFilters.paymentStatus
         <input id="swal-client-name" class="swal2-input" placeholder="Nome" value="${escapeHtml(draft.name || '')}" />
         <input id="swal-client-phone" class="swal2-input" placeholder="Telefone" value="${escapeHtml(draft.phone || '')}" />
         <input id="swal-client-plate" class="swal2-input" placeholder="Placa" value="${escapeHtml((draft.plate || '').toUpperCase())}" />
+        <input id="swal-client-city" class="swal2-input" placeholder="Cidade" />
+        <input id="swal-client-state" class="swal2-input" placeholder="Estado (UF)" maxlength="2" />
         <select id="swal-client-price-table" class="swal2-select">
           <option value="1" ${draft.price_table === 1 ? 'selected' : ''}>Tabela 1 - Cliente Final</option>
           <option value="2" ${draft.price_table === 2 ? 'selected' : ''}>Tabela 2 - Franqueado</option>
@@ -3286,16 +3331,30 @@ row.paymentStatus !== financialFilters.paymentStatus
       showCancelButton: true,
       confirmButtonText: 'Salvar',
       cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#000000',
+      color: '#ffffff',
       focusConfirm: false,
+      didOpen: () => {
+        const confirmButton = Swal.getConfirmButton();
+        if (confirmButton) {
+          confirmButton.style.backgroundColor = '#000000';
+          confirmButton.style.color = '#ffffff';
+          confirmButton.style.border = '1px solid #111111';
+        }
+      },
       preConfirm: () => {
         const nameInput = document.getElementById('swal-client-name') as HTMLInputElement | null;
         const phoneInput = document.getElementById('swal-client-phone') as HTMLInputElement | null;
         const plateInput = document.getElementById('swal-client-plate') as HTMLInputElement | null;
+        const cityInput = document.getElementById('swal-client-city') as HTMLInputElement | null;
+        const stateInput = document.getElementById('swal-client-state') as HTMLInputElement | null;
         const priceTableInput = document.getElementById('swal-client-price-table') as HTMLSelectElement | null;
 
         const name = nameInput?.value.trim() || '';
         const phone = phoneInput?.value.trim() || '';
         const plate = (plateInput?.value || '').toUpperCase().trim();
+        const city = cityInput?.value.trim() || '';
+        const state = (stateInput?.value || '').trim().toUpperCase();
         const parsedTable = Number(priceTableInput?.value || draft.price_table);
         const price_table = parsedTable === 2 ? 2 : 1;
 
@@ -3314,10 +3373,22 @@ row.paymentStatus !== financialFilters.paymentStatus
           return null;
         }
 
+        if (!city) {
+          Swal.showValidationMessage('Informe a cidade do cliente.');
+          return null;
+        }
+
+        if (!state) {
+          Swal.showValidationMessage('Informe o estado (UF) do cliente.');
+          return null;
+        }
+
         return {
           name,
           phone,
           plate,
+          city,
+          state,
           price_table,
         };
       },
@@ -3329,6 +3400,8 @@ row.paymentStatus !== financialFilters.paymentStatus
       name: result.value.name,
       phone: result.value.phone,
       plate: result.value.plate,
+      city: result.value.city,
+      state: result.value.state,
       price_table: result.value.price_table,
     });
 
@@ -4115,6 +4188,8 @@ row.paymentStatus !== financialFilters.paymentStatus
         name: patch.name,
         phone: patch.phone,
         plate: patch.plate,
+        city: patch.city,
+        state: patch.state,
         price_table: patch.priceTable,
       })
       .eq('id', id);
@@ -4130,6 +4205,8 @@ row.paymentStatus !== financialFilters.paymentStatus
       name: 'NOVO CLIENTE',
       phone: '67 90000-0000',
       plate: 'AAA-0000',
+      city: '',
+      state: '',
       price_table: 1,
     };
 
@@ -5340,12 +5417,14 @@ const basePrintable: PrintableDocument = {
   function exportClientsCSV() {
     downloadCsv(
       `clientes-filtrados-${Date.now()}.csv`,
-      ['ID', 'Nome', 'Telefone', 'Placa', 'Tabela Preco'],
+      ['ID', 'Nome', 'Telefone', 'Placa', 'Cidade', 'Estado', 'Tabela Preco'],
       filteredClients.map((client) => [
         client.id,
         client.name,
         client.phone,
         client.plate,
+        client.city || '',
+        client.state || '',
         client.priceTable === 2 ? 'TABELA 2 - FRANQUEADO' : 'TABELA 1 - CLIENTE FINAL',
       ])
     );
@@ -5366,6 +5445,8 @@ const basePrintable: PrintableDocument = {
             <td>${escapeHtml(client.name || '-')}</td>
             <td>${escapeHtml(client.phone || '-')}</td>
             <td>${escapeHtml(client.plate || '-')}</td>
+            <td>${escapeHtml(client.city || '-')}</td>
+            <td>${escapeHtml(client.state || '-')}</td>
             <td>${client.priceTable === 2 ? 'TABELA 2 - FRANQUEADO' : 'TABELA 1 - CLIENTE FINAL'}</td>
           </tr>
         `
@@ -5397,11 +5478,13 @@ const basePrintable: PrintableDocument = {
               <th>NOME</th>
               <th>TELEFONE</th>
               <th>PLACA</th>
+              <th>CIDADE</th>
+              <th>ESTADO</th>
               <th>TABELA</th>
             </tr>
           </thead>
           <tbody>
-            ${rows || '<tr><td colspan="5">Nenhum cliente encontrado.</td></tr>'}
+            ${rows || '<tr><td colspan="7">Nenhum cliente encontrado.</td></tr>'}
           </tbody>
         </table>
       </body>
@@ -6255,7 +6338,7 @@ const basePrintable: PrintableDocument = {
                   className="input-look"
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="Buscar por nome, telefone ou placa"
+                  placeholder="Buscar por nome, telefone, placa, cidade ou estado"
                 />
               </div>
               <div className="mini-actions receipt-actions" style={{ marginBottom: 10 }}>
@@ -6274,6 +6357,8 @@ const basePrintable: PrintableDocument = {
                       <input className="input-look" value={client.name} onChange={(event) => updateClient(client.id, { name: event.target.value })} />
                       <input className="input-look" value={client.phone} onChange={(event) => updateClient(client.id, { phone: event.target.value })} />
                       <input className="input-look plate" value={client.plate} onChange={(event) => updateClient(client.id, { plate: event.target.value.toUpperCase() })} />
+                      <input className="input-look" value={client.city || ''} onChange={(event) => updateClient(client.id, { city: event.target.value })} />
+                      <input className="input-look" value={client.state || ''} maxLength={2} onChange={(event) => updateClient(client.id, { state: event.target.value.toUpperCase() })} />
                       <select className="input-look" value={client.priceTable} onChange={(event) => updateClient(client.id, { priceTable: Number(event.target.value) as PriceTable })}>
                         <option value={1}>TABELA 1</option>
                         <option value={2}>TABELA 2</option>
@@ -6296,6 +6381,8 @@ const basePrintable: PrintableDocument = {
                       <input className="input-look" value={client.name} onChange={(event) => updateClient(client.id, { name: event.target.value })} />
                       <input className="input-look" value={client.phone} onChange={(event) => updateClient(client.id, { phone: event.target.value })} />
                       <input className="input-look plate" value={client.plate} onChange={(event) => updateClient(client.id, { plate: event.target.value.toUpperCase() })} />
+                      <input className="input-look" value={client.city || ''} onChange={(event) => updateClient(client.id, { city: event.target.value })} />
+                      <input className="input-look" value={client.state || ''} maxLength={2} onChange={(event) => updateClient(client.id, { state: event.target.value.toUpperCase() })} />
                       <select className="input-look" value={client.priceTable} onChange={(event) => updateClient(client.id, { priceTable: Number(event.target.value) as PriceTable })}>
                         <option value={1}>TABELA 1</option>
                         <option value={2}>TABELA 2</option>
