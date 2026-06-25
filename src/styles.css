@@ -2913,6 +2913,19 @@ select option {
   font-size: 13px;
 }
 
+.financial-total-status-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.financial-status-select {
+  min-width: 112px;
+  height: 32px;
+  padding: 4px 10px;
+}
+
 .sales-history-panel {
   background:
     radial-gradient(circle at 10% 0%, rgba(140, 140, 140, 0.12) 0%, transparent 38%),

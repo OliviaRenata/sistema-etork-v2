@@ -6650,8 +6650,7 @@ const basePrintable: PrintableDocument = {
                     <span>CLIENTE</span>
                     <span>PLACA</span>
                     <span>VEICULO</span>
-                    <span>TOTAL</span>
-                    <span>STATUS</span>
+                    <span>TOTAL / STATUS</span>
                   </div>
                   {filteredFinancialSalesRows.map((sale) => (
                     <div className="financial-sales-row" key={sale.id}>
@@ -6659,21 +6658,22 @@ const basePrintable: PrintableDocument = {
                       <span>{sale.customer}</span>
                       <span>{sale.plate || 'SEM PLACA'}</span>
                       <span>{sale.vehicle || 'SEM VEICULO'}</span>
-                     <span>{formatMoney(sale.total)}</span>
-
-<select
-  className="input-look"
-  value={sale.paymentStatus}
-  onChange={(event) =>
-    void updateSalePaymentStatus(
-      sale.id,
-      event.target.value as 'PAGO' | 'PENDENTE'
-    )
-  }
->
-  <option value="PENDENTE">PENDENTE</option>
-  <option value="PAGO">PAGO</option>
-</select>
+                      <span className="financial-total-status-cell">
+                        <strong className="money">{formatMoney(sale.total)}</strong>
+                        <select
+                          className="input-look financial-status-select"
+                          value={sale.paymentStatus}
+                          onChange={(event) =>
+                            void updateSalePaymentStatus(
+                              sale.id,
+                              event.target.value as 'PAGO' | 'PENDENTE'
+                            )
+                          }
+                        >
+                          <option value="PENDENTE">PENDENTE</option>
+                          <option value="PAGO">PAGO</option>
+                        </select>
+                      </span>
                     </div>
                   ))}
                   {filteredFinancialSalesRows.length === 0 && (
