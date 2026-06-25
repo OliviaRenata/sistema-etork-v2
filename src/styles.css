@@ -1255,7 +1255,7 @@ select option {
   padding-top: 16px;
   font-size: 12px;
   color: #444;
-  min-height: 64px;
+  min-height: 124px;
 }
 
 .print-doc-signatures > div span {
