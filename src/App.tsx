@@ -255,13 +255,12 @@ function mapDashboardStatusToDocumentStatus(status: DashboardServiceStatus): str
   return 'aberto';
 }
 
-function isIsoWithinLastDays(value: string | null | undefined, days: number): boolean {
+function isIsoInCurrentMonth(value: string | null | undefined): boolean {
   if (!value) return false;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return false;
-  const now = Date.now();
-  const cutoff = now - days * 24 * 60 * 60 * 1000;
-  return date.getTime() >= cutoff;
+  const now = new Date();
+  return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
 }
 
 function normalizeAppointmentStatus(value: string | null | undefined): AppointmentStatus {
@@ -3243,7 +3242,7 @@ row.paymentStatus !== financialFilters.paymentStatus
     () =>
       dashboardServices.filter((service) =>
         (service.status === 'EM ANDAMENTO' || service.status === 'ATRASADO' || service.status === 'AVISAR CLIENTE') ||
-        (service.status === 'CONCLUIDO' && isIsoWithinLastDays(service.statusUpdatedAtIso, 30))
+        (service.status === 'CONCLUIDO' && isIsoInCurrentMonth(service.statusUpdatedAtIso))
       ),
     [dashboardServices]
   );
