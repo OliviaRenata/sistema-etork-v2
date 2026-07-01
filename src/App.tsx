@@ -7316,13 +7316,15 @@ const basePrintable: PrintableDocument = {
 
               <div className="next-title">PROXIMOS AGENDAMENTOS</div>
               {nextAppointmentCards.length > 0 ? (
-                nextAppointmentCards.map((appointment) => (
-                  <article className="next-card" key={appointment.id}>
-                    <strong>{appointment.model}</strong>
-                    <span>{appointment.plate}</span>
-                    <small>{appointment.date}</small>
-                  </article>
-                ))
+                <div className="next-cards">
+                  {nextAppointmentCards.map((appointment) => (
+                    <article className="next-card" key={appointment.id}>
+                      <strong>{appointment.model}</strong>
+                      <span>{appointment.plate}</span>
+                      <small>{appointment.date}</small>
+                    </article>
+                  ))}
+                </div>
               ) : (
                 <div className="receipt-empty">Nenhum proximo agendamento encontrado.</div>
               )}

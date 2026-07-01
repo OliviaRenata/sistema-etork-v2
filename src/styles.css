@@ -636,8 +636,15 @@ button,
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.28);
 }
 
-.next-card {
+.next-cards {
   margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-content: flex-start;
+}
+
+.next-card {
   width: 220px;
   background: #bdbdbd;
   color: #181818;
