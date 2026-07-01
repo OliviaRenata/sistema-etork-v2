@@ -3310,7 +3310,7 @@ row.paymentStatus !== financialFilters.paymentStatus
   const dashboardStatusCards = useMemo(
     () =>
       dashboardServices.filter((service) =>
-        (service.status === 'EM ANDAMENTO' || service.status === 'ATRASADO' || service.status === 'AVISAR CLIENTE') ||
+        (service.status === 'EM ABERTO' || service.status === 'EM ANDAMENTO' || service.status === 'ATRASADO' || service.status === 'AVISAR CLIENTE') ||
         (service.status === 'CONCLUIDO' && isIsoInCurrentMonth(service.statusUpdatedAtIso))
       ),
     [dashboardServices]
@@ -4170,6 +4170,29 @@ row.paymentStatus !== financialFilters.paymentStatus
     setSelectedDashboardService({ ...service });
   }
 
+  function openDashboardServiceModalByAppointmentId(appointmentId: string) {
+    const appointment = calendarAppointments.find((item) => item.id === appointmentId);
+    if (!appointment) return;
+
+    const existing = dashboardServices.find((service) => service.sourceDocumentId === appointmentId);
+    if (existing) {
+      openDashboardServiceModal(existing);
+      return;
+    }
+
+    const derivedStatus = appointment.dashboardStatus || 'EM ABERTO';
+    openDashboardServiceModal({
+      id: `appt-${appointment.id}`,
+      title: (appointment.vehicleDetails || '').split('\n')[0] || appointment.customer || 'SERVICO',
+      plate: appointment.plate || 'SEM PLACA',
+      customer: appointment.customer || 'SEM CLIENTE',
+      status: derivedStatus,
+      tone: dashboardToneByStatus(derivedStatus),
+      sourceDocumentId: appointment.id,
+      statusUpdatedAtIso: new Date().toISOString(),
+    });
+  }
+
   function findSelectedDashboardAppointment() {
     if (!selectedDashboardService?.sourceDocumentId) return null;
     return calendarAppointments.find((item) => item.id === selectedDashboardService.sourceDocumentId) || null;
@@ -4993,6 +5016,7 @@ async function persistDocument(
     if (result.ok && result.id) {
       const appointmentId = String(result.id);
       setSavedAppointment(payload);
+      const nowIso = new Date().toISOString();
       setCalendarAppointments((prev) => [
         {
           id: appointmentId,
@@ -5009,6 +5033,28 @@ async function persistDocument(
         },
         ...prev,
       ]);
+      setDashboardServices((prev) => {
+        const cardId = `appt-${appointmentId}`;
+        const nextCard: DashboardService = {
+          id: cardId,
+          title: (payload.vehicleDetails || '').split('\n')[0] || payload.customer || 'SERVICO',
+          plate: payload.plate || 'SEM PLACA',
+          customer: payload.customer || 'SEM CLIENTE',
+          status: 'EM ABERTO',
+          tone: dashboardToneByStatus('EM ABERTO'),
+          sourceDocumentId: appointmentId,
+          statusUpdatedAtIso: nowIso,
+        };
+
+        const exists = prev.some((service) => service.id === cardId || service.sourceDocumentId === appointmentId);
+        if (!exists) return [nextCard, ...prev];
+
+        return prev.map((service) =>
+          service.id === cardId || service.sourceDocumentId === appointmentId
+            ? nextCard
+            : service
+        );
+      });
       window.alert('Agendamento salvo com sucesso no banco.');
       setScreen('dashboard');
     } else {
@@ -5357,9 +5403,9 @@ async function persistDocument(
       }
 
       if (isSupabaseConfigured && supabase) {
-        const saleStatusSaved = await persistDocumentStatus(String(receiptId), 'CONCLUIDO');
+        const saleStatusSaved = await persistDocumentStatus(String(receiptId), 'EM ABERTO');
         if (!saleStatusSaved) {
-          console.error('Falha ao atualizar status da venda para concluido');
+          console.error('Falha ao atualizar status da venda para em aberto');
         }
       }
 
@@ -5449,8 +5495,8 @@ async function persistDocument(
       });
 
       const normalizeCompare = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
-      const concludedStatus: DashboardServiceStatus = 'CONCLUIDO';
-      const concludedTone: DashboardServiceTone = 'success';
+      const defaultStatus: DashboardServiceStatus = 'EM ABERTO';
+      const defaultTone: DashboardServiceTone = dashboardToneByStatus(defaultStatus);
       const normalizedSalePlate = normalizeCompare(saleData.plate.trim());
       const normalizedSaleCustomer = normalizeCompare(saleData.customer.trim());
       const linkedAppointmentId = linkedAppointmentIdCandidate || null;
@@ -5481,7 +5527,7 @@ async function persistDocument(
         setDashboardServices((prev) =>
           prev.map((service) =>
             service.id === matchedService.id
-              ? { ...service, status: concludedStatus, tone: concludedTone, statusUpdatedAtIso: new Date().toISOString() }
+              ? { ...service, status: defaultStatus, tone: defaultTone, statusUpdatedAtIso: new Date().toISOString() }
               : service
           )
         );
@@ -5497,8 +5543,8 @@ async function persistDocument(
               title: saleTitle,
               plate: saleData.plate || 'SEM PLACA',
               customer: saleData.customer || 'SEM CLIENTE',
-              status: 'CONCLUIDO',
-              tone: 'success',
+              status: defaultStatus,
+              tone: defaultTone,
               sourceDocumentId: null,
               statusUpdatedAtIso: new Date().toISOString(),
             };
@@ -5517,7 +5563,7 @@ async function persistDocument(
         setCalendarAppointments((prev) =>
           prev.map((appointment) =>
             appointment.id === targetAppointmentId
-              ? { ...appointment, dashboardStatus: concludedStatus, status: 'CONFIRMADO' }
+              ? { ...appointment, dashboardStatus: defaultStatus, status: 'CONFIRMADO' }
               : appointment
           )
         );
@@ -5527,7 +5573,7 @@ async function persistDocument(
           const next = prev.map((service) => {
             if (service.sourceDocumentId === targetAppointmentId) {
               updated = true;
-              return { ...service, status: concludedStatus, tone: concludedTone, statusUpdatedAtIso: nowIso };
+              return { ...service, status: defaultStatus, tone: defaultTone, statusUpdatedAtIso: nowIso };
             }
             return service;
           });
@@ -5543,8 +5589,8 @@ async function persistDocument(
               title: (linkedAppointment.vehicleDetails || '').split('\n')[0] || linkedAppointment.customer || 'SERVICO',
               plate: linkedAppointment.plate || 'SEM PLACA',
               customer: linkedAppointment.customer || 'SEM CLIENTE',
-              status: concludedStatus,
-              tone: concludedTone,
+              status: defaultStatus,
+              tone: defaultTone,
               sourceDocumentId: targetAppointmentId,
               statusUpdatedAtIso: nowIso,
             },
@@ -5553,9 +5599,9 @@ async function persistDocument(
         });
 
         if (isSupabaseConfigured && supabase) {
-          const appointmentStatusSaved = await persistDocumentStatus(String(targetAppointmentId), 'CONCLUIDO');
+          const appointmentStatusSaved = await persistDocumentStatus(String(targetAppointmentId), 'EM ABERTO');
           if (!appointmentStatusSaved) {
-            console.error('Falha ao atualizar status para concluido');
+            console.error('Falha ao atualizar status para em aberto');
           }
         }
       }
@@ -7557,7 +7603,19 @@ const basePrintable: PrintableDocument = {
               {nextAppointmentCards.length > 0 ? (
                 <div className="next-cards">
                   {nextAppointmentCards.map((appointment) => (
-                    <article className="next-card" key={appointment.id}>
+                    <article
+                      className="next-card next-card-clickable"
+                      key={appointment.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => openDashboardServiceModalByAppointmentId(appointment.id)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          openDashboardServiceModalByAppointmentId(appointment.id);
+                        }
+                      }}
+                    >
                       <strong>{appointment.model}</strong>
                       <span>{appointment.customer}</span>
                       <span>{appointment.plate}</span>

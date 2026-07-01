@@ -656,6 +656,17 @@ button,
   animation-delay: 0.6s;
 }
 
+.next-card-clickable {
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.next-card-clickable:hover,
+.next-card-clickable:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.38);
+}
+
 @keyframes dashboardFloat {
   0% {
     transform: translateY(0px);
