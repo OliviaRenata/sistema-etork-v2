@@ -216,6 +216,7 @@ type DashboardService = {
   status: DashboardServiceStatus;
   tone: DashboardServiceTone;
   sourceDocumentId?: string | null;
+  statusUpdatedAtIso?: string | null;
 };
 
 const DASHBOARD_STATUS_OPTIONS: DashboardServiceStatus[] = [
@@ -252,6 +253,15 @@ function mapDashboardStatusToDocumentStatus(status: DashboardServiceStatus): str
   if (status === 'EM ANDAMENTO') return 'em_andamento';
   if (status === 'AVISAR CLIENTE') return 'avisar_cliente';
   return 'aberto';
+}
+
+function isIsoWithinLastDays(value: string | null | undefined, days: number): boolean {
+  if (!value) return false;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+  const now = Date.now();
+  const cutoff = now - days * 24 * 60 * 60 * 1000;
+  return date.getTime() >= cutoff;
 }
 
 function normalizeAppointmentStatus(value: string | null | undefined): AppointmentStatus {
@@ -2489,6 +2499,7 @@ salesResult.data.map((item) => ({
             status: dashboardStatus,
             tone: dashboardToneByStatus(dashboardStatus),
             sourceDocumentId: String(item.id),
+            statusUpdatedAtIso: item.scheduled_for || item.created_at || null,
           };
         });
         setDashboardServices(mappedDashboardServices);
@@ -3231,10 +3242,8 @@ row.paymentStatus !== financialFilters.paymentStatus
   const dashboardStatusCards = useMemo(
     () =>
       dashboardServices.filter((service) =>
-        service.status === 'EM ANDAMENTO' ||
-        service.status === 'ATRASADO' ||
-        service.status === 'CONCLUIDO' ||
-        service.status === 'AVISAR CLIENTE'
+        (service.status === 'EM ANDAMENTO' || service.status === 'ATRASADO' || service.status === 'AVISAR CLIENTE') ||
+        (service.status === 'CONCLUIDO' && isIsoWithinLastDays(service.statusUpdatedAtIso, 30))
       ),
     [dashboardServices]
   );
@@ -4101,7 +4110,15 @@ row.paymentStatus !== financialFilters.paymentStatus
 
     setDashboardServices((prev) =>
       prev.map((service) =>
-        service.id === selected.id ? selected : service
+        service.id === selected.id
+          ? {
+              ...selected,
+              statusUpdatedAtIso:
+                selected.status === 'CONCLUIDO'
+                  ? new Date().toISOString()
+                  : selected.statusUpdatedAtIso ?? service.statusUpdatedAtIso ?? null,
+            }
+          : service
       )
     );
     setCalendarAppointments((prev) =>
@@ -4174,6 +4191,7 @@ row.paymentStatus !== financialFilters.paymentStatus
               customer: updated.customer || 'SEM CLIENTE',
               status: updated.status === 'CANCELADO' ? 'AVISAR CLIENTE' : 'CONCLUIDO',
               tone: updated.status === 'CANCELADO' ? 'info' : 'success',
+              statusUpdatedAtIso: updated.status === 'CANCELADO' ? service.statusUpdatedAtIso ?? null : new Date().toISOString(),
             }
           : service
       )
@@ -5361,7 +5379,7 @@ async function persistDocument(
         setDashboardServices((prev) =>
           prev.map((service) =>
             service.id === matchedService.id
-              ? { ...service, status: 'CONCLUIDO', tone: 'success' }
+              ? { ...service, status: 'CONCLUIDO', tone: 'success', statusUpdatedAtIso: new Date().toISOString() }
               : service
           )
         );
@@ -5387,6 +5405,29 @@ async function persistDocument(
             }
           }
         }
+      } else {
+        const saleCardId = `sale-${receiptId}`;
+        const saleTitle = saleData.vehicleDetails.split('\n')[0] || 'VENDA FINALIZADA';
+
+        setDashboardServices((prev) => {
+          const existingIndex = prev.findIndex((service) => service.id === saleCardId);
+          const concludedSaleCard: DashboardService = {
+            id: saleCardId,
+            title: saleTitle,
+            plate: saleData.plate || 'SEM PLACA',
+            customer: saleData.customer || 'SEM CLIENTE',
+            status: 'CONCLUIDO',
+            tone: 'success',
+            sourceDocumentId: null,
+            statusUpdatedAtIso: new Date().toISOString(),
+          };
+
+          if (existingIndex >= 0) {
+            return prev.map((service, index) => (index === existingIndex ? concludedSaleCard : service));
+          }
+
+          return [concludedSaleCard, ...prev];
+        });
       }
 
       setSelectedPrintKind('venda');
