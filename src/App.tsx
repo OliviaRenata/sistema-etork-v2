@@ -5356,7 +5356,7 @@ async function persistDocument(
 
         return samePlate || sameCustomer;
       });
-
+ 
       if (matchedService) {
         setDashboardServices((prev) =>
           prev.map((service) =>
@@ -5374,7 +5374,7 @@ async function persistDocument(
                 : appointment
             )
           );
-
+ 
           if (isSupabaseConfigured && supabase) {
             const sb = supabase;
             const rpcResult = await sb.rpc('update_document_status_safe', {
