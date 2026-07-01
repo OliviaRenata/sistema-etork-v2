@@ -3140,6 +3140,16 @@ select option {
   box-shadow: 0 0 8px rgba(148, 163, 184, 0.3);
 }
 
+.quick-client-modal .swal2-input,
+.quick-client-modal .swal2-select {
+  color: #111;
+  background-color: #fff;
+}
+
+.quick-client-modal .swal2-input::placeholder {
+  color: #555;
+}
+
 .catalog-suggestions {
   display: grid;
   gap: 6px;

@@ -271,6 +271,52 @@ function mapPaymentStatusToDb(status: PaymentStatus): 'PAGO' | 'PENDENTE' | null
   return status;
 }
 
+function formatPaymentMethod(value: string | null | undefined) {
+  const labels: Record<string, string> = {
+    DINHEIRO: 'Dinheiro',
+    PIX: 'PIX',
+    CARTAO_DEBITO: 'Cartão de Débito',
+    CARTAO_CREDITO: 'Cartão de Crédito',
+    BOLETO: 'Boleto',
+    CHEQUE: 'Cheque',
+    SEGURO: 'Seguro',
+    'CARTÃO DE DÉBITO': 'Cartão de Débito',
+    'CARTÃO DE CRÉDITO': 'Cartão de Crédito',
+    'CARTAO DE DEBITO': 'Cartão de Débito',
+    'CARTAO DE CREDITO': 'Cartão de Crédito',
+  };
+
+  const normalized = (value || '').trim().toUpperCase();
+  return labels[normalized] || value || 'Nao informado';
+}
+
+function normalizePaymentMethodToDb(value: string | null | undefined) {
+  const normalized = (value || '').trim().toUpperCase();
+  const values: Record<string, string> = {
+    DINHEIRO: 'DINHEIRO',
+    PIX: 'PIX',
+    CARTAO: 'CARTAO_CREDITO',
+    CARTÃO: 'CARTAO_CREDITO',
+    CARTAO_DEBITO: 'CARTAO_DEBITO',
+    CARTÃO_DEBITO: 'CARTAO_DEBITO',
+    'CARTAO DE DEBITO': 'CARTAO_DEBITO',
+    'CARTÃO DE DÉBITO': 'CARTAO_DEBITO',
+    'CARTÃO DE DEBITO': 'CARTAO_DEBITO',
+    'CARTAO DE DÉBITO': 'CARTAO_DEBITO',
+    CARTAO_CREDITO: 'CARTAO_CREDITO',
+    CARTÃO_CREDITO: 'CARTAO_CREDITO',
+    'CARTAO DE CREDITO': 'CARTAO_CREDITO',
+    'CARTÃO DE CRÉDITO': 'CARTAO_CREDITO',
+    'CARTÃO DE CREDITO': 'CARTAO_CREDITO',
+    'CARTAO DE CRÉDITO': 'CARTAO_CREDITO',
+    BOLETO: 'BOLETO',
+    CHEQUE: 'CHEQUE',
+    SEGURO: 'SEGURO',
+  };
+
+  return values[normalized] || value || null;
+}
+
 function mapAppointmentStatusToDocumentStatus(status: AppointmentStatus): string {
   return status === 'CANCELADO' ? 'cancelado' : 'confirmado';
 }
@@ -289,6 +335,8 @@ type CatalogRow = {
 
 type PrintableDocument = {
   kind: 'orcamento' | 'venda';
+
+  sourceId?: string;
 
   number: string;
 
@@ -1559,7 +1607,7 @@ function SaleScreen({
     <select
       id="sales-payment-method"
       className="form-select sales-premium-input"
-      value={saleData.paymentMethod}
+      value={normalizePaymentMethodToDb(saleData.paymentMethod) || ''}
       onChange={(e) => patchSale({ paymentMethod: e.target.value })}
     >
       <option value="DINHEIRO">Dinheiro</option>
@@ -2563,6 +2611,7 @@ salesResult.data.map((item) => ({
 
   useEffect(() => {
     if (screen !== 'new-sale') return;
+    setSelectedSalePrintable(null);
     setSaleData(createEmptySaleData());
   }, [screen]);
 
@@ -2775,6 +2824,7 @@ return {
     return [
       {
         kind: 'orcamento',
+        sourceId: quoteId || undefined,
         number: quoteNumber,
         issuedAt: nowStamp,
         customer: quoteSource.customer,
@@ -2793,6 +2843,7 @@ return {
       },
       {
         kind: 'venda',
+        sourceId: saleId || undefined,
         number: saleNumber,
         issuedAt: `${receipts[0]?.date || now.toLocaleDateString('pt-BR')} ${now.toLocaleTimeString('pt-BR', {
           hour: '2-digit',
@@ -2816,10 +2867,10 @@ return {
     ];
   }, [lastSavedDocumentIds.orcamento, lastSavedDocumentIds.venda, now, quoteData, receipts, saleData, saleSubtotal, saleTotal, savedQuote]);
 
-  const selectedPrintableDocument = useMemo(
-    () => printableDocuments.find((doc) => doc.kind === selectedPrintKind) || printableDocuments[0] || null,
-    [printableDocuments, selectedPrintKind]
-  );
+  const selectedPrintableDocument = useMemo(() => {
+    if (selectedPrintKind === 'venda' && selectedSalePrintable) return selectedSalePrintable;
+    return printableDocuments.find((doc) => doc.kind === selectedPrintKind) || printableDocuments[0] || null;
+  }, [printableDocuments, selectedPrintKind, selectedSalePrintable]);
 
   const filteredSalesHistory = useMemo(() => {
     const query = salesHistoryFilters.query.trim().toLowerCase();
@@ -3323,6 +3374,9 @@ row.paymentStatus !== financialFilters.paymentStatus
     const draft = getDraftClientByTarget(target);
     const result = await Swal.fire({
       title: 'Cadastrar novo cliente',
+      customClass: {
+        popup: 'quick-client-modal',
+      },
       html: `
         <input id="swal-client-name" class="swal2-input" placeholder="Nome" value="${escapeHtml(draft.name || '')}" />
         <input id="swal-client-phone" class="swal2-input" placeholder="Telefone" value="${escapeHtml(draft.phone || '')}" />
@@ -3651,11 +3705,24 @@ row.paymentStatus !== financialFilters.paymentStatus
     updateReceipt(receiptId, { car: vehicleName });
   }
 
-  function resolveCustomerType(customerName: string, fallback: string) {
-    const value = customerName.trim().toLowerCase();
-    if (!value) return fallback;
+  function resolveCustomerType(customerName: string, fallback: string, phone = '', plate = '') {
+    const normalizedName = customerName.trim().toLowerCase();
+    const normalizedPhone = phone.trim().toLowerCase();
+    const normalizedPlate = plate.trim().toLowerCase();
 
-    const matched = clients.find((client) => client.name.trim().toLowerCase() === value);
+    if (!normalizedName && !normalizedPhone && !normalizedPlate) return fallback;
+
+    const matched = clients.find((client) => {
+      const clientName = client.name.trim().toLowerCase();
+      const clientPhone = client.phone.trim().toLowerCase();
+      const clientPlate = client.plate.trim().toLowerCase();
+
+      return (
+        Boolean(normalizedName && clientName === normalizedName) ||
+        Boolean(normalizedPhone && clientPhone === normalizedPhone) ||
+        Boolean(normalizedPlate && clientPlate === normalizedPlate)
+      );
+    });
     if (!matched) return fallback;
     return getCustomerTypeLabel(matched.priceTable);
   }
@@ -4561,7 +4628,7 @@ async function persistDocument(
 
     surcharge_amount: surcharge,
 
-    payment_method: payload.paymentMethod ?? null,
+    payment_method: normalizePaymentMethodToDb(payload.paymentMethod),
 
     payment_status: 'PENDENTE',
 
@@ -4780,7 +4847,7 @@ async function persistDocument(
     setSaleData((prev) => ({
       ...prev,
       customer: source.customer,
-      customerType: resolveCustomerType(source.customer, source.customerType),
+      customerType: resolveCustomerType(source.customer, source.customerType, source.phone, source.plate),
       phone: source.phone,
       plate: source.plate,
       items: cloneItems(source.items),
@@ -4806,7 +4873,7 @@ async function persistDocument(
     setSaleData((prev) => ({
       ...prev,
       customer: selected.customer,
-      customerType: resolveCustomerType(selected.customer, prev.customerType),
+      customerType: resolveCustomerType(selected.customer, prev.customerType, selected.phone, selected.plate),
       phone: selected.phone,
       plate: selected.plate,
       vehicleDetails: selected.vehicleSnapshot,
@@ -4832,7 +4899,7 @@ async function persistDocument(
     setSaleData((prev) => ({
       ...prev,
       customer: selected.customer,
-      customerType: resolveCustomerType(selected.customer, prev.customerType),
+      customerType: resolveCustomerType(selected.customer, prev.customerType, selected.phone, selected.plate),
       phone: selected.phone,
       plate: selected.plate,
       vehicleDetails: selected.vehicleSnapshot,
@@ -4877,7 +4944,7 @@ async function persistDocument(
     setSaleData((prev) => ({
       ...prev,
       customer: source.customer,
-      customerType: resolveCustomerType(source.customer, source.customerType),
+      customerType: resolveCustomerType(source.customer, source.customerType, source.phone, source.plate),
       phone: source.phone,
       plate: source.plate,
       vehicleDetails: source.vehicleDetails,
@@ -5021,11 +5088,35 @@ async function persistDocument(
     },
     ...prev,
 ]);
+    setSelectedSalePrintable({
+      kind: 'venda',
+      sourceId: receiptId,
+      number: `VEN-${receiptId.slice(0, 8).toUpperCase()}`,
+      issuedAt: `${nowDate} ${now.toLocaleTimeString('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      })}`,
+      customer: saleData.customer,
+      customerType: resolveCustomerType(saleData.customer, saleData.customerType, saleData.phone, saleData.plate),
+      phone: saleData.phone,
+      plate: saleData.plate,
+      vehicle: saleData.vehicleDetails,
+      items: cloneItems(saleData.items),
+      subtotal: saleSubtotal,
+      discount: saleData.discount,
+      total: saleTotal,
+      note: saleData.note,
+      serviceTimeDays: saleData.timeDays,
+      laborRequired: saleData.laborRequired,
+      paymentMethod: saleData.paymentMethod,
+    });
     setSelectedPrintKind('venda');
     setScreen('print-receipt');
   }
 
   function openSaleReceiptDocument(printable: PrintableDocument, shouldPrint = false) {
+    setSelectedSalePrintable(printable);
     setSaleData((prev) => ({
       ...prev,
       customer: printable.customer,
@@ -5059,10 +5150,11 @@ async function persistDocument(
     setSaleReceiptLoading(true);
 const basePrintable: PrintableDocument = {
   kind: 'venda',
+  sourceId: saleRow.id,
   number: `VEN-${saleRow.id.slice(0, 8).toUpperCase()}`,
   issuedAt: saleRow.createdAt,
   customer: saleRow.customer,
-  customerType: getCustomerTypeLabel(1),
+  customerType: resolveCustomerType(saleRow.customer, getCustomerTypeLabel(1), saleRow.phone, saleRow.plate),
   phone: saleRow.phone,
   plate: saleRow.plate,
   vehicle: saleRow.vehicle,
@@ -5125,6 +5217,36 @@ const basePrintable: PrintableDocument = {
   function printSelectedSaleReceipt() {
     if (!selectedSalePrintable) return;
     openSaleReceiptDocument(selectedSalePrintable, true);
+  }
+
+  function updatePrintablePaymentMethod(paymentMethod: string) {
+    if (selectedPrintKind !== 'venda') {
+      setPrintSettings((prev) => ({ ...prev, paymentMethod }));
+      return;
+    }
+
+    setSaleData((prev) => ({ ...prev, paymentMethod }));
+    setSelectedSalePrintable((current) => (current ? { ...current, paymentMethod } : current));
+  }
+
+  async function persistPrintablePaymentMethod() {
+    if (selectedPrintKind !== 'venda') return;
+    if (!isSupabaseConfigured || !supabase) return;
+
+    const documentId = selectedSalePrintable?.sourceId || lastSavedDocumentIds.venda;
+    if (!documentId) return;
+
+    const paymentMethod = selectedSalePrintable?.paymentMethod || saleData.paymentMethod;
+    const { error } = await supabase
+      .from('documents_v2')
+      .update({ payment_method: normalizePaymentMethodToDb(paymentMethod) })
+      .eq('id', documentId)
+      .eq('doc_type', 'venda');
+
+    if (error) {
+      console.error(error);
+      window.alert('Nao foi possivel atualizar a forma de pagamento no banco.');
+    }
   }
 
   async function deleteSaleFromHistory(saleId: string) {
@@ -7332,11 +7454,27 @@ const basePrintable: PrintableDocument = {
                   </label>
                   <label className="wide">
                     FORMA DE PAGAMENTO
-                    <input
+                    <select
                       className="input-look"
-                      value={printSettings.paymentMethod}
-                      onChange={(event) => setPrintSettings((prev) => ({ ...prev, paymentMethod: event.target.value }))}
-                    />
+                      value={
+                        selectedPrintKind === 'venda'
+                          ? normalizePaymentMethodToDb(selectedPrintableDocument?.paymentMethod || saleData.paymentMethod) || ''
+                          : printSettings.paymentMethod
+                      }
+                      onChange={(event) => updatePrintablePaymentMethod(event.target.value)}
+                      onBlur={() => void persistPrintablePaymentMethod()}
+                    >
+                      {selectedPrintKind !== 'venda' && (
+                        <option value={printSettings.paymentMethod}>{formatPaymentMethod(printSettings.paymentMethod)}</option>
+                      )}
+                      <option value="DINHEIRO">Dinheiro</option>
+                      <option value="PIX">PIX</option>
+                      <option value="CARTAO_DEBITO">Cartão de Débito</option>
+                      <option value="CARTAO_CREDITO">Cartão de Crédito</option>
+                      <option value="BOLETO">Boleto</option>
+                      <option value="CHEQUE">Cheque</option>
+                      <option value="SEGURO">Seguro</option>
+                    </select>
                   </label>
                   <label>
                     GARANTIA (DIAS)
@@ -7429,7 +7567,7 @@ const basePrintable: PrintableDocument = {
   <div><strong>Subtotal:</strong> {formatMoney(selectedPrintableDocument.subtotal)}</div>
   <div><strong>Desconto:</strong> {formatMoney(selectedPrintableDocument.discount)}</div>
   <div><strong>Total:</strong> {formatMoney(selectedPrintableDocument.total)}</div>
-  <div><strong>Forma de pagamento:</strong> {selectedPrintableDocument.paymentMethod || 'Não informado'}</div>
+  <div><strong>Forma de pagamento:</strong> {formatPaymentMethod(selectedPrintableDocument.paymentMethod)}</div>
 </section>
 
                   <table className="print-doc-items">
@@ -7467,7 +7605,7 @@ const basePrintable: PrintableDocument = {
 
                   <section className="print-doc-commercial">
                     <h4>Informacoes Comerciais</h4>
-                    <p><strong>Forma de pagamento:</strong> {printSettings.paymentMethod}</p>
+                    <p><strong>Forma de pagamento:</strong> {selectedPrintableDocument.kind === 'venda' ? formatPaymentMethod(selectedPrintableDocument.paymentMethod) : formatPaymentMethod(printSettings.paymentMethod)}</p>
                     <p><strong>Garantia:</strong> {formatDaysValue(printSettings.warrantyDays)}</p>
                     <p><strong>Validade do orcamento:</strong> {formatDaysValue(printSettings.validityDays)}</p>
                     <p><strong>Responsavel:</strong> {printSettings.responsibleName}</p>
