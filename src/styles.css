@@ -2988,6 +2988,48 @@ select option {
   color: rgba(226, 232, 240, 0.9);
 }
 
+.sales-link-banner {
+  display: grid;
+  gap: 4px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(15, 23, 42, 0.4);
+  color: #e2e8f0;
+}
+
+.sales-link-banner strong {
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.sales-link-banner span {
+  font-size: 11px;
+  color: #cbd5e1;
+}
+
+.sales-link-banner.warning {
+  border-color: rgba(251, 191, 36, 0.45);
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.16), rgba(245, 158, 11, 0.08));
+  color: #fde68a;
+}
+
+.sales-link-banner.warning span {
+  color: rgba(255, 237, 213, 0.95);
+}
+
+.sales-link-banner.ok {
+  border-color: rgba(34, 197, 94, 0.45);
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.14), rgba(16, 185, 129, 0.08));
+  color: #bbf7d0;
+}
+
+.sales-link-banner.ok span {
+  color: rgba(220, 252, 231, 0.95);
+}
+
 .sales-history-panel {
   background:
     radial-gradient(circle at 10% 0%, rgba(140, 140, 140, 0.12) 0%, transparent 38%),

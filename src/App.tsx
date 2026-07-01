@@ -272,6 +272,31 @@ function mapDashboardStatusToDocumentStatus(status: DashboardServiceStatus): str
   return 'aberto';
 }
 
+async function persistDocumentStatus(documentId: string, status: DashboardServiceStatus): Promise<boolean> {
+  if (!isSupabaseConfigured || !supabase) return true;
+
+  const sb = supabase;
+  const nextStatus = mapDashboardStatusToDocumentStatus(status);
+  const rpcResult = await sb.rpc('update_document_status_safe', {
+    p_document_id: String(documentId),
+    p_status: nextStatus,
+  });
+
+  if (!rpcResult.error) return true;
+
+  console.error('Falha ao atualizar status via RPC update_document_status_safe', rpcResult.error);
+
+  const fallbackResult = await sb
+    .from('documents_v2')
+    .update({ status: nextStatus })
+    .eq('id', String(documentId));
+
+  if (!fallbackResult.error) return true;
+
+  console.error('Falha ao atualizar status via fallback em documents_v2', fallbackResult.error);
+  return false;
+}
+
 function isIsoInCurrentMonth(value: string | null | undefined): boolean {
   if (!value) return false;
   const date = new Date(value);
@@ -1279,6 +1304,8 @@ function SaleScreen({
   saleAppointmentResults,
   saleSelectedAppointmentId,
   setSaleSelectedAppointmentId,
+  saleLinkedAppointmentId,
+  saleRequiresAppointmentLink,
   runSaleQuoteSearch,
   importQuoteToSaleBySearch,
   runSaleAppointmentSearch,
@@ -1312,6 +1339,8 @@ function SaleScreen({
   saleAppointmentResults: ImportDocumentRow[];
   saleSelectedAppointmentId: string;
   setSaleSelectedAppointmentId: (value: string) => void;
+  saleLinkedAppointmentId: string | null;
+  saleRequiresAppointmentLink: boolean;
   runSaleQuoteSearch: () => void;
   importQuoteToSaleBySearch: () => void;
   runSaleAppointmentSearch: () => void;
@@ -1341,6 +1370,7 @@ function SaleScreen({
   const vehicleModel = vehicleLines[0] || 'VEICULO PERFORMANCE';
   const vehicleGear = vehicleLines[1] || 'AUTOMATICO';
   const vehicleYear = vehicleLines[2] || '2024/2024';
+  const linkedAppointmentId = (saleLinkedAppointmentId || saleSelectedAppointmentId || '').trim();
 
   const paymentStatusLabel = saleTotal > 0 ? 'PENDENTE' : 'SEM VALOR';
 
@@ -1556,6 +1586,25 @@ function SaleScreen({
                         <button className="sales-premium-btn primary" onClick={importAppointmentToSaleBySearch}>Importar</button>
                         <button className="sales-premium-btn success" onClick={importAppointmentToSale}>Ultimo</button>
                       </div>
+                    </div>
+
+                    <div
+                      className={`sales-link-banner ${saleRequiresAppointmentLink && !linkedAppointmentId ? 'warning' : 'ok'}`}
+                      role="status"
+                      aria-live="polite"
+                    >
+                      <strong>
+                        {linkedAppointmentId
+                          ? `Agendamento vinculado: ${linkedAppointmentId.slice(0, 8).toUpperCase()}`
+                          : 'Nenhum agendamento vinculado'}
+                      </strong>
+                      <span>
+                        {saleRequiresAppointmentLink && !linkedAppointmentId
+                          ? 'Esta venda foi iniciada por agendamento. Vincule um agendamento para liberar a finalizacao.'
+                          : saleRequiresAppointmentLink
+                            ? 'Vinculo confirmado. Ao finalizar, o agendamento sera marcado como concluido.'
+                            : 'Opcional: importe um agendamento para sincronizar status automaticamente.'}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -2507,7 +2556,7 @@ salesResult.data.map((item) => ({
         });
         setCalendarAppointments(mappedAppointments);
 
-        const mappedDashboardServices: DashboardService[] = appointmentResult.data.slice(0, 8).map((item) => {
+        const mappedDashboardServices: DashboardService[] = appointmentResult.data.map((item) => {
           const dashboardStatus = normalizeDashboardStatus(item.status);
           return {
             id: `appt-${String(item.id)}`,
@@ -4156,15 +4205,8 @@ row.paymentStatus !== financialFilters.paymentStatus
     );
 
     if (selected.sourceDocumentId && isSupabaseConfigured && supabase) {
-      const sb = supabase;
-      const nextStatus = mapDashboardStatusToDocumentStatus(selected.status);
-      const rpcResult = await sb.rpc('update_document_status_safe', {
-        p_document_id: String(selected.sourceDocumentId),
-        p_status: nextStatus,
-      });
-
-      if (rpcResult.error) {
-        console.error('Falha ao atualizar status via RPC update_document_status_safe', rpcResult.error);
+      const statusSaved = await persistDocumentStatus(String(selected.sourceDocumentId), selected.status);
+      if (!statusSaved) {
         window.alert('Nao foi possivel salvar o status no Supabase. Verifique se a funcao update_document_status_safe foi criada no banco.');
       }
     }
@@ -5314,6 +5356,13 @@ async function persistDocument(
         return;
       }
 
+      if (isSupabaseConfigured && supabase) {
+        const saleStatusSaved = await persistDocumentStatus(String(receiptId), 'CONCLUIDO');
+        if (!saleStatusSaved) {
+          console.error('Falha ao atualizar status da venda para concluido');
+        }
+      }
+
       const currentPaymentStatus = editingSaleId ? saleEditingPaymentStatus : 'PENDENTE';
       const persistedReceipt: ReceiptRow = {
         id: receiptId,
@@ -5504,14 +5553,9 @@ async function persistDocument(
         });
 
         if (isSupabaseConfigured && supabase) {
-          const sb = supabase;
-          const rpcResult = await sb.rpc('update_document_status_safe', {
-            p_document_id: String(targetAppointmentId),
-            p_status: mapDashboardStatusToDocumentStatus('CONCLUIDO'),
-          });
-
-          if (rpcResult.error) {
-            console.error('Falha ao atualizar status para concluido', rpcResult.error);
+          const appointmentStatusSaved = await persistDocumentStatus(String(targetAppointmentId), 'CONCLUIDO');
+          if (!appointmentStatusSaved) {
+            console.error('Falha ao atualizar status para concluido');
           }
         }
       }
@@ -7794,6 +7838,8 @@ const basePrintable: PrintableDocument = {
           saleAppointmentResults={saleAppointmentResults}
           saleSelectedAppointmentId={saleSelectedAppointmentId}
           setSaleSelectedAppointmentId={setSaleSelectedAppointmentId}
+          saleLinkedAppointmentId={saleLinkedAppointmentId}
+          saleRequiresAppointmentLink={saleRequiresAppointmentLink}
           runSaleQuoteSearch={() => void runSaleQuoteSearch()}
           importQuoteToSaleBySearch={() => void importQuoteToSaleBySearch()}
           runSaleAppointmentSearch={() => void runSaleAppointmentSearch()}
