@@ -1239,6 +1239,7 @@ function ServiceStatusModal({
 function SaleScreen({
   saleData,
   setSaleData,
+  isEditingSale,
   saleSubtotal,
   saleTotal,
   saleQuoteSearch,
@@ -1271,6 +1272,7 @@ function SaleScreen({
 }: {
   saleData: SaleData;
   setSaleData: (updater: (prev: SaleData) => SaleData) => void;
+  isEditingSale: boolean;
   saleSubtotal: number;
   saleTotal: number;
   saleQuoteSearch: string;
@@ -1351,9 +1353,16 @@ function SaleScreen({
         <div className="sales-premium-header-top">
           <div>
             <p className="sales-premium-eyebrow mb-1">ETORK BRASIL PERFORMANCE HUB</p>
-            <h2 className="sales-premium-title mb-0">Balcao de Vendas</h2>
+            <h2 className="sales-premium-title mb-0">{isEditingSale ? 'Editar Venda' : 'Balcao de Vendas'}</h2>
           </div>
         </div>
+
+        {isEditingSale && (
+          <div className="sales-edit-banner">
+            <strong>Modo de edição ativo.</strong>
+            <span>Altere os campos da venda e salve para atualizar o documento selecionado.</span>
+          </div>
+        )}
 
         <div className="sales-premium-header-grid">
           <div className="sales-premium-top-badges">
@@ -1364,7 +1373,13 @@ function SaleScreen({
         </div>
 
         <div className="sales-premium-header-actions">
-          <button className="sales-premium-btn ghost sales-premium-btn-back" onClick={() => setScreen('dashboard')}>
+          <button
+            className="sales-premium-btn ghost sales-premium-btn-back"
+            onClick={() => {
+              onCancelSale();
+              setScreen('dashboard');
+            }}
+          >
             <CalendarClock size={16} /> Voltar
           </button>
           <button
@@ -1379,7 +1394,7 @@ function SaleScreen({
             <Send size={16} /> Enviar Servico
           </button>
           <button className="sales-premium-btn success" onClick={finalizeSale} disabled={isSaving}>
-            <CircleDollarSign size={16} /> {isSaving ? 'Salvando...' : 'Finalizar Venda'}
+            <CircleDollarSign size={16} /> {isSaving ? 'Salvando...' : isEditingSale ? 'Salvar Alteracoes' : 'Finalizar Venda'}
           </button>
         </div>
       </section>
@@ -2051,6 +2066,8 @@ const createEmptySaleData = (): SaleData => ({
   useState<ReturnType<typeof createEmptySaleData>>(
     createEmptySaleData()
   );
+  const [saleEditingDocumentId, setSaleEditingDocumentId] = useState<string | null>(null);
+  const [saleEditingPaymentStatus, setSaleEditingPaymentStatus] = useState<PaymentStatus>('PENDENTE');
   const [receipts, setReceipts] = useState<ReceiptRow[]>([]);
   const [savedQuote, setSavedQuote] = useState<SavedQuote | null>(null);
   const [savedAppointment, setSavedAppointment] = useState<SavedAppointment | null>(null);
@@ -2612,8 +2629,10 @@ salesResult.data.map((item) => ({
   useEffect(() => {
     if (screen !== 'new-sale') return;
     setSelectedSalePrintable(null);
-    setSaleData(createEmptySaleData());
-  }, [screen]);
+    if (!saleEditingDocumentId) {
+      setSaleData(createEmptySaleData());
+    }
+  }, [saleEditingDocumentId, screen]);
 
   useEffect(() => {
     window.localStorage.setItem(PRINT_SETTINGS_STORAGE_KEY, JSON.stringify(printSettings));
@@ -3820,6 +3839,86 @@ row.paymentStatus !== financialFilters.paymentStatus
     };
   }
 
+  async function fetchSaleDocumentWithItemsById(id: string) {
+    if (!isSupabaseConfigured || !supabase) return null;
+
+    const sb = supabase;
+    const { data: doc, error: docError } = await sb
+      .from('documents_v2')
+      .select(
+        'id, customer_name_snapshot, phone_snapshot, plate_snapshot, vehicle_snapshot, notes, discount_amount, surcharge_amount, service_time_days, labor_required, payment_method, payment_status, created_at'
+      )
+      .eq('doc_type', 'venda')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (docError || !doc) return null;
+
+    const { data: items } = await sb
+      .from('document_items_v2')
+      .select('description, quantity, unit_price')
+      .eq('document_id', doc.id)
+      .order('created_at', { ascending: true });
+
+    const mappedItems: ServiceItem[] = (items || []).map((item) => ({
+      description: item.description,
+      quantity: Number(item.quantity) || 1,
+      price: Number(item.unit_price) || 0,
+    }));
+
+    return {
+      id: String(doc.id),
+      customer: doc.customer_name_snapshot || '',
+      customerType: resolveCustomerType(doc.customer_name_snapshot || '', getCustomerTypeLabel(1), doc.phone_snapshot || '', doc.plate_snapshot || ''),
+      phone: doc.phone_snapshot || '',
+      plate: doc.plate_snapshot || '',
+      vehicleDetails: doc.vehicle_snapshot || '',
+      items: mappedItems,
+      discount: Number(doc.discount_amount) || 0,
+      surcharge: Number(doc.surcharge_amount) || 0,
+      timeDays: Number(doc.service_time_days) || 1,
+      laborRequired: Boolean(doc.labor_required),
+      paymentMethod: normalizePaymentMethodToDb(doc.payment_method || '') || 'PIX',
+      note: doc.notes || '',
+      paymentStatus: normalizePaymentStatus(doc.payment_status),
+      createdAtIso: doc.created_at || '',
+    };
+  }
+
+  async function openSaleForEdit(saleId: string) {
+    const sale = await fetchSaleDocumentWithItemsById(saleId);
+    if (!sale) {
+      window.alert('Venda nao encontrada para edicao.');
+      return;
+    }
+
+    setSaleEditingDocumentId(sale.id);
+    setSaleEditingPaymentStatus(sale.paymentStatus);
+    setSaleData((prev) => ({
+      ...prev,
+      customer: sale.customer,
+      customerType: sale.customerType,
+      phone: sale.phone,
+      plate: sale.plate,
+      vehicleDetails: sale.vehicleDetails,
+      laborRequired: sale.laborRequired,
+      timeDays: sale.timeDays,
+      items: cloneItems(sale.items),
+      discount: sale.discount,
+      surcharge: sale.surcharge,
+      paymentMethod: sale.paymentMethod,
+      note: sale.note,
+    }));
+    setSaleQuoteSearch('');
+    setSaleQuoteResults([]);
+    setSaleSelectedQuoteId('');
+    setSaleAppointmentSearch('');
+    setSaleAppointmentResults([]);
+    setSaleSelectedAppointmentId('');
+    setSelectedSalePrintable(null);
+    setScreen('new-sale');
+  }
+
   async function runAppointmentQuoteSearch() {
     const rows = await searchDocumentsForImport('orcamento', appointmentQuoteSearch);
     setAppointmentQuoteResults(rows);
@@ -4959,6 +5058,8 @@ async function persistDocument(
 
   function clearSaleForm() {
     setSaleData(createEmptySaleData());
+    setSaleEditingDocumentId(null);
+    setSaleEditingPaymentStatus('PENDENTE');
     setSaleQuoteSearch('');
     setSaleQuoteResults([]);
     setSaleSelectedQuoteId('');
@@ -4968,7 +5069,22 @@ async function persistDocument(
   }
 
   async function finalizeSale() {
+    const editingSaleId = saleEditingDocumentId;
+    const originalSale = editingSaleId ? await fetchSaleDocumentWithItemsById(editingSaleId) : null;
+
+    if (editingSaleId && !originalSale) {
+      window.alert('Nao foi possivel carregar a venda original para edicao.');
+      return;
+    }
+
     const soldByDescription = saleData.items.reduce<Record<string, number>>((acc, item) => {
+      const key = normalizeCatalogKey(item.description);
+      if (!key) return acc;
+      acc[key] = (acc[key] || 0) + (Number(item.quantity) || 0);
+      return acc;
+    }, {});
+
+    const originalByDescription = (originalSale?.items || []).reduce<Record<string, number>>((acc, item) => {
       const key = normalizeCatalogKey(item.description);
       if (!key) return acc;
       acc[key] = (acc[key] || 0) + (Number(item.quantity) || 0);
@@ -4983,10 +5099,14 @@ async function persistDocument(
 
     const insufficientItems: string[] = [];
     Object.entries(soldByDescription).forEach(([key, soldQty]) => {
+      const originalQty = originalByDescription[key] || 0;
+      const additionalQty = soldQty - originalQty;
+      if (additionalQty <= 0) return;
+
       const catalogItem = catalogByDescription[key];
       if (!catalogItem) return;
-      if (catalogItem.quantity < soldQty) {
-        insufficientItems.push(`${catalogItem.description} (estoque: ${catalogItem.quantity}, venda: ${soldQty})`);
+      if (catalogItem.quantity < additionalQty) {
+        insufficientItems.push(`${catalogItem.description} (estoque: ${catalogItem.quantity}, necessidade adicional: ${additionalQty})`);
       }
     });
 
@@ -4996,9 +5116,12 @@ async function persistDocument(
     }
 
     const nextCatalog = serviceCatalogData.map((item) => {
-      const soldQty = soldByDescription[normalizeCatalogKey(item.description)] || 0;
-      if (soldQty <= 0) return item;
-      return { ...item, quantity: item.quantity - soldQty };
+      const key = normalizeCatalogKey(item.description);
+      const soldQty = soldByDescription[key] || 0;
+      const originalQty = originalByDescription[key] || 0;
+      const quantityDelta = soldQty - originalQty;
+      if (quantityDelta === 0) return item;
+      return { ...item, quantity: item.quantity - quantityDelta };
     });
     setServiceCatalogData(nextCatalog);
 
@@ -5007,7 +5130,12 @@ async function persistDocument(
       await Promise.all(
         nextCatalog
           .filter((item) => item.id !== null)
-          .filter((item) => soldByDescription[normalizeCatalogKey(item.description)] > 0)
+          .filter((item) => {
+            const key = normalizeCatalogKey(item.description);
+            const soldQty = soldByDescription[key] || 0;
+            const originalQty = originalByDescription[key] || 0;
+            return soldQty - originalQty !== 0;
+          })
           .map((item) =>
             sb
               .from('service_catalog_v2')
@@ -5017,60 +5145,115 @@ async function persistDocument(
       );
     }
 
-    const nowDate = now.toLocaleDateString('pt-BR');
+    const createdAtIso = editingSaleId ? originalSale?.createdAtIso || new Date().toISOString() : new Date().toISOString();
+    const nowDate = editingSaleId ? toBrDate(createdAtIso) : now.toLocaleDateString('pt-BR');
     const car = saleData.vehicleDetails.split('\n')[0] || saleData.vehicleDetails;
 
     setIsSaving(true);
-  const result = await persistDocument(
-  'venda',
-  {
-    customerName: saleData.customer,
 
-    phone: saleData.phone,
+    try {
+      let receiptId: string | null = editingSaleId || null;
 
-    plate: saleData.plate,
+      if (editingSaleId) {
+        if (!isSupabaseConfigured || !supabase) {
+          window.alert('Supabase nao configurado para atualizar a venda.');
+          return;
+        }
 
-    vehicleSnapshot: saleData.vehicleDetails,
+        const sb = supabase;
+        const { error: updateError } = await sb
+          .from('documents_v2')
+          .update({
+            customer_name_snapshot: saleData.customer,
+            phone_snapshot: saleData.phone,
+            plate_snapshot: saleData.plate,
+            vehicle_snapshot: saleData.vehicleDetails,
+            labor_required: saleData.laborRequired,
+            service_time_days: saleData.timeDays,
+            discount_amount: saleData.discount,
+            surcharge_amount: saleData.surcharge,
+            payment_method: normalizePaymentMethodToDb(saleData.paymentMethod),
+            payment_status: saleEditingPaymentStatus,
+            notes: saleData.note,
+            subtotal_amount: saleSubtotal,
+            total_amount: saleTotal,
+          })
+          .eq('id', editingSaleId)
+          .eq('doc_type', 'venda');
 
-    laborRequired: saleData.laborRequired,
+        if (updateError) {
+          window.alert(`Nao foi possivel atualizar a venda no banco: ${updateError.message}`);
+          return;
+        }
 
-    serviceTimeDays: saleData.timeDays,
+        const { error: deleteItemsError } = await sb.from('document_items_v2').delete().eq('document_id', editingSaleId);
+        if (deleteItemsError) {
+          window.alert(`Nao foi possivel atualizar os itens da venda: ${deleteItemsError.message}`);
+          return;
+        }
 
-    discount: saleData.discount,
+        if (saleData.items.length > 0) {
+          const itemRows = saleData.items.map((item) => ({
+            document_id: editingSaleId,
+            description: item.description,
+            quantity: item.quantity,
+            unit_price: item.price,
+          }));
 
-    surcharge: saleData.surcharge,
+          const { error: insertItemsError } = await sb.from('document_items_v2').insert(itemRows);
+          if (insertItemsError) {
+            window.alert(`Nao foi possivel salvar os itens atualizados da venda: ${insertItemsError.message}`);
+            return;
+          }
+        }
 
-    paymentMethod: saleData.paymentMethod,
+        setSaleEditingDocumentId(null);
+        setSaleEditingPaymentStatus('PENDENTE');
+      } else {
+        const result = await persistDocument(
+          'venda',
+          {
+            customerName: saleData.customer,
+            phone: saleData.phone,
+            plate: saleData.plate,
+            vehicleSnapshot: saleData.vehicleDetails,
+            laborRequired: saleData.laborRequired,
+            serviceTimeDays: saleData.timeDays,
+            discount: saleData.discount,
+            surcharge: saleData.surcharge,
+            paymentMethod: saleData.paymentMethod,
+            note: saleData.note,
+          },
+          saleData.items
+        );
 
-    note: saleData.note,
-  },
-  saleData.items
-);
-    setIsSaving(false);
-    if (!result.ok || !result.id) {
-      window.alert(`Nao foi possivel salvar a venda no banco: ${result.error ?? 'Erro desconhecido'}`);
-      return;
-    }
+        if (!result.ok || !result.id) {
+          window.alert(`Nao foi possivel salvar a venda no banco: ${result.error ?? 'Erro desconhecido'}`);
+          return;
+        }
 
-    const receiptId = String(result.id);
+        receiptId = String(result.id);
+      }
 
-    const persistedReceipt: ReceiptRow = {
-      id: receiptId,
-      date: nowDate,
-      customer: saleData.customer,
-      car,
-      plate: saleData.plate,
-      total: saleTotal,
-    };
+      if (!receiptId) {
+        window.alert('Nao foi possivel concluir a operacao da venda.');
+        return;
+      }
 
-    setLastSavedDocumentIds((prev) => ({ ...prev, venda: String(result.id) }));
-    setReceipts((prev) => [persistedReceipt, ...prev]);
-    window.alert('Venda finalizada e salva no banco.');
-    setFinancialSalesRows((prev) => [
-    {
-        id: String(result.id),
+      const currentPaymentStatus = editingSaleId ? saleEditingPaymentStatus : 'PENDENTE';
+      const persistedReceipt: ReceiptRow = {
+        id: receiptId,
         date: nowDate,
-        createdAtIso: new Date().toISOString(),
+        customer: saleData.customer,
+        car,
+        plate: saleData.plate,
+        total: saleTotal,
+      };
+
+      const updatedFinancialSale: FinancialSaleRow = {
+        id: receiptId,
+        date: nowDate,
+        createdAtIso,
         customer: saleData.customer,
         phone: saleData.phone,
         plate: saleData.plate,
@@ -5082,37 +5265,71 @@ async function persistDocument(
         note: saleData.note,
         timeDays: saleData.timeDays,
         laborRequired: saleData.laborRequired,
-
         paymentMethod: saleData.paymentMethod,
-        paymentStatus: 'PENDENTE',
-    },
-    ...prev,
-]);
-    setSelectedSalePrintable({
-      kind: 'venda',
-      sourceId: receiptId,
-      number: `VEN-${receiptId.slice(0, 8).toUpperCase()}`,
-      issuedAt: `${nowDate} ${now.toLocaleTimeString('pt-BR', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      })}`,
-      customer: saleData.customer,
-      customerType: resolveCustomerType(saleData.customer, saleData.customerType, saleData.phone, saleData.plate),
-      phone: saleData.phone,
-      plate: saleData.plate,
-      vehicle: saleData.vehicleDetails,
-      items: cloneItems(saleData.items),
-      subtotal: saleSubtotal,
-      discount: saleData.discount,
-      total: saleTotal,
-      note: saleData.note,
-      serviceTimeDays: saleData.timeDays,
-      laborRequired: saleData.laborRequired,
-      paymentMethod: saleData.paymentMethod,
-    });
-    setSelectedPrintKind('venda');
-    setScreen('print-receipt');
+        paymentStatus: currentPaymentStatus,
+      };
+
+      setLastSavedDocumentIds((prev) => ({ ...prev, venda: receiptId }));
+      setReceipts((prev) => {
+        const exists = prev.some((row) => row.id === receiptId);
+        return exists ? prev.map((row) => (row.id === receiptId ? persistedReceipt : row)) : [persistedReceipt, ...prev];
+      });
+      setFinancialSalesRows((prev) => {
+        const exists = prev.some((row) => row.id === receiptId);
+        return exists ? prev.map((row) => (row.id === receiptId ? updatedFinancialSale : row)) : [updatedFinancialSale, ...prev];
+      });
+      setSalesHistory((prev) => {
+        const updatedHistoryRow: SaleHistoryRow = {
+          id: updatedFinancialSale.id,
+          createdAtIso: updatedFinancialSale.createdAtIso,
+          createdAt: createdAtIso ? new Date(createdAtIso).toLocaleString('pt-BR') : nowDate,
+          customer: updatedFinancialSale.customer,
+          phone: updatedFinancialSale.phone,
+          plate: updatedFinancialSale.plate,
+          vehicle: updatedFinancialSale.vehicle,
+          subtotal: updatedFinancialSale.subtotal,
+          discount: updatedFinancialSale.discount,
+          surcharge: updatedFinancialSale.surcharge,
+          total: updatedFinancialSale.total,
+          note: updatedFinancialSale.note,
+          timeDays: updatedFinancialSale.timeDays,
+          laborRequired: saleData.laborRequired,
+          paymentMethod: updatedFinancialSale.paymentMethod,
+          paymentStatus: updatedFinancialSale.paymentStatus,
+        };
+        const exists = prev.some((row) => row.id === receiptId);
+        return exists ? prev.map((row) => (row.id === receiptId ? updatedHistoryRow : row)) : [updatedHistoryRow, ...prev];
+      });
+
+      setSelectedSalePrintable({
+        kind: 'venda',
+        sourceId: receiptId,
+        number: `VEN-${receiptId.slice(0, 8).toUpperCase()}`,
+        issuedAt: `${nowDate} ${now.toLocaleTimeString('pt-BR', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        })}`,
+        customer: saleData.customer,
+        customerType: resolveCustomerType(saleData.customer, saleData.customerType, saleData.phone, saleData.plate),
+        phone: saleData.phone,
+        plate: saleData.plate,
+        vehicle: saleData.vehicleDetails,
+        items: cloneItems(saleData.items),
+        subtotal: saleSubtotal,
+        discount: saleData.discount,
+        total: saleTotal,
+        note: saleData.note,
+        serviceTimeDays: saleData.timeDays,
+        laborRequired: saleData.laborRequired,
+        paymentMethod: saleData.paymentMethod,
+      });
+      setSelectedPrintKind('venda');
+      setScreen('print-receipt');
+      window.alert(editingSaleId ? 'Venda atualizada com sucesso no banco.' : 'Venda finalizada e salva no banco.');
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   function openSaleReceiptDocument(printable: PrintableDocument, shouldPrint = false) {
@@ -6790,6 +7007,7 @@ const basePrintable: PrintableDocument = {
                     <span>PLACA</span>
                     <span>VEICULO</span>
                     <span>TOTAL / STATUS</span>
+                    <span>ACOES</span>
                   </div>
                   {filteredFinancialSalesRows.map((sale) => (
                     <div className="financial-sales-row" key={sale.id}>
@@ -6814,6 +7032,9 @@ const basePrintable: PrintableDocument = {
                           <option value="NAO_INFORMADO">NAO INFORMADO</option>
                         </select>
                       </span>
+                      <button className="btn-cyan sales-history-edit-btn" type="button" onClick={() => void openSaleForEdit(sale.id)}>
+                        EDITAR
+                      </button>
                     </div>
                   ))}
                   {filteredFinancialSalesRows.length === 0 && (
@@ -7362,6 +7583,7 @@ const basePrintable: PrintableDocument = {
         <SaleScreen
           saleData={saleData}
           setSaleData={setSaleData}
+          isEditingSale={Boolean(saleEditingDocumentId)}
           saleSubtotal={saleSubtotal}
           saleTotal={saleTotal}
           saleQuoteSearch={saleQuoteSearch}
