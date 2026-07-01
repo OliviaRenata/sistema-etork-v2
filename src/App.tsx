@@ -4153,7 +4153,7 @@ row.paymentStatus !== financialFilters.paymentStatus
       nextStatus === 'CANCELADO' || nextStatus === 'CONFIRMADO'
         ? nextStatus
         : calendarEditData.status || 'CONFIRMADO';
-    const updated = {
+    const updated: CalendarAppointment = {
       ...calendarEditData,
       date: normalizedDate,
       dayKey: toCalendarDateKey(normalizedDate),
