@@ -219,6 +219,23 @@ type DashboardService = {
   statusUpdatedAtIso?: string | null;
 };
 
+type ImportedDocumentWithItems = {
+  id: string;
+  customer: string;
+  phone: string;
+  plate: string;
+  vehicleSnapshot: string;
+  note: string;
+  discount: number;
+  timeDays: number;
+  scheduledFor: string | null;
+  items: ServiceItem[];
+};
+
+type ImportedAppointmentDocumentWithItems = ImportedDocumentWithItems & {
+  status: DashboardServiceStatus;
+};
+
 const DASHBOARD_STATUS_OPTIONS: DashboardServiceStatus[] = [
   'EM ABERTO',
   'EM ANDAMENTO',
@@ -2155,6 +2172,8 @@ const [financialFilters, setFinancialFilters] =
   const [saleAppointmentSearch, setSaleAppointmentSearch] = useState('');
   const [saleAppointmentResults, setSaleAppointmentResults] = useState<ImportDocumentRow[]>([]);
   const [saleSelectedAppointmentId, setSaleSelectedAppointmentId] = useState('');
+  const [saleLinkedAppointmentId, setSaleLinkedAppointmentId] = useState<string | null>(null);
+  const [saleRequiresAppointmentLink, setSaleRequiresAppointmentLink] = useState(false);
   const [salesHistory, setSalesHistory] = useState<SaleHistoryRow[]>([]);
   const [salesHistoryLoading, setSalesHistoryLoading] = useState(false);
   const [saleReceiptLoading, setSaleReceiptLoading] = useState(false);
@@ -3819,7 +3838,7 @@ row.paymentStatus !== financialFilters.paymentStatus
     );
   }
 
-  async function fetchDocumentWithItemsById(docType: 'orcamento' | 'agendamento', id: string) {
+  async function fetchDocumentWithItemsById(docType: 'orcamento' | 'agendamento', id: string): Promise<ImportedAppointmentDocumentWithItems | null> {
     if (!isSupabaseConfigured || !supabase) return null;
 
     const sb = supabase;
@@ -3845,6 +3864,7 @@ row.paymentStatus !== financialFilters.paymentStatus
     }));
 
     return {
+      id: String(doc.id),
       customer: doc.customer_name_snapshot || '',
       phone: doc.phone_snapshot || '',
       plate: doc.plate_snapshot || '',
@@ -3934,6 +3954,8 @@ row.paymentStatus !== financialFilters.paymentStatus
     setSaleAppointmentSearch('');
     setSaleAppointmentResults([]);
     setSaleSelectedAppointmentId('');
+    setSaleLinkedAppointmentId(null);
+    setSaleRequiresAppointmentLink(false);
     setSelectedSalePrintable(null);
     setScreen('new-sale');
   }
@@ -4795,7 +4817,7 @@ async function persistDocument(
     return { ok: true as const, id: documentRow.id };
   }
 
-  async function fetchLatestDocumentWithItems(docType: 'orcamento' | 'agendamento') {
+  async function fetchLatestDocumentWithItems(docType: 'orcamento' | 'agendamento'): Promise<ImportedDocumentWithItems | null> {
     if (!isSupabaseConfigured || !supabase) return null;
 
     const sb = supabase;
@@ -4822,6 +4844,7 @@ async function persistDocument(
     }));
 
     return {
+      id: String(doc.id),
       customer: doc.customer_name_snapshot || '',
       phone: doc.phone_snapshot || '',
       plate: doc.plate_snapshot || '',
@@ -4991,6 +5014,8 @@ async function persistDocument(
       note: source.note,
       vehicleDetails: source.vehicle,
     }));
+    setSaleLinkedAppointmentId(null);
+    setSaleRequiresAppointmentLink(false);
     window.alert(dbQuote ? 'Orcamento importado do banco.' : 'Orcamento importado para a venda.');
   }
 
@@ -5017,6 +5042,8 @@ async function persistDocument(
       timeDays: selected.timeDays,
       note: selected.note,
     }));
+    setSaleLinkedAppointmentId(null);
+    setSaleRequiresAppointmentLink(false);
     window.alert('Orcamento importado para a venda.');
   }
 
@@ -5043,6 +5070,8 @@ async function persistDocument(
       timeDays: selected.timeDays,
       note: selected.note,
     }));
+    setSaleLinkedAppointmentId(String(selected.id));
+    setSaleRequiresAppointmentLink(true);
     window.alert('Agendamento importado para a venda.');
   }
 
@@ -5088,6 +5117,8 @@ async function persistDocument(
       timeDays: source.timeDays,
       note: source.note,
     }));
+    setSaleLinkedAppointmentId(dbAppointment ? String(dbAppointment.id) : null);
+    setSaleRequiresAppointmentLink(Boolean(dbAppointment?.id));
     window.alert(dbAppointment ? 'Agendamento importado do banco.' : 'Agendamento importado para a venda.');
   }
 
@@ -5101,14 +5132,22 @@ async function persistDocument(
     setSaleAppointmentSearch('');
     setSaleAppointmentResults([]);
     setSaleSelectedAppointmentId('');
+    setSaleLinkedAppointmentId(null);
+    setSaleRequiresAppointmentLink(false);
   }
 
   async function finalizeSale() {
     const editingSaleId = saleEditingDocumentId;
     const originalSale = editingSaleId ? await fetchSaleDocumentWithItemsById(editingSaleId) : null;
+    const linkedAppointmentIdCandidate = (saleLinkedAppointmentId || saleSelectedAppointmentId || '').trim();
 
     if (editingSaleId && !originalSale) {
       window.alert('Nao foi possivel carregar a venda original para edicao.');
+      return;
+    }
+
+    if (saleRequiresAppointmentLink && !linkedAppointmentIdCandidate) {
+      window.alert('Esta venda veio de agendamento. Selecione um agendamento valido antes de finalizar.');
       return;
     }
 
@@ -5360,75 +5399,125 @@ async function persistDocument(
         paymentMethod: saleData.paymentMethod,
       });
 
-      const normalizedSalePlate = saleData.plate.trim().toLowerCase();
-      const normalizedSaleCustomer = saleData.customer.trim().toLowerCase();
+      const normalizeCompare = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const concludedStatus: DashboardServiceStatus = 'CONCLUIDO';
+      const concludedTone: DashboardServiceTone = 'success';
+      const normalizedSalePlate = normalizeCompare(saleData.plate.trim());
+      const normalizedSaleCustomer = normalizeCompare(saleData.customer.trim());
+      const linkedAppointmentId = linkedAppointmentIdCandidate || null;
       const matchedService = dashboardServices.find((service) => {
         if (service.status === 'CONCLUIDO' || service.status === 'AVISAR CLIENTE') return false;
 
         const samePlate =
           Boolean(normalizedSalePlate) &&
-          service.plate.trim().toLowerCase() === normalizedSalePlate;
+          normalizeCompare(service.plate.trim()) === normalizedSalePlate;
         const sameCustomer =
           Boolean(normalizedSaleCustomer) &&
-          service.customer.trim().toLowerCase() === normalizedSaleCustomer;
+          normalizeCompare(service.customer.trim()) === normalizedSaleCustomer;
 
         return samePlate || sameCustomer;
       });
+
+      let targetAppointmentId: string | null = linkedAppointmentId || matchedService?.sourceDocumentId || null;
+      if (!targetAppointmentId) {
+        const matchedAppointment = calendarAppointments.find((appointment) => {
+          const samePlate = Boolean(normalizedSalePlate) && normalizeCompare(appointment.plate.trim()) === normalizedSalePlate;
+          const sameCustomer = Boolean(normalizedSaleCustomer) && normalizeCompare(appointment.customer.trim()) === normalizedSaleCustomer;
+          return (samePlate || sameCustomer) && appointment.dashboardStatus !== 'CONCLUIDO';
+        });
+        targetAppointmentId = matchedAppointment?.id || null;
+      }
  
       if (matchedService) {
         setDashboardServices((prev) =>
           prev.map((service) =>
             service.id === matchedService.id
-              ? { ...service, status: 'CONCLUIDO', tone: 'success', statusUpdatedAtIso: new Date().toISOString() }
+              ? { ...service, status: concludedStatus, tone: concludedTone, statusUpdatedAtIso: new Date().toISOString() }
               : service
           )
         );
-
-        if (matchedService.sourceDocumentId) {
-          setCalendarAppointments((prev) =>
-            prev.map((appointment) =>
-              appointment.id === matchedService.sourceDocumentId
-                ? { ...appointment, dashboardStatus: 'CONCLUIDO', status: 'CONFIRMADO' }
-                : appointment
-            )
-          );
- 
-          if (isSupabaseConfigured && supabase) {
-            const sb = supabase;
-            const rpcResult = await sb.rpc('update_document_status_safe', {
-              p_document_id: String(matchedService.sourceDocumentId),
-              p_status: mapDashboardStatusToDocumentStatus('CONCLUIDO'),
-            });
-
-            if (rpcResult.error) {
-              console.error('Falha ao atualizar status para concluido', rpcResult.error);
-            }
-          }
-        }
       } else {
-        const saleCardId = `sale-${receiptId}`;
-        const saleTitle = saleData.vehicleDetails.split('\n')[0] || 'VENDA FINALIZADA';
+        if (!targetAppointmentId) {
+          const saleCardId = `sale-${receiptId}`;
+          const saleTitle = saleData.vehicleDetails.split('\n')[0] || 'VENDA FINALIZADA';
+
+          setDashboardServices((prev) => {
+            const existingIndex = prev.findIndex((service) => service.id === saleCardId);
+            const concludedSaleCard: DashboardService = {
+              id: saleCardId,
+              title: saleTitle,
+              plate: saleData.plate || 'SEM PLACA',
+              customer: saleData.customer || 'SEM CLIENTE',
+              status: 'CONCLUIDO',
+              tone: 'success',
+              sourceDocumentId: null,
+              statusUpdatedAtIso: new Date().toISOString(),
+            };
+
+            if (existingIndex >= 0) {
+              return prev.map((service, index) => (index === existingIndex ? concludedSaleCard : service));
+            }
+
+            return [concludedSaleCard, ...prev];
+          });
+        }
+      }
+
+      if (targetAppointmentId) {
+        const nowIso = new Date().toISOString();
+        setCalendarAppointments((prev) =>
+          prev.map((appointment) =>
+            appointment.id === targetAppointmentId
+              ? { ...appointment, dashboardStatus: concludedStatus, status: 'CONFIRMADO' }
+              : appointment
+          )
+        );
 
         setDashboardServices((prev) => {
-          const existingIndex = prev.findIndex((service) => service.id === saleCardId);
-          const concludedSaleCard: DashboardService = {
-            id: saleCardId,
-            title: saleTitle,
-            plate: saleData.plate || 'SEM PLACA',
-            customer: saleData.customer || 'SEM CLIENTE',
-            status: 'CONCLUIDO',
-            tone: 'success',
-            sourceDocumentId: null,
-            statusUpdatedAtIso: new Date().toISOString(),
-          };
+          let updated = false;
+          const next = prev.map((service) => {
+            if (service.sourceDocumentId === targetAppointmentId) {
+              updated = true;
+              return { ...service, status: concludedStatus, tone: concludedTone, statusUpdatedAtIso: nowIso };
+            }
+            return service;
+          });
 
-          if (existingIndex >= 0) {
-            return prev.map((service, index) => (index === existingIndex ? concludedSaleCard : service));
-          }
+          if (updated) return next;
 
-          return [concludedSaleCard, ...prev];
+          const linkedAppointment = calendarAppointments.find((appointment) => appointment.id === targetAppointmentId);
+          if (!linkedAppointment) return next;
+
+          return [
+            {
+              id: `appt-${targetAppointmentId}`,
+              title: (linkedAppointment.vehicleDetails || '').split('\n')[0] || linkedAppointment.customer || 'SERVICO',
+              plate: linkedAppointment.plate || 'SEM PLACA',
+              customer: linkedAppointment.customer || 'SEM CLIENTE',
+              status: concludedStatus,
+              tone: concludedTone,
+              sourceDocumentId: targetAppointmentId,
+              statusUpdatedAtIso: nowIso,
+            },
+            ...next,
+          ];
         });
+
+        if (isSupabaseConfigured && supabase) {
+          const sb = supabase;
+          const rpcResult = await sb.rpc('update_document_status_safe', {
+            p_document_id: String(targetAppointmentId),
+            p_status: mapDashboardStatusToDocumentStatus('CONCLUIDO'),
+          });
+
+          if (rpcResult.error) {
+            console.error('Falha ao atualizar status para concluido', rpcResult.error);
+          }
+        }
       }
+
+      setSaleLinkedAppointmentId(null);
+      setSaleRequiresAppointmentLink(false);
 
       setSelectedPrintKind('venda');
       setScreen('dashboard');
