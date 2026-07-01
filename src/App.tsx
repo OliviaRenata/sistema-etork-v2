@@ -3210,24 +3210,31 @@ row.paymentStatus !== financialFilters.paymentStatus
   }, [salesHistoryTotalPages]);
 
   const nextAppointmentCards = useMemo(() => {
-    const currentTime = new Date().getTime();
-
     return calendarAppointments
       .filter((appointment) => appointment.status !== 'CANCELADO')
       .map((appointment) => ({
         appointment,
         scheduledAt: parseBrDateTime(appointment.date),
       }))
-      .filter((item) => item.scheduledAt && item.scheduledAt.getTime() >= currentTime)
       .sort((a, b) => (a.scheduledAt?.getTime() || 0) - (b.scheduledAt?.getTime() || 0))
-      .slice(0, 3)
       .map(({ appointment }) => ({
         id: appointment.id,
         model: appointment.vehicleDetails.split('\n')[0] || 'SEM VEICULO',
         plate: appointment.plate || 'SEM PLACA',
         date: appointment.date,
       }));
-  }, [calendarAppointments, now]);
+  }, [calendarAppointments]);
+
+  const dashboardStatusCards = useMemo(
+    () =>
+      dashboardServices.filter((service) =>
+        service.status === 'EM ANDAMENTO' ||
+        service.status === 'ATRASADO' ||
+        service.status === 'CONCLUIDO' ||
+        service.status === 'AVISAR CLIENTE'
+      ),
+    [dashboardServices]
+  );
 
   function askAndApplyDiscount(current: number, apply: (next: number) => void) {
     const answer = window.prompt('Informe o desconto em R$', String(current).replace('.', ','));
@@ -7287,7 +7294,7 @@ const basePrintable: PrintableDocument = {
                   )}
 
                   <div className="service-chips">
-                    {dashboardServices.map((service) => (
+                    {dashboardStatusCards.map((service) => (
                       <article
                         key={service.id}
                         className="service-chip service-chip-clickable"
@@ -7307,14 +7314,14 @@ const basePrintable: PrintableDocument = {
                         <small className={`tone-${service.tone}`}>{service.status}</small>
                       </article>
                     ))}
-                    {dashboardServices.length === 0 && (
+                    {dashboardStatusCards.length === 0 && (
                       <div className="receipt-empty">Nenhum servico em andamento no momento.</div>
                     )}
                   </div>
                 </>
               )}
 
-              <div className="next-title">PROXIMOS AGENDAMENTOS</div>
+              <div className="next-title"> AGENDAMENTOS</div>
               {nextAppointmentCards.length > 0 ? (
                 <div className="next-cards">
                   {nextAppointmentCards.map((appointment) => (
