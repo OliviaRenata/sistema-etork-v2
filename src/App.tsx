@@ -5341,8 +5341,56 @@ async function persistDocument(
         laborRequired: saleData.laborRequired,
         paymentMethod: saleData.paymentMethod,
       });
+
+      const normalizedSalePlate = saleData.plate.trim().toLowerCase();
+      const normalizedSaleCustomer = saleData.customer.trim().toLowerCase();
+      const matchedService = dashboardServices.find((service) => {
+        if (service.status === 'CONCLUIDO' || service.status === 'AVISAR CLIENTE') return false;
+
+        const samePlate =
+          Boolean(normalizedSalePlate) &&
+          service.plate.trim().toLowerCase() === normalizedSalePlate;
+        const sameCustomer =
+          Boolean(normalizedSaleCustomer) &&
+          service.customer.trim().toLowerCase() === normalizedSaleCustomer;
+
+        return samePlate || sameCustomer;
+      });
+
+      if (matchedService) {
+        setDashboardServices((prev) =>
+          prev.map((service) =>
+            service.id === matchedService.id
+              ? { ...service, status: 'CONCLUIDO', tone: 'success' }
+              : service
+          )
+        );
+
+        if (matchedService.sourceDocumentId) {
+          setCalendarAppointments((prev) =>
+            prev.map((appointment) =>
+              appointment.id === matchedService.sourceDocumentId
+                ? { ...appointment, dashboardStatus: 'CONCLUIDO', status: 'CONFIRMADO' }
+                : appointment
+            )
+          );
+
+          if (isSupabaseConfigured && supabase) {
+            const sb = supabase;
+            const rpcResult = await sb.rpc('update_document_status_safe', {
+              p_document_id: String(matchedService.sourceDocumentId),
+              p_status: mapDashboardStatusToDocumentStatus('CONCLUIDO'),
+            });
+
+            if (rpcResult.error) {
+              console.error('Falha ao atualizar status para concluido', rpcResult.error);
+            }
+          }
+        }
+      }
+
       setSelectedPrintKind('venda');
-      setScreen('print-receipt');
+      setScreen('dashboard');
       window.alert(editingSaleId ? 'Venda atualizada com sucesso no banco.' : 'Venda finalizada e salva no banco.');
     } finally {
       setIsSaving(false);
