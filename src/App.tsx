@@ -103,6 +103,7 @@ type CalendarAppointment = {
   note: string;
   total: number;
   status: AppointmentStatus;
+  dashboardStatus: DashboardServiceStatus;
 };
 
 type ReceiptRow = {
@@ -2460,6 +2461,7 @@ salesResult.data.map((item) => ({
       if (!appointmentResult.error && appointmentResult.data) {
         const mappedAppointments = appointmentResult.data.map((item) => {
           const scheduledDate = item.scheduled_for ? new Date(item.scheduled_for) : null;
+          const dashboardStatus = normalizeDashboardStatus(item.status);
 
           return {
             id: String(item.id),
@@ -2472,6 +2474,7 @@ salesResult.data.map((item) => ({
             note: item.notes || '',
             total: Number(item.total_amount) || 0,
             status: normalizeAppointmentStatus(item.status),
+            dashboardStatus,
           };
         });
         setCalendarAppointments(mappedAppointments);
@@ -3211,7 +3214,7 @@ row.paymentStatus !== financialFilters.paymentStatus
 
   const nextAppointmentCards = useMemo(() => {
     return calendarAppointments
-      .filter((appointment) => appointment.status !== 'CANCELADO')
+      .filter((appointment) => appointment.dashboardStatus === 'EM ABERTO')
       .map((appointment) => ({
         appointment,
         scheduledAt: parseBrDateTime(appointment.date),
@@ -4104,7 +4107,11 @@ row.paymentStatus !== financialFilters.paymentStatus
     setCalendarAppointments((prev) =>
       prev.map((appointment) =>
         selected.sourceDocumentId && appointment.id === selected.sourceDocumentId
-          ? { ...appointment, status: selected.status === 'AVISAR CLIENTE' ? 'CANCELADO' : 'CONFIRMADO' }
+          ? {
+              ...appointment,
+              status: selected.status === 'AVISAR CLIENTE' ? 'CANCELADO' : 'CONFIRMADO',
+              dashboardStatus: selected.status,
+            }
           : appointment
       )
     );
@@ -4151,6 +4158,7 @@ row.paymentStatus !== financialFilters.paymentStatus
       date: normalizedDate,
       dayKey: toCalendarDateKey(normalizedDate),
       status: resolvedStatus,
+      dashboardStatus: resolvedStatus === 'CANCELADO' ? 'AVISAR CLIENTE' : 'EM ABERTO',
     };
 
     setCalendarAppointments((prev) =>
@@ -4228,6 +4236,7 @@ row.paymentStatus !== financialFilters.paymentStatus
     }
 
     const updated = { ...appointment, status: 'CANCELADO' as AppointmentStatus };
+    updated.dashboardStatus = 'AVISAR CLIENTE';
     setCalendarAppointments((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
     setDashboardServices((prev) =>
       prev.map((service) =>
@@ -4913,6 +4922,7 @@ async function persistDocument(
           note: payload.note,
           total: appointmentData.items.reduce((acc, item) => acc + item.price * item.quantity, 0) - appointmentData.discount,
           status: 'CONFIRMADO',
+          dashboardStatus: 'EM ABERTO',
         },
         ...prev,
       ]);
