@@ -3233,6 +3233,7 @@ row.paymentStatus !== financialFilters.paymentStatus
       .map(({ appointment }) => ({
         id: appointment.id,
         model: appointment.vehicleDetails.split('\n')[0] || 'SEM VEICULO',
+        customer: appointment.customer || 'SEM CLIENTE',
         plate: appointment.plate || 'SEM PLACA',
         date: appointment.date,
       }));
@@ -7425,6 +7426,7 @@ const basePrintable: PrintableDocument = {
                   {nextAppointmentCards.map((appointment) => (
                     <article className="next-card" key={appointment.id}>
                       <strong>{appointment.model}</strong>
+                      <span>{appointment.customer}</span>
                       <span>{appointment.plate}</span>
                       <small>{appointment.date}</small>
                     </article>
