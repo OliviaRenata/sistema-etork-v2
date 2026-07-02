@@ -7903,7 +7903,7 @@ const basePrintable: PrintableDocument = {
 
                   {pagedSalesHistory.map((sale) => (
                     <div className="sales-history-grid-row" key={sale.id}>
-                      <span className="muted">#{getCompactSaleId(sale.id)}</span>
+                      <span className="muted">Numero: VEN-{getCompactSaleId(sale.id)}</span>
                       <span className="muted">{sale.createdAt}</span>
                       <span className="strong">{sale.customer}</span>
                       <span className="plate">{sale.plate || 'SEM PLACA'}</span>
