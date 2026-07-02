@@ -1215,6 +1215,7 @@ function ServiceStatusModal({
   onClose,
   onServiceChange,
   onSave,
+  onCompleteService,
   onPrint,
   onWhatsapp,
   onCancelAppointment,
@@ -1226,6 +1227,7 @@ function ServiceStatusModal({
   onClose: () => void;
   onServiceChange: (patch: Partial<DashboardService>) => void;
   onSave: () => void;
+  onCompleteService: () => void;
   onPrint: () => void;
   onWhatsapp: () => void;
   onCancelAppointment: () => void;
@@ -1280,6 +1282,7 @@ function ServiceStatusModal({
           <button className="btn-cyan" disabled={!hasLinkedAppointment} onClick={onWhatsapp}>ENVIAR WHATSAPP</button>
           <button className="btn-red" disabled={!hasLinkedAppointment} onClick={onCancelAppointment}>CANCELAR AGEND.</button>
           <button className="btn-dark" disabled={!hasLinkedAppointment} onClick={onDeleteAppointment}>EXCLUIR</button>
+          <button className="btn-save" onClick={onCompleteService}>CONCLUIR SERVICO</button>
           <button className="btn-cancel" onClick={onClose}>CANCELAR</button>
           <button className="btn-save" onClick={onSave}>SALVAR STATUS</button>
         </div>
@@ -3307,14 +3310,31 @@ row.paymentStatus !== financialFilters.paymentStatus
       }));
   }, [calendarAppointments]);
 
-  const dashboardStatusCards = useMemo(
-    () =>
-      dashboardServices.filter((service) =>
-        (service.status === 'EM ABERTO' || service.status === 'EM ANDAMENTO' || service.status === 'ATRASADO' || service.status === 'AVISAR CLIENTE') ||
-        (service.status === 'CONCLUIDO' && isIsoInCurrentMonth(service.statusUpdatedAtIso))
-      ),
-    [dashboardServices]
-  );
+  const dashboardStatusCards = useMemo(() => {
+    const now = Date.now();
+
+    return dashboardServices.filter((service) => {
+      const shouldShowByStatus =
+        service.status === 'EM ABERTO' ||
+        service.status === 'EM ANDAMENTO' ||
+        service.status === 'ATRASADO' ||
+        service.status === 'AVISAR CLIENTE';
+
+      if (!shouldShowByStatus) return false;
+
+      if (service.status !== 'EM ABERTO' || !service.sourceDocumentId) return true;
+
+      const linkedAppointment = calendarAppointments.find(
+        (appointment) => appointment.id === service.sourceDocumentId
+      );
+      if (!linkedAppointment) return true;
+
+      const scheduledAt = parseBrDateTime(linkedAppointment.date);
+      if (!scheduledAt) return true;
+
+      return scheduledAt.getTime() <= now;
+    });
+  }, [calendarAppointments, dashboardServices]);
 
   function askAndApplyDiscount(current: number, apply: (next: number) => void) {
     const answer = window.prompt('Informe o desconto em R$', String(current).replace('.', ','));
@@ -4034,6 +4054,67 @@ row.paymentStatus !== financialFilters.paymentStatus
     setSaleSelectedAppointmentId(rows[0] ? String(rows[0].id) : '');
   }
 
+  async function moveAppointmentToInProgress(appointmentId: string) {
+    const normalizedId = appointmentId.trim();
+    if (!normalizedId) return;
+
+    const nowIso = new Date().toISOString();
+    const inProgressStatus: DashboardServiceStatus = 'EM ANDAMENTO';
+    const inProgressTone = dashboardToneByStatus(inProgressStatus);
+    let linkedAppointment: CalendarAppointment | null = null;
+
+    setCalendarAppointments((prev) =>
+      prev.map((appointment) => {
+        if (appointment.id !== normalizedId) return appointment;
+        linkedAppointment = {
+          ...appointment,
+          status: 'CONFIRMADO',
+          dashboardStatus: inProgressStatus,
+        };
+        return linkedAppointment;
+      })
+    );
+
+    setDashboardServices((prev) => {
+      let updated = false;
+      const next = prev.map((service) => {
+        if (service.sourceDocumentId === normalizedId || service.id === `appt-${normalizedId}`) {
+          updated = true;
+          return {
+            ...service,
+            status: inProgressStatus,
+            tone: inProgressTone,
+            statusUpdatedAtIso: nowIso,
+          };
+        }
+        return service;
+      });
+
+      if (updated || !linkedAppointment) return next;
+
+      return [
+        {
+          id: `appt-${normalizedId}`,
+          title: (linkedAppointment.vehicleDetails || '').split('\n')[0] || linkedAppointment.customer || 'SERVICO',
+          plate: linkedAppointment.plate || 'SEM PLACA',
+          customer: linkedAppointment.customer || 'SEM CLIENTE',
+          status: inProgressStatus,
+          tone: inProgressTone,
+          sourceDocumentId: normalizedId,
+          statusUpdatedAtIso: nowIso,
+        },
+        ...next,
+      ];
+    });
+
+    if (isSupabaseConfigured && supabase) {
+      const statusSaved = await persistDocumentStatus(normalizedId, inProgressStatus);
+      if (!statusSaved) {
+        console.error('Falha ao atualizar agendamento para EM ANDAMENTO durante importacao para venda');
+      }
+    }
+  }
+
   async function importQuoteToAppointmentBySearch() {
     const id = appointmentSelectedQuoteId.trim();
     if (!id) return;
@@ -4198,9 +4279,15 @@ row.paymentStatus !== financialFilters.paymentStatus
     return calendarAppointments.find((item) => item.id === selectedDashboardService.sourceDocumentId) || null;
   }
 
-  async function saveDashboardServiceStatus() {
+  async function saveDashboardServiceStatus(forcedStatus?: DashboardServiceStatus) {
     if (!selectedDashboardService) return;
-    const selected = selectedDashboardService;
+    const selected = forcedStatus
+      ? {
+          ...selectedDashboardService,
+          status: forcedStatus,
+          tone: dashboardToneByStatus(forcedStatus),
+        }
+      : selectedDashboardService;
 
     setDashboardServices((prev) =>
       prev.map((service) =>
@@ -5160,6 +5247,7 @@ async function persistDocument(
     }));
     setSaleLinkedAppointmentId(String(selected.id));
     setSaleRequiresAppointmentLink(true);
+    await moveAppointmentToInProgress(String(selected.id));
     window.alert('Agendamento importado para a venda.');
   }
 
@@ -5207,6 +5295,9 @@ async function persistDocument(
     }));
     setSaleLinkedAppointmentId(dbAppointment ? String(dbAppointment.id) : null);
     setSaleRequiresAppointmentLink(Boolean(dbAppointment?.id));
+    if (dbAppointment?.id) {
+      await moveAppointmentToInProgress(String(dbAppointment.id));
+    }
     window.alert(dbAppointment ? 'Agendamento importado do banco.' : 'Agendamento importado para a venda.');
   }
 
@@ -5497,6 +5588,8 @@ async function persistDocument(
       const normalizeCompare = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
       const defaultStatus: DashboardServiceStatus = 'EM ABERTO';
       const defaultTone: DashboardServiceTone = dashboardToneByStatus(defaultStatus);
+      const linkedInProgressStatus: DashboardServiceStatus = 'EM ANDAMENTO';
+      const linkedInProgressTone: DashboardServiceTone = dashboardToneByStatus(linkedInProgressStatus);
       const normalizedSalePlate = normalizeCompare(saleData.plate.trim());
       const normalizedSaleCustomer = normalizeCompare(saleData.customer.trim());
       const linkedAppointmentId = linkedAppointmentIdCandidate || null;
@@ -5527,7 +5620,7 @@ async function persistDocument(
         setDashboardServices((prev) =>
           prev.map((service) =>
             service.id === matchedService.id
-              ? { ...service, status: defaultStatus, tone: defaultTone, statusUpdatedAtIso: new Date().toISOString() }
+              ? { ...service, status: linkedInProgressStatus, tone: linkedInProgressTone, statusUpdatedAtIso: new Date().toISOString() }
               : service
           )
         );
@@ -5563,7 +5656,7 @@ async function persistDocument(
         setCalendarAppointments((prev) =>
           prev.map((appointment) =>
             appointment.id === targetAppointmentId
-              ? { ...appointment, dashboardStatus: defaultStatus, status: 'CONFIRMADO' }
+              ? { ...appointment, dashboardStatus: linkedInProgressStatus, status: 'CONFIRMADO' }
               : appointment
           )
         );
@@ -5573,7 +5666,7 @@ async function persistDocument(
           const next = prev.map((service) => {
             if (service.sourceDocumentId === targetAppointmentId) {
               updated = true;
-              return { ...service, status: defaultStatus, tone: defaultTone, statusUpdatedAtIso: nowIso };
+              return { ...service, status: linkedInProgressStatus, tone: linkedInProgressTone, statusUpdatedAtIso: nowIso };
             }
             return service;
           });
@@ -5589,8 +5682,8 @@ async function persistDocument(
               title: (linkedAppointment.vehicleDetails || '').split('\n')[0] || linkedAppointment.customer || 'SERVICO',
               plate: linkedAppointment.plate || 'SEM PLACA',
               customer: linkedAppointment.customer || 'SEM CLIENTE',
-              status: defaultStatus,
-              tone: defaultTone,
+              status: linkedInProgressStatus,
+              tone: linkedInProgressTone,
               sourceDocumentId: targetAppointmentId,
               statusUpdatedAtIso: nowIso,
             },
@@ -5599,9 +5692,9 @@ async function persistDocument(
         });
 
         if (isSupabaseConfigured && supabase) {
-          const appointmentStatusSaved = await persistDocumentStatus(String(targetAppointmentId), 'EM ABERTO');
+          const appointmentStatusSaved = await persistDocumentStatus(String(targetAppointmentId), 'EM ANDAMENTO');
           if (!appointmentStatusSaved) {
-            console.error('Falha ao atualizar status para em aberto');
+            console.error('Falha ao atualizar status para em andamento');
           }
         }
       }
@@ -8249,6 +8342,7 @@ const basePrintable: PrintableDocument = {
         onClose={() => setSelectedDashboardService(null)}
         onServiceChange={(patch) => setSelectedDashboardService((prev) => (prev ? { ...prev, ...patch } : prev))}
         onSave={saveDashboardServiceStatus}
+        onCompleteService={() => void saveDashboardServiceStatus('CONCLUIDO')}
         onPrint={printSelectedDashboardServiceSlip}
         onWhatsapp={openSelectedDashboardServiceWhatsapp}
         onCancelAppointment={() => void cancelSelectedDashboardServiceAppointment()}
