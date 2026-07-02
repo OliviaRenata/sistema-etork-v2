@@ -2168,6 +2168,7 @@ const createEmptySaleData = (): SaleData => ({
   const [savedQuote, setSavedQuote] = useState<SavedQuote | null>(null);
   const [savedAppointment, setSavedAppointment] = useState<SavedAppointment | null>(null);
   const [receiptFilters, setReceiptFilters] = useState({
+    saleId: '',
     customer: '',
     plate: '',
     startDate: '',
@@ -2553,6 +2554,16 @@ salesResult.data.map((item) => ({
 }));
        
         setFinancialSalesRows(mappedSales);
+        setReceipts(
+          mappedSales.map((sale) => ({
+            id: sale.id,
+            date: sale.date,
+            customer: sale.customer,
+            car: sale.vehicle,
+            plate: sale.plate,
+            total: sale.total,
+          }))
+        );
       }
 
       if (!appointmentResult.error && appointmentResult.data) {
@@ -2675,6 +2686,10 @@ salesResult.data.map((item) => ({
 
   const filteredReceipts = useMemo(() => {
     return receipts.filter((row) => {
+      const saleIdQuery = receiptFilters.saleId.trim().toLowerCase();
+      const fullSaleId = String(row.id || '').toLowerCase();
+      const compactSaleId = getCompactSaleId(row.id).toLowerCase();
+      const saleIdMatch = !saleIdQuery || fullSaleId.includes(saleIdQuery) || compactSaleId.includes(saleIdQuery);
       const customerMatch = row.customer.toLowerCase().includes(receiptFilters.customer.toLowerCase());
       const plateMatch = row.plate.toLowerCase().includes(receiptFilters.plate.toLowerCase());
 
@@ -2690,7 +2705,7 @@ salesResult.data.map((item) => ({
         if (rowDate > end) return false;
       }
 
-      return customerMatch && plateMatch;
+      return saleIdMatch && customerMatch && plateMatch;
     });
   }, [receipts, receiptFilters]);
 
@@ -3041,6 +3056,25 @@ return {
         (client.state || '').toLowerCase().includes(query)
     );
   }, [clients, searchQuery]);
+
+  const filteredSearchSales = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    const sourceRows = salesHistory.length > 0 ? salesHistory : fallbackSalesHistory;
+
+    const filtered = sourceRows.filter((row) => {
+      if (!query) return true;
+      return (
+        String(row.id).toLowerCase().includes(query) ||
+        getCompactSaleId(row.id).toLowerCase().includes(query) ||
+        row.customer.toLowerCase().includes(query) ||
+        row.phone.toLowerCase().includes(query) ||
+        row.plate.toLowerCase().includes(query) ||
+        row.vehicle.toLowerCase().includes(query)
+      );
+    });
+
+    return filtered.slice(0, 40);
+  }, [fallbackSalesHistory, salesHistory, searchQuery]);
 
   const clientsTable1 = useMemo(
     () => filteredClients.filter((client) => client.priceTable === 1),
@@ -6210,7 +6244,7 @@ const basePrintable: PrintableDocument = {
     downloadCsv(
       `recibos-${Date.now()}.csv`,
       ['ID', 'Data', 'Cliente', 'Veiculo', 'Placa', 'Total'],
-      filteredReceipts.map((row) => [row.id, row.date, row.customer, row.car, row.plate, row.total.toFixed(2)])
+      filteredReceipts.map((row) => [getCompactSaleId(row.id), row.date, row.customer, row.car, row.plate, row.total.toFixed(2)])
     );
   }
 
@@ -7086,7 +7120,19 @@ const basePrintable: PrintableDocument = {
           <h2 className="panel-title">PESQUISAR</h2>
           <section className="form-grid menu-single">
             <div className="form-main">
-              <div className="line"><strong>BUSCA:</strong> <input className="input-look" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="cliente, placa, produto..." /></div>
+              <div className="line"><strong>BUSCA:</strong> <input className="input-look" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="id da venda, cliente, placa, produto..." /></div>
+
+              <div className="menu-block">
+                <div className="line"><strong>VENDAS</strong></div>
+                {filteredSearchSales.map((sale) => (
+                  <div className="menu-row" key={sale.id}>
+                    <span>#{getCompactSaleId(sale.id)}</span>
+                    <span>{sale.customer}</span>
+                    <span>{sale.plate || 'SEM PLACA'}</span>
+                    <span>{formatMoney(sale.total)}</span>
+                  </div>
+                ))}
+              </div>
 
               <div className="menu-block">
                 <div className="line"><strong>CLIENTES</strong></div>
@@ -8092,6 +8138,7 @@ const basePrintable: PrintableDocument = {
           <h2 className="panel-title">IMPRIMIR RECIBO</h2>
 
           <section className="receipt-filters">
+            <div className="line"><strong>ID VENDA:</strong> <input className="input-look" value={receiptFilters.saleId} onChange={(event) => setReceiptFilters((prev) => ({ ...prev, saleId: event.target.value }))} placeholder="Ex.: 123 ou UUID" /></div>
             <div className="line"><strong>CLIENTE:</strong> <input className="input-look" value={receiptFilters.customer} onChange={(event) => setReceiptFilters((prev) => ({ ...prev, customer: event.target.value }))} /></div>
             <div className="line dual">
               <div><strong>DATA:</strong> <input type="date" className="input-look small" value={receiptFilters.startDate} onChange={(event) => setReceiptFilters((prev) => ({ ...prev, startDate: event.target.value }))} /></div>
@@ -8336,6 +8383,7 @@ const basePrintable: PrintableDocument = {
             </div>
             {filteredReceipts.map((row) => (
               <div className="receipt-row editable" key={row.id}>
+                <input className="input-look" value={`#${getCompactSaleId(row.id)}`} readOnly />
                 <input className="input-look" value={row.date} onChange={(event) => updateReceipt(row.id, { date: event.target.value })} />
                 <input className="input-look" value={row.customer} onChange={(event) => updateReceipt(row.id, { customer: event.target.value })} />
                 <input className="input-look" value={row.car} onChange={(event) => updateReceipt(row.id, { car: event.target.value })} />

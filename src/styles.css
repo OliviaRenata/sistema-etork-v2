@@ -1048,7 +1048,7 @@ select option {
 
 .receipt-row {
   display: grid;
-  grid-template-columns: 130px 1fr 240px 140px 170px;
+  grid-template-columns: 110px 130px 1fr 220px 140px 170px auto;
   gap: 2px;
   margin-bottom: 2px;
 }
