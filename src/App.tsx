@@ -586,6 +586,23 @@ function formatDaysValue(value: number) {
   return `${value} dia(s)`;
 }
 
+function getCompactSaleId(value: string | number) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '0';
+
+  if (/^\d+$/.test(raw)) {
+    const normalized = raw.replace(/^0+/, '') || '0';
+    return normalized.length > 6 ? normalized.slice(-6) : normalized;
+  }
+
+  let hash = 0;
+  for (let index = 0; index < raw.length; index += 1) {
+    hash = (hash * 31 + raw.charCodeAt(index)) % 900000;
+  }
+
+  return String(hash + 100000);
+}
+
 function getCustomerPriceTable(customerType: string): PriceTable {
   const normalized = customerType.trim().toUpperCase();
   return normalized.includes('2') || normalized.includes('FRANQUEADO') ? 2 : 1;
@@ -2984,6 +3001,7 @@ return {
       const matchesQuery =
         !query ||
         String(row.id).includes(query) ||
+        getCompactSaleId(row.id).includes(query) ||
         row.customer.toLowerCase().includes(query) ||
         row.phone.toLowerCase().includes(query) ||
         row.plate.toLowerCase().includes(query) ||
@@ -3169,6 +3187,7 @@ row.paymentStatus !== financialFilters.paymentStatus
         return matchesSearchTokens(
           [
             row.id,
+            getCompactSaleId(row.id),
             row.date,
             row.createdAtIso,
             row.customer,
@@ -4858,6 +4877,17 @@ async function updateSalePaymentStatus(
     )
   );
 
+  setFinancialEntries((prev) =>
+    prev.map((entry) =>
+      entry.sourceType === 'venda' && entry.sourceId === id
+        ? {
+            ...entry,
+            paymentStatus: status,
+          }
+        : entry
+    )
+  );
+
   if (!isSupabaseConfigured || !supabase) return;
 
   const { error } = await supabase
@@ -5559,6 +5589,44 @@ async function persistDocument(
         };
         const exists = prev.some((row) => row.id === receiptId);
         return exists ? prev.map((row) => (row.id === receiptId ? updatedHistoryRow : row)) : [updatedHistoryRow, ...prev];
+      });
+
+      setFinancialEntries((prev) => {
+        const saleDate = createdAtIso ? toInputDateValue(new Date(createdAtIso)) : toInputDateValue(new Date());
+        const nextDescription = `VENDA #${getCompactSaleId(updatedFinancialSale.id)} - ${updatedFinancialSale.customer || 'SEM CLIENTE'}`;
+        const existingIndex = prev.findIndex(
+          (entry) => entry.sourceType === 'venda' && entry.sourceId === updatedFinancialSale.id
+        );
+
+        if (existingIndex >= 0) {
+          return prev.map((entry, index) =>
+            index === existingIndex
+              ? {
+                  ...entry,
+                  date: saleDate,
+                  description: nextDescription,
+                  amount: updatedFinancialSale.total,
+                  paymentStatus: currentPaymentStatus,
+                  entryKind: 'receita',
+                }
+              : entry
+          );
+        }
+
+        const temporaryEntryId = -(Date.now() + Math.floor(Math.random() * 1000));
+        const nextEntry: FinancialEntry = {
+          id: temporaryEntryId,
+          date: saleDate,
+          description: nextDescription,
+          amount: updatedFinancialSale.total,
+          sourceType: 'venda',
+          sourceId: updatedFinancialSale.id,
+          paymentStatus: currentPaymentStatus,
+          isNew: false,
+          entryKind: 'receita',
+        };
+
+        return [nextEntry, ...prev];
       });
 
       setSelectedSalePrintable({
@@ -6421,6 +6489,7 @@ const basePrintable: PrintableDocument = {
         'Descricao',
         'Valor Lancamento',
         'Origem',
+        'ID Venda',
         'Data Venda',
         'Cliente',
         'Telefone',
@@ -6446,6 +6515,7 @@ const basePrintable: PrintableDocument = {
           entry.description,
           entry.amount.toFixed(2),
           sourceType || '-',
+          linkedSale ? getCompactSaleId(linkedSale.id) : '-',
           linkedSale?.date || '-',
           linkedSale?.customer || '-',
           linkedSale?.phone || '-',
@@ -6518,6 +6588,7 @@ const basePrintable: PrintableDocument = {
             <td>${escapeHtml(entry.description || '-')}</td>
             <td>${escapeHtml(formatMoney(entry.amount))}</td>
             <td>${escapeHtml(sourceType || '-')}</td>
+            <td>${escapeHtml(linkedSale ? getCompactSaleId(linkedSale.id) : '-')}</td>
             <td>${escapeHtml(linkedSale?.date || '-')}</td>
             <td>${escapeHtml(linkedSale?.customer || '-')}</td>
             <td>${escapeHtml(linkedSale?.phone || '-')}</td>
@@ -6576,6 +6647,7 @@ const basePrintable: PrintableDocument = {
                 <th>Descricao</th>
                 <th>Valor Lancamento</th>
                 <th>Origem</th>
+                <th>ID Venda</th>
                 <th>Data Venda</th>
                 <th>Cliente</th>
                 <th>Telefone</th>
@@ -6591,7 +6663,7 @@ const basePrintable: PrintableDocument = {
               </tr>
             </thead>
             <tbody>
-              ${rows || '<tr><td colspan="17">Nenhum lancamento encontrado para os filtros aplicados.</td></tr>'}
+              ${rows || '<tr><td colspan="18">Nenhum lancamento encontrado para os filtros aplicados.</td></tr>'}
             </tbody>
           </table>
         </div>
@@ -6610,7 +6682,7 @@ const basePrintable: PrintableDocument = {
       ['ID', 'Data', 'Cliente', 'Telefone', 'Placa', 'Veiculo', 'Subtotal', 'Desconto', 'Acrescimo', 'Total', 'Forma Pagamento',
     'Status','Prazo Dias', 'Mao de Obra', 'Observacao'],
       filteredSalesHistory.map((row) => [
-        row.id,
+        getCompactSaleId(row.id),
         row.createdAt,
         row.customer,
         row.phone,
@@ -6642,6 +6714,7 @@ const basePrintable: PrintableDocument = {
       .map(
         (row) => `
           <tr>
+            <td>${escapeHtml(getCompactSaleId(row.id))}</td>
             <td>${escapeHtml(row.createdAt)}</td>
             <td>${escapeHtml(row.customer || 'SEM CLIENTE')}</td>
             <td>${escapeHtml(row.phone || 'SEM TELEFONE')}</td>
@@ -6681,6 +6754,7 @@ const basePrintable: PrintableDocument = {
         <table>
           <thead>
             <tr>
+              <th>ID</th>
               <th>DATA</th>
               <th>CLIENTE</th>
               <th>TELEFONE</th>
@@ -6693,7 +6767,7 @@ const basePrintable: PrintableDocument = {
             </tr>
           </thead>
           <tbody>
-            ${rows || '<tr><td colspan="7">Nenhuma venda encontrada com os filtros atuais.</td></tr>'}
+            ${rows || '<tr><td colspan="10">Nenhuma venda encontrada com os filtros atuais.</td></tr>'}
           </tbody>
         </table>
       </body>
@@ -7472,7 +7546,7 @@ const basePrintable: PrintableDocument = {
               <div className="line"><strong>CLIENTES CADASTRADOS:</strong> <span>{formatNumberValue(clients.length)}</span></div>
               <div className="line"><strong>ITENS CADASTRADOS:</strong> <span>{formatNumberValue(serviceCatalogData.length)}</span></div>
               <div className="line"><strong>RECIBOS GERADOS:</strong> <span>{formatNumberValue(receipts.length)}</span></div>
-              <div className="line"><strong>FATURAMENTO:</strong> <span>{formatMoney(financialTotal)}</span></div>
+              <div className="line"><strong>FATURAMENTO:</strong> <span>{formatMoney(reportIncomeTotal)}</span></div>
               <div className="line"><strong>REGISTROS FILTRADOS:</strong> <span>{formatNumberValue(filteredReportEntries.length)}</span></div>
               <div className="mini-actions">
                 <button className="btn-yellow lg" onClick={printDetailedReports}>IMPRIMIR RELATORIO</button>
@@ -7773,6 +7847,7 @@ const basePrintable: PrintableDocument = {
               {!salesHistoryLoading && filteredSalesHistory.length > 0 && (
                 <div className="sales-history-list-card">
                   <div className="sales-history-grid-header">
+                    <span>ID</span>
                     <span>DATA</span>
                     <span>CLIENTE</span>
                     <span>PLACA</span>
@@ -7782,6 +7857,7 @@ const basePrintable: PrintableDocument = {
 
                   {pagedSalesHistory.map((sale) => (
                     <div className="sales-history-grid-row" key={sale.id}>
+                      <span className="muted">#{getCompactSaleId(sale.id)}</span>
                       <span className="muted">{sale.createdAt}</span>
                       <span className="strong">{sale.customer}</span>
                       <span className="plate">{sale.plate || 'SEM PLACA'}</span>

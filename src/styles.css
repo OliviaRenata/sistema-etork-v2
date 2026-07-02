@@ -3082,11 +3082,11 @@ select option {
 .sales-history-grid-header,
 .sales-history-grid-row {
   display: grid;
-  grid-template-columns: 180px minmax(220px, 1fr) 140px 150px minmax(220px, auto);
+  grid-template-columns: 110px 180px minmax(220px, 1fr) 140px 150px minmax(220px, auto);
   gap: 10px;
   align-items: center;
   padding: 10px 12px;
-  min-width: 860px;
+  min-width: 980px;
 }
 
 .sales-history-grid-header {
