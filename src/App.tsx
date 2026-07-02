@@ -7903,7 +7903,7 @@ const basePrintable: PrintableDocument = {
 
                   {pagedSalesHistory.map((sale) => (
                     <div className="sales-history-grid-row" key={sale.id}>
-                      <span className="muted">Numero: VEN-{getCompactSaleId(sale.id)}</span>
+                      <span className="muted">Numero: VEN-{String(sale.id).slice(0, 8).toUpperCase()}</span>
                       <span className="muted">{sale.createdAt}</span>
                       <span className="strong">{sale.customer}</span>
                       <span className="plate">{sale.plate || 'SEM PLACA'}</span>
@@ -8383,7 +8383,7 @@ const basePrintable: PrintableDocument = {
             </div>
             {filteredReceipts.map((row) => (
               <div className="receipt-row editable" key={row.id}>
-                <input className="input-look" value={`#${getCompactSaleId(row.id)}`} readOnly />
+                <input className="input-look" value={`VEN-${String(row.id).slice(0, 8).toUpperCase()}`} readOnly />
                 <input className="input-look" value={row.date} onChange={(event) => updateReceipt(row.id, { date: event.target.value })} />
                 <input className="input-look" value={row.customer} onChange={(event) => updateReceipt(row.id, { customer: event.target.value })} />
                 <input className="input-look" value={row.car} onChange={(event) => updateReceipt(row.id, { car: event.target.value })} />
